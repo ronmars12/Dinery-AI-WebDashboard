@@ -2,7 +2,11 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { collection, addDoc, getDocs, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, firestore } from '../../firebase';
-import { FiX, FiSave, FiUser, FiPhone, FiMail, FiChevronRight, FiUsers, FiClock, FiCheck, FiArrowLeft } from 'react-icons/fi';
+import {
+  FiX, FiSave, FiUser, FiPhone, FiMail, FiChevronRight, FiUsers,
+  FiClock, FiCheck, FiArrowLeft, FiLock, FiGlobe, FiPlus, FiMinus,
+  FiTrash2, FiChevronDown, FiSearch
+} from 'react-icons/fi';
 
 const sortTables = (tables) => {
   return [...tables].sort((a, b) => {
@@ -155,7 +159,7 @@ const TableSelector = ({
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Individual Tables</p>
           )}
           <div className="flex flex-wrap gap-2">
-            {sortTables(tables).map(t => {  // ← CHANGE THIS LINE
+            {sortTables(tables).map(t => {
               const isSel = selectedTableIds.includes(t.id);
               const isPreSel = t.id === preSelectedTableId;
               return (
@@ -236,6 +240,199 @@ const GuestPicker = ({ guests, setGuests, maxGuests, showCustomGuests, setShowCu
   </div>
 );
 
+// ── MenuItemSelector — Party/Group Menu ──
+const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemoveItem, onUpdateQuantity, getCategoryName }) => {
+  const [expandedCategory, setExpandedCategory] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Group items by category
+  const itemsByCategory = menuItems.reduce((acc, item) => {
+    const catId = item.category || 'uncategorized';
+    if (!acc[catId]) acc[catId] = [];
+    acc[catId].push(item);
+    return acc;
+  }, {});
+
+  // Filter items based on search and guest capacity
+  const filteredItems = Object.keys(itemsByCategory).reduce((acc, catId) => {
+    const items = itemsByCategory[catId].filter(item => {
+      // Search filter
+      if (searchQuery) {
+        const name = item.name?.en || item.name || '';
+        if (!name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      }
+      // Guest capacity filter
+      const minCap = item.minCapacity || 0;
+      const maxCap = item.maxCapacity || 0;
+      if (minCap > 0 && guests < minCap) return false;
+      if (maxCap > 0 && guests > maxCap) return false;
+      return true;
+    });
+    if (items.length > 0) acc[catId] = items;
+    return acc;
+  }, {});
+
+  // Check if item is selected
+  const isSelected = (itemId) => selectedItems.some(si => si.id === itemId);
+
+  // Get selected item quantity
+  const getQuantity = (itemId) => {
+    const found = selectedItems.find(si => si.id === itemId);
+    return found ? found.quantity : 0;
+  };
+
+  // Calculate total items selected
+  const totalItems = selectedItems.reduce((sum, si) => sum + si.quantity, 0);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className={labelCls}>🍽️ Party Menu Selection</p>
+        {totalItems > 0 && (
+          <span className="text-xs font-bold bg-[#fe8a24]/10 text-[#fe8a24] px-2.5 py-1 rounded-full">
+            {totalItems} items selected
+          </span>
+        )}
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+        <FiSearch className="w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search menu items…"
+          className="bg-transparent text-sm text-gray-700 focus:outline-none w-full"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
+            <FiX className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Menu items grid */}
+      <div className="max-h-60 overflow-y-auto pr-1 space-y-2">
+        {Object.keys(filteredItems).length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">
+            {searchQuery ? 'No items match your search' : 'No menu items available for this party size'}
+          </p>
+        ) : (
+          Object.keys(filteredItems).map((catId) => {
+            const items = filteredItems[catId];
+            const isExpanded = expandedCategory === catId;
+            const catName = getCategoryName ? getCategoryName(catId) : (catId === 'uncategorized' ? 'Uncategorized' : catId);
+
+            return (
+              <div key={catId} className="border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setExpandedCategory(isExpanded ? null : catId)}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-xs font-semibold text-gray-700">{catName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">{items.length} items</span>
+                    {isExpanded ? <FiChevronDown className="w-4 h-4 text-gray-400" /> : <FiChevronRight className="w-4 h-4 text-gray-400" />}
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="p-2 space-y-1.5">
+                    {items.map((item) => {
+                      const selected = isSelected(item.id);
+                      const qty = getQuantity(item.id);
+                      const itemName = item.name?.en || item.name || 'Unnamed';
+                      const price = item.price || '0';
+
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between p-2 rounded-lg transition-all ${
+                            selected ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50 border border-gray-100 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800 truncate">{itemName}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="text-xs font-bold text-[#fe8a24]">{price},-</span>
+                              {(item.minCapacity > 0 || item.maxCapacity > 0) && (
+                                <span className="text-[10px] text-gray-400">
+                                  👥 {item.minCapacity > 0 && item.maxCapacity > 0
+                                    ? `${item.minCapacity}–${item.maxCapacity} guests`
+                                    : item.minCapacity > 0
+                                    ? `${item.minCapacity}+ guests`
+                                    : `up to ${item.maxCapacity} guests`}
+                                </span>
+                              )}
+                              {item.allergens?.length > 0 && (
+                                <span className="text-[10px] text-amber-600">⚠️ Allergens</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {selected ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => onUpdateQuantity(item.id, qty - 1)}
+                                className="w-7 h-7 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors"
+                              >
+                                <FiMinus className="w-3 h-3" />
+                              </button>
+                              <span className="text-sm font-bold text-gray-700 w-6 text-center">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => onUpdateQuantity(item.id, qty + 1)}
+                                className="w-7 h-7 rounded-lg bg-[#fe8a24] hover:bg-[#ff9d47] text-white flex items-center justify-center transition-colors"
+                              >
+                                <FiPlus className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onRemoveItem(item.id)}
+                                className="w-7 h-7 rounded-lg bg-red-100 hover:bg-red-200 text-red-500 flex items-center justify-center transition-colors ml-1"
+                              >
+                                <FiTrash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onAddItem(item)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              <FiPlus className="w-3 h-3" /> Add
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Selected items summary */}
+      {selectedItems.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+          <p className="text-xs font-semibold text-green-700 mb-2">Selected Items:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {selectedItems.map((si) => (
+              <span key={si.id} className="inline-flex items-center gap-1 bg-white border border-green-200 rounded-full px-2.5 py-1 text-xs font-medium text-gray-700">
+                {si.name}
+                <span className="bg-[#fe8a24] text-white rounded-full px-1.5 text-[10px] font-bold">×{si.quantity}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN MODAL
 // ─────────────────────────────────────────────────────────────────────────────
@@ -270,6 +467,7 @@ const CreateReservationModal = ({
   const [selectedSlot, setSelectedSlot]   = useState(null);
   const [step, setStep]                   = useState(1);
   const [showTimeSlots, setShowTimeSlots] = useState(true);
+  const [isTimeManuallyChanged, setIsTimeManuallyChanged] = useState(false);
   const [fromTime, setFromTime] = useState(() => {
     const now = new Date();
     return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -282,12 +480,20 @@ const CreateReservationModal = ({
   const [untilClose, setUntilClose]       = useState(false);
   const sittingTime                       = 60;
 
+  // Party Menu state
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuCategories, setMenuCategories] = useState([]);
+  const [selectedMenuItems, setSelectedMenuItems] = useState([]);
+  const [loadingMenu, setLoadingMenu] = useState(false);
+  const [showMenuSelector, setShowMenuSelector] = useState(false);
+
   const [formData, setFormData] = useState({
     customer_first_name:     '',
     customer_last_name:      '',
     customer_email:          '',
     customer_phone:          '',
-    special_requests:        '',
+    special_requests:        '',        // Public notes (visible to customer)
+    internal_notes:          '',        // Internal notes (staff only)
     ServiceType_Reservation: 'dine-in',
     status:                  'confirmed',
     meal_status:             '',
@@ -301,6 +507,7 @@ const CreateReservationModal = ({
     setTimeout(() => { setToast(null); onClose(); }, 1800);
   };
 
+  // Load tables and combinations
   useEffect(() => {
     if (!selectedRestaurant?.id) return;
     const fetchAll = async () => {
@@ -311,12 +518,38 @@ const CreateReservationModal = ({
           getDocs(collection(db, col, selectedRestaurant.id, 'tableCombinations')),
         ]);
         const loadedTables = tabSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setTables(sortTables(loadedTables)); // ← ADD sortTables() HERE
+        setTables(sortTables(loadedTables));
         setCombinations(comboSnap.docs.map(d => ({ id: d.id, ...d.data() })));
         if (preSelectedTableId) setSelectedTableIds([preSelectedTableId]);
       } catch(e) { console.error(e); }
     };
     fetchAll();
+  }, [selectedRestaurant?.id]);
+
+  // Load menu items and categories
+  useEffect(() => {
+    if (!selectedRestaurant?.id) return;
+    const loadMenu = async () => {
+      setLoadingMenu(true);
+      try {
+        const col = selectedRestaurant._collection || 'restaurants';
+        const [itemsSnap, categoriesSnap] = await Promise.all([
+          getDocs(collection(db, col, selectedRestaurant.id, 'menuItems')),
+          getDocs(collection(db, col, selectedRestaurant.id, 'menuCategories')),
+        ]);
+        
+        const items = itemsSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(item => item.active !== false);
+        
+        const categories = categoriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        setMenuItems(items);
+        setMenuCategories(categories);
+      } catch(e) { console.error('Failed to load menu:', e); }
+      finally { setLoadingMenu(false); }
+    };
+    loadMenu();
   }, [selectedRestaurant?.id]);
 
   // Load settings
@@ -334,8 +567,10 @@ const CreateReservationModal = ({
     load();
   }, [selectedRestaurant?.id]);
 
-  // Set default times
+  // Set default times - skip if manually changed
   useEffect(() => {
+    if (isTimeManuallyChanged) return;
+    
     const dayName = (formData.reservation_date || new Date()).toLocaleDateString('en-US', { weekday: 'long' });
     const matchingHours = selectedRestaurant?.customHours?.find(slot =>
       slot.days?.some(d => d.name === dayName && !d.closed)
@@ -359,7 +594,23 @@ const CreateReservationModal = ({
     const endMins = Math.min(oMins + 60, cMins);
     setFromTime(ch.openTime);
     setToTime(`${String(Math.floor(endMins/60)%24).padStart(2,'0')}:${String(endMins%60).padStart(2,'0')}`);
-}, [selectedRestaurant?.id, selectedDate, formData.reservation_date]);
+  }, [selectedRestaurant?.id, selectedDate, formData.reservation_date, isTimeManuallyChanged]);
+
+  useEffect(() => {
+    // This only runs once when the component mounts
+    // It won't override manual changes because we check if the values are already set
+    if (!fromTime || !toTime) {
+      const now = new Date();
+      const mins = now.getMinutes();
+      const roundedMins = Math.ceil(mins / 30) * 30;
+      now.setMinutes(roundedMins, 0, 0);
+      const from = now.toTimeString().slice(0, 5);
+      setFromTime(from);
+      
+      const end = new Date(now.getTime() + 60 * 60000);
+      setToTime(end.toTimeString().slice(0, 5));
+    }
+  }, []);
 
   const formatDisplayTime = (timeStr) => {
     if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return timeStr || '';
@@ -504,11 +755,43 @@ const CreateReservationModal = ({
     return selectedDate ? new Date(selectedDate) : new Date();
   };
 
+  // ── Menu item handlers ──
+  const handleAddMenuItem = (item) => {
+    setSelectedMenuItems(prev => {
+      const existing = prev.find(si => si.id === item.id);
+      if (existing) {
+        return prev.map(si => si.id === item.id ? { ...si, quantity: si.quantity + 1 } : si);
+      }
+      return [...prev, { id: item.id, name: item.name?.en || item.name || 'Unnamed', price: item.price || 0, quantity: 1 }];
+    });
+  };
+
+  const handleRemoveMenuItem = (itemId) => {
+    setSelectedMenuItems(prev => prev.filter(si => si.id !== itemId));
+  };
+
+  const handleUpdateMenuItemQuantity = (itemId, quantity) => {
+    if (quantity <= 0) {
+      handleRemoveMenuItem(itemId);
+      return;
+    }
+    setSelectedMenuItems(prev => 
+      prev.map(si => si.id === itemId ? { ...si, quantity } : si)
+    );
+  };
+
+  // Get category name by ID
+  const getCategoryName = (catId) => {
+    if (catId === 'uncategorized') return 'Uncategorized';
+    const cat = menuCategories.find(c => c.id === catId);
+    return cat?.name?.en || cat?.name || catId || 'Uncategorized';
+  };
+
   const handleSave = async () => {
     setError(''); setTableError('');
     const name = `${formData.customer_first_name?.trim() || ''} ${formData.customer_last_name?.trim() || ''}`.trim() || (isWalkIn ? 'Walk-in Guest' : '');
     if (!isWalkIn && !formData.customer_first_name?.trim()) { setError('First name is required'); return; }
-    if (!isWalkIn && !formData.customer_email?.trim()) { setError('Email address is required'); return; }
+    // Email is now optional - removed validation
     if (isQuickBook && !selectedSlot) { setError('Please select a time slot'); return; }
     if (settings?.requireTableAssignment && selectedTableIds.length===0) { setTableError('Please assign at least one table.'); return; }
     try {
@@ -579,7 +862,14 @@ const CreateReservationModal = ({
         reservation_date:  reservationDate,
         ServiceType_Reservation: formData.ServiceType_Reservation,
         status:            formData.status||'confirmed',
-        special_requests:  formData.special_requests.trim(),
+        special_requests:  formData.special_requests.trim(),      // Public notes
+        internal_notes:    formData.internal_notes.trim(),        // Internal notes
+        selected_menu_items: selectedMenuItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
         restaurant_owner_id: ownerUid,
         created_by_uid: currentUser.uid,
         created_by_role: isStaff ? (sessionStorage.getItem("staffRole") || "staff") : "owner",
@@ -626,8 +916,8 @@ const CreateReservationModal = ({
           updated_at:serverTimestamp(),
         }).catch(e=>console.warn('Table update failed:',tid,e))
       ));
-      // Send confirmation email
-     if (!isWalkIn && formData.customer_email?.trim()) {
+      // Send confirmation email - only if email is provided
+      if (!isWalkIn && formData.customer_email?.trim()) {
         try {
           const { getFunctions, httpsCallable } = await import('firebase/functions');
           const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
@@ -636,6 +926,22 @@ const CreateReservationModal = ({
           const tableName = selectedCombination
             ? selectedCombination.name
             : tables.filter(t => selectedTableIds.includes(t.id)).map(t => t.name).join(' + ') || '—';
+          
+          // Build menu items HTML
+          const menuItemsHtml = selectedMenuItems.length > 0 ? `
+            <div style="margin-top:16px;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+              <p style="margin:0 0 8px;font-weight:bold;color:#1e293b;font-size:13px;">🍽️ Pre-selected Menu Items</p>
+              <ul style="margin:0;padding:0;list-style:none;">
+                ${selectedMenuItems.map(item => `
+                  <li style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;">
+                    <span>${item.name} ×${item.quantity}</span>
+                    <span style="font-weight:600;color:#fe8a24;">${(parseFloat(item.price) * item.quantity).toFixed(0)},-</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          ` : '';
+
           const emailResult = await sendEmailFn({
             to: formData.customer_email.trim(),
             subject: `Reservation Confirmed – ${selectedRestaurant?.name || 'Restaurant'}`,
@@ -649,8 +955,9 @@ const CreateReservationModal = ({
                   <tr><td style="padding:8px 0;color:#888;">Time</td><td><strong>${resTimeFormatted}</strong></td></tr>
                   <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${guests}</strong></td></tr>
                   <tr><td style="padding:8px 0;color:#888;">Table</td><td><strong>${tableName}</strong></td></tr>
-                  ${formData.special_requests?.trim() ? `<tr><td style="padding:8px 0;color:#888;">Notes</td><td>${formData.special_requests}</td></tr>` : ''}
+                  ${formData.special_requests?.trim() ? `<tr><td style="padding:8px 0;color:#888;">Special Requests</td><td>${formData.special_requests}</td></tr>` : ''}
                 </table>
+                ${menuItemsHtml}
                 ${(settings?.contactEmail || settings?.contactPhone) ? `
                   <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
                     <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 Restaurant Contact</p>
@@ -688,52 +995,170 @@ const CreateReservationModal = ({
       <div className="bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 focus-within:border-[#fe8a24] transition-colors">
         <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">From</p>
         <input
-          type="text"
-          inputMode="numeric"
-          placeholder="HH:MM"
-          maxLength={5}
+          type="time"
           value={fromTime}
           onChange={e => {
-            let val = e.target.value.replace(/[^0-9:]/g, '');
-            if (val.length === 2 && !val.includes(':')) val = val + ':';
+            const val = e.target.value;
+            setIsTimeManuallyChanged(true);
             setFromTime(val);
-            if (/^\d{2}:\d{2}$/.test(val)) {
-              if (!untilClose) setToTime(addMinutes(val, sittingTime));
-              if (modalMode === 'full') {
-                const [h, m] = val.split(':').map(Number);
-                const nd = new Date(formData.reservation_date || new Date());
-                nd.setHours(h, m);
-                setFormData(p => ({ ...p, reservation_date: nd }));
+            
+            if (val && !untilClose) {
+              const [h, m] = val.split(':').map(Number);
+              let endMins = h * 60 + m + sittingTime;
+              if (endMins >= 24 * 60) {
+                endMins = endMins - 24 * 60;
               }
+              const endH = Math.floor(endMins / 60);
+              const endM = endMins % 60;
+              const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+              setToTime(endStr);
+            }
+            
+            if (modalMode === 'full' && val) {
+              const [h, m] = val.split(':').map(Number);
+              const nd = new Date(formData.reservation_date || new Date());
+              nd.setHours(h, m, 0, 0);
+              setFormData(p => ({ ...p, reservation_date: nd }));
             }
           }}
+          step="1800"
           className="text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent"
         />
       </div>
       <div className={`bg-gray-50 border-2 rounded-xl px-4 py-3 transition-colors ${untilClose ? 'opacity-50 border-gray-100' : 'border-gray-100 focus-within:border-[#fe8a24]'}`}>
         <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">To</p>
         <input
-          type="text"
-          inputMode="numeric"
-          placeholder="HH:MM"
-          maxLength={5}
+          type="time"
           value={untilClose ? closeTime : toTime}
           disabled={untilClose}
           onChange={e => {
-            let val = e.target.value.replace(/[^0-9:]/g, '');
-            if (val.length === 2 && !val.includes(':')) val = val + ':';
-            setToTime(val);
+            const val = e.target.value;
+            if (val) {
+              setIsTimeManuallyChanged(true);
+              setToTime(val);
+            }
           }}
+          step="1800"
           className="text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent disabled:text-gray-400"
         />
       </div>
     </div>
+    
+    {/* Quick time presets */}
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      <button
+        type="button"
+        onClick={() => {
+          setIsTimeManuallyChanged(true);
+          const now = new Date();
+          const mins = now.getMinutes();
+          const roundedMins = Math.ceil(mins / 30) * 30;
+          now.setMinutes(roundedMins, 0, 0);
+          const time = now.toTimeString().slice(0, 5);
+          setFromTime(time);
+          if (!untilClose) {
+            const [fh, fm] = time.split(':').map(Number);
+            let endMins = fh * 60 + fm + sittingTime;
+            if (endMins >= 24 * 60) {
+              endMins = endMins - 24 * 60;
+            }
+            const endH = Math.floor(endMins / 60);
+            const endM = endMins % 60;
+            setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
+          }
+        }}
+        className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+      >
+        Now
+      </button>
+      {openTime && (
+        <button
+          type="button"
+          onClick={() => {
+            setIsTimeManuallyChanged(true);
+            setFromTime(openTime);
+            if (!untilClose) {
+              const [fh, fm] = openTime.split(':').map(Number);
+              let endMins = fh * 60 + fm + sittingTime;
+              if (endMins >= 24 * 60) {
+                endMins = endMins - 24 * 60;
+              }
+              const endH = Math.floor(endMins / 60);
+              const endM = endMins % 60;
+              setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
+            }
+          }}
+          className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+        >
+          Open ({openTime})
+        </button>
+      )}
+    </div>
+    
+    {/* Quick duration buttons */}
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {[30, 45, 60, 75, 90, 120].map(duration => (
+        <button
+          key={duration}
+          type="button"
+          onClick={() => {
+            if (fromTime && !untilClose) {
+              setIsTimeManuallyChanged(true);
+              const [fh, fm] = fromTime.split(':').map(Number);
+              let endMins = fh * 60 + fm + duration;
+              if (endMins >= 24 * 60) {
+                endMins = endMins - 24 * 60;
+              }
+              const endH = Math.floor(endMins / 60);
+              const endM = endMins % 60;
+              setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
+            }
+          }}
+          className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+        >
+          {duration}m
+        </button>
+      ))}
+    </div>
+    
     <label className="flex items-center gap-2 mt-2 cursor-pointer">
       <input type="checkbox" checked={untilClose}
-        onChange={e => { setUntilClose(e.target.checked); if (e.target.checked) setToTime(closeTime); }}
+        onChange={e => { 
+          setUntilClose(e.target.checked); 
+          if (e.target.checked) {
+            setToTime(closeTime);
+          } else {
+            if (fromTime) {
+              const [fh, fm] = fromTime.split(':').map(Number);
+              let endMins = fh * 60 + fm + sittingTime;
+              if (endMins >= 24 * 60) {
+                endMins = endMins - 24 * 60;
+              }
+              const endH = Math.floor(endMins / 60);
+              const endM = endMins % 60;
+              setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
+            }
+          }
+        }}
         className="w-4 h-4 accent-[#fe8a24]" />
       <span className="text-sm text-gray-500">Until close <span className="text-gray-300">({closeTime})</span></span>
     </label>
+    
+    {/* Display current selection */}
+    <div className="mt-3 flex items-center gap-2 text-sm bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
+      <span className="font-semibold text-blue-700">Selected:</span>
+      <span className="font-mono font-bold text-gray-800">{fromTime || '--:--'}</span>
+      <span className="text-gray-400">→</span>
+      <span className="font-mono font-bold text-gray-800">{untilClose ? closeTime : (toTime || '--:--')}</span>
+      {!untilClose && fromTime && toTime && (() => {
+        const [th, tm] = toTime.split(':').map(Number);
+        const [ffh, ffm] = fromTime.split(':').map(Number);
+        let dur = (th * 60 + tm) - (ffh * 60 + ffm);
+        if (dur < 0) dur += 24 * 60;
+        return dur > 0 ? <span className="text-xs text-gray-400 ml-1">({dur} min)</span> : null;
+      })()}
+      {untilClose && <span className="text-xs text-[#fe8a24] font-semibold ml-1">(until close)</span>}
+    </div>
   </>
 );
 
@@ -862,7 +1287,7 @@ const CreateReservationModal = ({
                     const isSelected = currentDuration === mins;
                     return (
                       <button key={mins} type="button"
-                        onClick={() => setToTime(endStr)}
+                        onClick={() => { setIsTimeManuallyChanged(true); setToTime(endStr); }}
                         className={`px-3 h-11 rounded-xl text-sm font-bold transition-all ${
                           isSelected
                             ? 'bg-[#fe8a24] text-white shadow-md scale-105'
@@ -916,23 +1341,72 @@ const CreateReservationModal = ({
               {/* 4. Table */}
               <TableSelector {...tableSelectorProps}/>
 
-              {/* 5. Optional note */}
+              {/* 5. Public Notes - Walk-in */}
               <div>
-                <label className={labelCls}>Note <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
-                <input type="text" value={formData.special_requests}
+                <label className={labelCls}>
+                  <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal">(visible to customer)</span>
+                </label>
+                <textarea 
+                  value={formData.special_requests}
                   onChange={e => setFormData(p => ({...p, special_requests: e.target.value}))}
-                  className={inputCls} placeholder="Special requests, dietary needs…"/>
+                  rows="2"
+                  className={inputCls + ' resize-none'} 
+                  placeholder="Special requests, dietary needs, allergies…"
+                />
               </div>
 
-            </div>
-          )}
+              {/* 6. Party Menu - Walk-in (below Public Notes) */}
+              {menuItems.length > 0 && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMenuSelector(!showMenuSelector)}
+                    className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                  >
+                    {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                    {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
+                    {selectedMenuItems.length > 0 && (
+                      <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                        {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
+                      </span>
+                    )}
+                  </button>
+                  {showMenuSelector && (
+                    <div className="mt-3">
+                      {loadingMenu ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <MenuItemSelector 
+                          menuItems={menuItems}
+                          selectedItems={selectedMenuItems}
+                          guests={guests}
+                          onAddItem={handleAddMenuItem}
+                          onRemoveItem={handleRemoveMenuItem}
+                          onUpdateQuantity={handleUpdateMenuItemQuantity}
+                          getCategoryName={getCategoryName}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-          {/* ══ QUICK BOOK STEP 1 ══ */}
-          {isQuickBook && step===1 && (
-            <div className="p-6 space-y-5">
-              <GuestPicker {...guestPickerProps}/>
-              <TimeSlotGrid {...timeSlotProps}/>
-              <TableSelector {...tableSelectorProps}/>
+              {/* 7. Internal Notes - Walk-in */}
+              <div>
+                <label className={labelCls}>
+                  <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal">(staff only)</span>
+                </label>
+                <textarea 
+                  value={formData.internal_notes}
+                  onChange={e => setFormData(p => ({...p, internal_notes: e.target.value}))}
+                  rows="2"
+                  className={inputCls + ' resize-none'} 
+                  placeholder="Staff notes, special arrangements, VIP info…"
+                />
+              </div>
+
             </div>
           )}
 
@@ -952,6 +1426,11 @@ const CreateReservationModal = ({
                 {selectedTableIds.length > 0 && (
                   <span className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full">
                     🪑 {tables.filter(t=>selectedTableIds.includes(t.id)).map(t=>t.name).join(' + ')}
+                  </span>
+                )}
+                {selectedMenuItems.length > 0 && (
+                  <span className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                    🍽️ {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} menu items
                   </span>
                 )}
               </div>
@@ -978,16 +1457,76 @@ const CreateReservationModal = ({
                   className={inputCls} placeholder="+1 234 567 8900"/>
               </div>
               <div>
-               <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email *</label>
+              <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
                 <input type="email" value={formData.customer_email}
                   onChange={e=>setFormData(p=>({...p,customer_email:e.target.value}))}
                   className={inputCls} placeholder="email@example.com"/>
               </div>
+              
+              {/* Public Notes - Quick Book */}
               <div>
-                <label className={labelCls}>Special Requests</label>
-                <textarea value={formData.special_requests}
+                <label className={labelCls}>
+                  <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal">(visible to customer)</span>
+                </label>
+                <textarea 
+                  value={formData.special_requests}
                   onChange={e=>setFormData(p=>({...p,special_requests:e.target.value}))}
-                  rows="2" className={inputCls+' resize-none'} placeholder="Dietary needs, celebrations…"/>
+                  rows="2" 
+                  className={inputCls+' resize-none'} 
+                  placeholder="Special requests, dietary needs, allergies…"
+                />
+              </div>
+
+              {/* Party Menu - Quick Book (below Public Notes) */}
+              {menuItems.length > 0 && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMenuSelector(!showMenuSelector)}
+                    className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                  >
+                    {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                    {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
+                    {selectedMenuItems.length > 0 && (
+                      <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                        {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
+                      </span>
+                    )}
+                  </button>
+                  {showMenuSelector && (
+                    <div className="mt-3">
+                      {loadingMenu ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <MenuItemSelector 
+                          menuItems={menuItems}
+                          selectedItems={selectedMenuItems}
+                          guests={guests}
+                          onAddItem={handleAddMenuItem}
+                          onRemoveItem={handleRemoveMenuItem}
+                          onUpdateQuantity={handleUpdateMenuItemQuantity}
+                          getCategoryName={getCategoryName}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Internal Notes - Quick Book */}
+              <div>
+                <label className={labelCls}>
+                  <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal">(staff only)</span>
+                </label>
+                <textarea 
+                  value={formData.internal_notes}
+                  onChange={e=>setFormData(p=>({...p,internal_notes:e.target.value}))}
+                  rows="2" 
+                  className={inputCls+' resize-none'} 
+                  placeholder="Staff notes, special arrangements, VIP info…"
+                />
               </div>
 
               <div>
@@ -1002,7 +1541,7 @@ const CreateReservationModal = ({
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                {/* Left: Customer */}
+                {/* Left: Customer Information + Public Notes + Party Menu + Internal Notes */}
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider pb-2 border-b-2 border-[#fe8a24]/30">
                     👤 Customer Information
@@ -1028,20 +1567,80 @@ const CreateReservationModal = ({
                       className={inputCls} placeholder="+1 234 567 8900"/>
                   </div>
                   <div>
-                   <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email *</label>
+                  <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
                     <input type="email" value={formData.customer_email}
                       onChange={e=>setFormData(p=>({...p,customer_email:e.target.value}))}
                       className={inputCls} placeholder="email@example.com"/>
                   </div>
+                  
+                  {/* Public Notes - Full Create (Left Side) */}
                   <div>
-                    <label className={labelCls}>Special Requests</label>
-                    <textarea value={formData.special_requests}
+                    <label className={labelCls}>
+                      <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal">(visible to customer)</span>
+                    </label>
+                    <textarea 
+                      value={formData.special_requests}
                       onChange={e=>setFormData(p=>({...p,special_requests:e.target.value}))}
-                      rows="3" className={inputCls+' resize-none'} placeholder="Dietary needs, accessibility, celebrations…"/>
+                      rows="3" 
+                      className={inputCls+' resize-none'} 
+                      placeholder="Special requests, dietary needs, accessibility, celebrations…"
+                    />
                   </div>
+                  {/* Internal Notes - Full Create (Left Side, below Party Menu) */}
+                  <div>
+                    <label className={labelCls}>
+                      <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal">(staff only)</span>
+                    </label>
+                    <textarea 
+                      value={formData.internal_notes}
+                      onChange={e=>setFormData(p=>({...p,internal_notes:e.target.value}))}
+                      rows="3" 
+                      className={inputCls+' resize-none'} 
+                      placeholder="Staff notes, special arrangements, VIP info, pre-order details…"
+                    />
+                  </div>
+                  {/* Party Menu - Full Create (Left Side, below Public Notes) */}
+                  {menuItems.length > 0 && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowMenuSelector(!showMenuSelector)}
+                        className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                      >
+                        {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                        {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
+                        {selectedMenuItems.length > 0 && (
+                          <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                            {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
+                          </span>
+                        )}
+                      </button>
+                      {showMenuSelector && (
+                        <div className="mt-3">
+                          {loadingMenu ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          ) : (
+                            <MenuItemSelector 
+                              menuItems={menuItems}
+                              selectedItems={selectedMenuItems}
+                              guests={guests}
+                              onAddItem={handleAddMenuItem}
+                              onRemoveItem={handleRemoveMenuItem}
+                              onUpdateQuantity={handleUpdateMenuItemQuantity}
+                              getCategoryName={getCategoryName}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  
                 </div>
 
-                {/* Right: Reservation details */}
+                {/* Right: Reservation Details */}
                 <div className="space-y-4">
                   <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider pb-2 border-b-2 border-[#fe8a24]/30">
                     📅 Reservation Details
@@ -1127,10 +1726,15 @@ const CreateReservationModal = ({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-gray-400 flex items-center gap-3">
             {selectedTableIds.length > 0 && (
               <span className="text-[#fe8a24] font-semibold">
                 🪑 {sortTables(tables.filter(t=>selectedTableIds.includes(t.id))).map(t=>t.name).join(' + ')}
+              </span>
+            )}
+            {selectedMenuItems.length > 0 && (
+              <span className="text-green-600 font-semibold">
+                🍽️ {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} menu items
               </span>
             )}
           </div>

@@ -616,7 +616,6 @@ const CalendarView = ({
         ? dragState.duration / 15
         : Math.max(1, Math.round((r.duration_minutes || 75) / 15));
       if (isActive && dragState.tableId !== null && dragState.tableId !== tableId) {
-        // Still render in the target row even if not originally there
         if (dragState.tableId === tableId) return null;
         return null;
       }
@@ -778,7 +777,6 @@ const CalendarView = ({
       if (!isUnassigned && !table) return null;
       const tableId = isUnassigned ? '__unassigned__' : table.id;
       const tableRes = resByTable[tableId] || [];
-      // Also show actively dragged reservation in its drag-target row
       const draggedToThisRow = dragging?.hasMoved && 
         dragState?.tableId === tableId && 
         dragState?.id && 
@@ -882,7 +880,6 @@ const CalendarView = ({
                         </div>
                       </div>
                       <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-gray-400 font-medium">:30</div>
-                      {/* Vertical grid lines inside header */}
                       <div className="absolute top-0 bottom-0 left-1/4 border-l border-gray-200" />
                       <div className="absolute top-0 bottom-0 left-2/4 border-l border-gray-300" />
                       <div className="absolute top-0 bottom-0 left-3/4 border-l border-gray-200" />
@@ -954,13 +951,6 @@ const CalendarView = ({
                         </div>
                         <div className={`relative overflow-hidden ${isDragTarget ? 'bg-purple-50/30' : ''}`}
                           style={{ width: (closeHour - openHour) * HOUR_WIDTH }}>
-                          {/* Vertical grid lines for combinations */}
-                          {Array.from({ length: closeHour - openHour }, (_, i) => (
-                            <div key={i} className="absolute top-0 bottom-0 border-l border-purple-200" style={{ left: i * HOUR_WIDTH }} />
-                          ))}
-                          {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => (
-                            <div key={`slot-${i}`} className="absolute top-0 bottom-0 border-l border-purple-100" style={{ left: i * TABLE_CELL_WIDTH }} />
-                          ))}
                           <div className="absolute inset-0 cursor-crosshair z-0 hover:bg-purple-50/10 transition-colors"
                             onClick={(e) => {
                               if (dragging) return;
@@ -1058,15 +1048,11 @@ const CalendarView = ({
                       <div key={hour} style={{ height: SLOT_HEIGHT }} className={`relative group border-b ${
                         isEvenHour ? 'border-gray-200' : 'border-gray-100'
                       }`}>
-                        {/* Vertical grid lines for each hour */}
                         <div className="absolute top-0 bottom-0 left-0 w-px bg-gray-300" />
-                        {/* Vertical quarter-hour grid lines */}
                         <div className="absolute top-0 bottom-0 left-1/4 w-px bg-gray-200" />
                         <div className="absolute top-0 bottom-0 left-2/4 w-px bg-gray-300" />
                         <div className="absolute top-0 bottom-0 left-3/4 w-px bg-gray-200" />
-                        {/* Horizontal half-hour marker line */}
                         <div className="absolute w-full border-b border-dashed border-gray-200" style={{ top: SLOT_HEIGHT / 2 }} />
-                        {/* Horizontal quarter-hour lines */}
                         <div className="absolute left-0 right-0 top-1/4 bottom-0 border-t border-dashed border-gray-100" />
                         <div className="absolute left-0 right-0 top-3/4 bottom-0 border-t border-dashed border-gray-100" />
                         
@@ -1412,9 +1398,10 @@ const CalendarView = ({
 
       {viewRange === 'month' ? renderMonthView() : viewRange === 'day' ? renderDayTableView() : renderGrid()}
 
+      {/* Footer with legend - UPDATED with Current Time indicator */}
       <div className="flex-shrink-0 border-t-2 border-gray-200 px-6 py-3 bg-white shadow-inner">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Booking Status</span>
               {[
@@ -1447,8 +1434,21 @@ const CalendarView = ({
                 </div>
               ))}
             </div>
+
+            {/* NEW: Current Time Indicator in Legend */}
+            <div className="flex items-center gap-3 border-l-2 border-gray-200 pl-4">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Timeline</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-rose-200" style={{ backgroundColor: '#f43f5e' }} />
+                <span className="text-xs text-gray-600 font-medium">Current Time</span>
+                <span className="text-[10px] text-gray-400 font-mono ml-1">
+                  {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-5 text-xs text-gray-400">
+          
+          <div className="flex items-center gap-5 text-xs text-gray-400 flex-wrap">
             <div className="flex items-center gap-1.5">
               <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[9px]" style={{ backgroundColor: COLORS.info }}>!</span>
               <span>Change request</span>

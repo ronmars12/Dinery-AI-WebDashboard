@@ -1,9 +1,197 @@
 // src/components/reservation-software/ReservationModal.jsx
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firestore } from '../../firebase';
-import { FiX, FiTrash2, FiSave, FiUser, FiPhone, FiMail, FiClock, FiUsers } from 'react-icons/fi';
+import { 
+  FiX, FiTrash2, FiSave, FiUser, FiPhone, FiMail, FiClock, FiUsers, 
+  FiLock, FiGlobe, FiPlus, FiMinus, FiChevronDown, FiChevronRight, FiSearch 
+} from 'react-icons/fi';
+
+const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemoveItem, onUpdateQuantity, getCategoryName }) => {
+  const [expandedCategory, setExpandedCategory] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Group items by category
+  const itemsByCategory = menuItems.reduce((acc, item) => {
+    const catId = item.category || 'uncategorized';
+    if (!acc[catId]) acc[catId] = [];
+    acc[catId].push(item);
+    return acc;
+  }, {});
+
+  // Filter items based on search and guest capacity
+  const filteredItems = Object.keys(itemsByCategory).reduce((acc, catId) => {
+    const items = itemsByCategory[catId].filter(item => {
+      if (searchQuery) {
+        const name = item.name?.en || item.name || '';
+        if (!name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      }
+      const minCap = item.minCapacity || 0;
+      const maxCap = item.maxCapacity || 0;
+      if (minCap > 0 && guests < minCap) return false;
+      if (maxCap > 0 && guests > maxCap) return false;
+      return true;
+    });
+    if (items.length > 0) acc[catId] = items;
+    return acc;
+  }, {});
+
+  const isSelected = (itemId) => selectedItems.some(si => si.id === itemId);
+  const getQuantity = (itemId) => {
+    const found = selectedItems.find(si => si.id === itemId);
+    return found ? found.quantity : 0;
+  };
+  const totalItems = selectedItems.reduce((sum, si) => sum + si.quantity, 0);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">🍽️ Party Menu Selection</p>
+        {totalItems > 0 && (
+          <span className="text-xs font-bold bg-[#fe8a24]/10 text-[#fe8a24] px-2.5 py-1 rounded-full">
+            {totalItems} items selected
+          </span>
+        )}
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+        <FiSearch className="w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search menu items…"
+          className="bg-transparent text-sm text-gray-700 focus:outline-none w-full"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
+            <FiX className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Menu items grid */}
+      <div className="max-h-60 overflow-y-auto pr-1 space-y-2">
+        {Object.keys(filteredItems).length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">
+            {searchQuery ? 'No items match your search' : 'No menu items available for this party size'}
+          </p>
+        ) : (
+          Object.keys(filteredItems).map((catId) => {
+            const items = filteredItems[catId];
+            const isExpanded = expandedCategory === catId;
+            const catName = getCategoryName ? getCategoryName(catId) : (catId === 'uncategorized' ? 'Uncategorized' : catId);
+
+            return (
+              <div key={catId} className="border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setExpandedCategory(isExpanded ? null : catId)}
+                  className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-xs font-semibold text-gray-700">{catName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">{items.length} items</span>
+                    {isExpanded ? <FiChevronDown className="w-4 h-4 text-gray-400" /> : <FiChevronRight className="w-4 h-4 text-gray-400" />}
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="p-2 space-y-1.5">
+                    {items.map((item) => {
+                      const selected = isSelected(item.id);
+                      const qty = getQuantity(item.id);
+                      const itemName = item.name?.en || item.name || 'Unnamed';
+                      const price = item.price || '0';
+
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between p-2 rounded-lg transition-all ${
+                            selected ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50 border border-gray-100 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800 truncate">{itemName}</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="text-xs font-bold text-[#fe8a24]">{price},-</span>
+                              {(item.minCapacity > 0 || item.maxCapacity > 0) && (
+                                <span className="text-[10px] text-gray-400">
+                                  👥 {item.minCapacity > 0 && item.maxCapacity > 0
+                                    ? `${item.minCapacity}–${item.maxCapacity} guests`
+                                    : item.minCapacity > 0
+                                    ? `${item.minCapacity}+ guests`
+                                    : `up to ${item.maxCapacity} guests`}
+                                </span>
+                              )}
+                              {item.allergens?.length > 0 && (
+                                <span className="text-[10px] text-amber-600">⚠️ Allergens</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {selected ? (
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => onUpdateQuantity(item.id, qty - 1)}
+                                className="w-7 h-7 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors"
+                              >
+                                <FiMinus className="w-3 h-3" />
+                              </button>
+                              <span className="text-sm font-bold text-gray-700 w-6 text-center">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => onUpdateQuantity(item.id, qty + 1)}
+                                className="w-7 h-7 rounded-lg bg-[#fe8a24] hover:bg-[#ff9d47] text-white flex items-center justify-center transition-colors"
+                              >
+                                <FiPlus className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onRemoveItem(item.id)}
+                                className="w-7 h-7 rounded-lg bg-red-100 hover:bg-red-200 text-red-500 flex items-center justify-center transition-colors ml-1"
+                              >
+                                <FiTrash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onAddItem(item)}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              <FiPlus className="w-3 h-3" /> Add
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Selected items summary */}
+      {selectedItems.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+          <p className="text-xs font-semibold text-green-700 mb-2">Selected Items:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {selectedItems.map((si) => (
+              <span key={si.id} className="inline-flex items-center gap-1 bg-white border border-green-200 rounded-full px-2.5 py-1 text-xs font-medium text-gray-700">
+                {si.name}
+                <span className="bg-[#fe8a24] text-white rounded-full px-1.5 text-[10px] font-bold">×{si.quantity}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ReservationModal = ({ reservation, onClose }) => {
   const [formData, setFormData] = useState({
@@ -14,7 +202,8 @@ const ReservationModal = ({ reservation, onClose }) => {
       reservation_date: reservation.reservation_date?.toDate?.() || new Date(),
       ServiceType_Reservation: reservation.ServiceType_Reservation || 'dine-in',
       status: reservation.status || 'pending',
-      special_requests: reservation.special_requests || '',
+      special_requests: reservation.special_requests || '',      // Public notes (visible to customer)
+      internal_notes: reservation.internal_notes || '',          // Internal notes (staff only)
       // Support all offer field variants from mobile + web
       claimed_offer: reservation.claimed_offer || reservation.offer_name || reservation.offerName || '',
       claimed_offer_id: reservation.claimed_offer_id || reservation.offer_id || reservation.offerId || '',
@@ -35,10 +224,17 @@ const ReservationModal = ({ reservation, onClose }) => {
   const [approvalStatus, setApprovalStatus] = useState(null);
   const [liveReservation, setLiveReservation] = useState(reservation);
 
+  // ── Party Menu state ──
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuCategories, setMenuCategories] = useState([]);
+  const [selectedMenuItems, setSelectedMenuItems] = useState([]);
+  const [loadingMenu, setLoadingMenu] = useState(false);
+  const [showMenuSelector, setShowMenuSelector] = useState(false);
+
   const refreshReservation = async () => {
     try {
       const { getDoc } = await import('firebase/firestore');
-      const snap = await getDoc(doc(db, 'reservations', reservation.id));
+      const snap = await getDoc(doc(firestore, 'reservations', reservation.id));
       if (snap.exists()) {
         setLiveReservation({ id: snap.id, ...snap.data() });
       }
@@ -52,8 +248,51 @@ const ReservationModal = ({ reservation, onClose }) => {
       ...prev,
       status: liveReservation.status || prev.status,
       reservation_date: liveReservation.reservation_date?.toDate?.() || new Date(liveReservation.reservation_date) || prev.reservation_date,
+      special_requests: liveReservation.special_requests || prev.special_requests || '',
+      internal_notes: liveReservation.internal_notes || prev.internal_notes || '',
     }));
   }, [liveReservation]);
+
+  // ── Load menu items and categories ──
+  useEffect(() => {
+    if (!reservation.restaurant_id) return;
+    const loadMenu = async () => {
+      setLoadingMenu(true);
+      try {
+        const col = reservation.restaurant_collection || 'restaurants';
+        const [itemsSnap, categoriesSnap] = await Promise.all([
+          getDocs(collection(firestore, col, reservation.restaurant_id, 'menuItems')),
+          getDocs(collection(firestore, col, reservation.restaurant_id, 'menuCategories')),
+        ]);
+        
+        const items = itemsSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(item => item.active !== false);
+        
+        const categories = categoriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        setMenuItems(items);
+        setMenuCategories(categories);
+      } catch(e) { console.error('Failed to load menu:', e); }
+      finally { setLoadingMenu(false); }
+    };
+    loadMenu();
+  }, [reservation.restaurant_id]);
+
+  // ── Load existing selected menu items from reservation ──
+  useEffect(() => {
+    if (reservation.selected_menu_items && reservation.selected_menu_items.length > 0) {
+      const items = reservation.selected_menu_items.map(item => ({
+        id: item.id,
+        name: item.name || 'Unnamed',
+        price: item.price || 0,
+        quantity: item.quantity || item.qty || 1,
+      }));
+      setSelectedMenuItems(items);
+      setShowMenuSelector(true);
+    }
+  }, [reservation.selected_menu_items]);
+
   const [settings, setSettings] = useState(null);
 
   useEffect(() => {
@@ -65,6 +304,7 @@ const ReservationModal = ({ reservation, onClose }) => {
         .catch(e => console.warn('Could not load settings:', e));
     });
   }, [reservation.restaurant_id]);
+  
   const [tables, setTables] = useState([]);
   const isMultiTable = Array.isArray(reservation.table_ids) && reservation.table_ids.length > 1;
   const [selectedTableIds, setSelectedTableIds] = useState(
@@ -72,15 +312,17 @@ const ReservationModal = ({ reservation, onClose }) => {
       ? reservation.table_ids
       : reservation.table_id ? [reservation.table_id] : []
   );
+  
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => { setToast(null); onClose(); }, 1800);
   };
+  
   useEffect(() => {
     if (!reservation.restaurant_id) return;
     const collectionName = reservation.restaurant_collection || 'restaurants';
     import('firebase/firestore').then(({ collection, getDocs }) => {
-      getDocs(collection(db, collectionName, reservation.restaurant_id, 'tables'))
+      getDocs(collection(firestore, collectionName, reservation.restaurant_id, 'tables'))
         .then(snap => {
           const data = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
@@ -91,7 +333,9 @@ const ReservationModal = ({ reservation, onClose }) => {
         .catch(e => console.warn('Could not load tables:', e));
     });
   }, [reservation.restaurant_id]);
+  
   const db = firestore; 
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -119,20 +363,16 @@ const ReservationModal = ({ reservation, onClose }) => {
   };
 
   const getAssignedTableIds = () => {
-  if (Array.isArray(reservation.table_ids) && reservation.table_ids.length > 0) {
-    return reservation.table_ids;
-  }
-
-  return reservation.table_id ? [reservation.table_id] : [];
+    if (Array.isArray(reservation.table_ids) && reservation.table_ids.length > 0) {
+      return reservation.table_ids;
+    }
+    return reservation.table_id ? [reservation.table_id] : [];
   };
 
   const clearAssignedTables = async () => {
     const tableIds = getAssignedTableIds();
-
     if (!tableIds.length || !reservation.restaurant_id) return;
-
     const collectionName = reservation.restaurant_collection || 'restaurants';
-
     await Promise.all(
       tableIds.map(tid =>
         updateDoc(doc(db, collectionName, reservation.restaurant_id, 'tables', tid), {
@@ -148,12 +388,44 @@ const ReservationModal = ({ reservation, onClose }) => {
     );
   };
 
-const handleSave = async () => {
+  // ── Menu item handlers ──
+  const handleAddMenuItem = (item) => {
+    setSelectedMenuItems(prev => {
+      const existing = prev.find(si => si.id === item.id);
+      if (existing) {
+        return prev.map(si => si.id === item.id ? { ...si, quantity: si.quantity + 1 } : si);
+      }
+      return [...prev, { id: item.id, name: item.name?.en || item.name || 'Unnamed', price: item.price || 0, quantity: 1 }];
+    });
+  };
+
+  const handleRemoveMenuItem = (itemId) => {
+    setSelectedMenuItems(prev => prev.filter(si => si.id !== itemId));
+  };
+
+  const handleUpdateMenuItemQuantity = (itemId, quantity) => {
+    if (quantity <= 0) {
+      handleRemoveMenuItem(itemId);
+      return;
+    }
+    setSelectedMenuItems(prev => 
+      prev.map(si => si.id === itemId ? { ...si, quantity } : si)
+    );
+  };
+
+  // Get category name by ID
+  const getCategoryName = (catId) => {
+    if (catId === 'uncategorized') return 'Uncategorized';
+    const cat = menuCategories.find(c => c.id === catId);
+    return cat?.name?.en || cat?.name || catId || 'Uncategorized';
+  };
+
+  const handleSave = async () => {
     try {
       setSaving(true);
       console.log('💾 Saving reservation:', reservation.id);
 
-    const reservationRef = doc(db, 'reservations', reservation.id);
+      const reservationRef = doc(db, 'reservations', reservation.id);
       const selectedTables = tables.filter(t => selectedTableIds.includes(t.id));
       const tableFields = {
         table_id:         selectedTableIds[0] || null,
@@ -164,6 +436,14 @@ const handleSave = async () => {
         combination_name: selectedTableIds.length > 1 ? (reservation.combination_name || null) : null,
       };
 
+      // Format selected menu items for saving
+      const formattedMenuItems = selectedMenuItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price || '',
+        quantity: item.quantity || 1,
+      }));
+
       await updateDoc(reservationRef, {
         ...formData,
         reservation_date: formData.reservation_date,
@@ -171,6 +451,9 @@ const handleSave = async () => {
         to_time: formData.to_time,
         duration_minutes: formData.duration_minutes,
         meal_status: formData.meal_status || null,
+        special_requests: formData.special_requests || '',
+        internal_notes: formData.internal_notes || '',
+        selected_menu_items: formattedMenuItems,
         ...tableFields,
         updated_at: serverTimestamp(),
       });
@@ -213,10 +496,10 @@ const handleSave = async () => {
       setDeleting(true);
       console.log('🗑️ Deleting reservation:', reservation.id);
 
-    const reservationRef = doc(db, 'reservations', reservation.id);
-          await deleteDoc(reservationRef);
-          await clearAssignedTables();
-          console.log('✅ Reservation deleted successfully');
+      const reservationRef = doc(db, 'reservations', reservation.id);
+      await deleteDoc(reservationRef);
+      await clearAssignedTables();
+      console.log('✅ Reservation deleted successfully');
       showToast('Reservation deleted successfully!', 'delete');
     } catch (error) {
       console.error('❌ Error deleting reservation:', error);
@@ -557,7 +840,7 @@ const handleSave = async () => {
                 );
               })()}
 
-        {tables.length > 0 && (
+              {tables.length > 0 && (
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Table Assignment
@@ -788,67 +1071,132 @@ const handleSave = async () => {
               </div>
             </div>
       
-            {/* Special Requests - Full Width */}
+            {/* Notes Section - Full Width */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Special Requests
-              </label>
-              <textarea
-                name="special_requests"
-                value={formData.special_requests}
-                onChange={handleChange}
-                rows="3"
-                className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
-                placeholder="Any special requests or dietary requirements..."
-              />
-            </div>
-
-      {/* Selected Menu Items */}
-          {reservation.selected_menu_items?.length > 0 && (
-            <div className="md:col-span-2">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                🍽️ Pre-selected Menu Items
+              <h4 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">
+                Notes
               </h4>
-              <div className="bg-orange-50 border-2 border-orange-200 rounded-xl overflow-hidden">
-                <div className="divide-y divide-orange-100">
-                  {reservation.selected_menu_items.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                      <div className="flex items-center gap-3">
-                        {item.qty > 1 && (
-                          <span className="text-xs font-bold bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
-                            ×{item.qty}
-                          </span>
-                        )}
-                        <span className="text-sm font-semibold text-gray-800">{item.name}</span>
-                      </div>
-                      {item.price && (
-                        <span className="text-sm font-bold text-[#fe8a24]">
-                          {item.qty > 1
-                            ? `${(parseFloat(item.price) * item.qty).toFixed(0)},-`
-                            : `${item.price},-`}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Public Notes (Special Requests) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <FiGlobe className="w-4 h-4 text-blue-500" />
+                    Public Notes <span className="text-xs text-gray-400 font-normal">(visible to customer)</span>
+                  </label>
+                  <textarea
+                    name="special_requests"
+                    value={formData.special_requests}
+                    onChange={handleChange}
+                    rows="4"
+                    className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                    placeholder="Special requests, dietary requirements, allergies, celebrations…"
+                  />
                 </div>
-                <div className="px-4 py-2 bg-orange-100 border-t border-orange-200 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-orange-700">
-                    {reservation.selected_menu_items.reduce((s, i) => s + (i.qty || 1), 0)} items selected
-                  </span>
-                  {reservation.selected_menu_items.some(i => i.price) && (
-                    <span className="text-sm font-bold text-[#fe8a24]">
-                      Total: {reservation.selected_menu_items.reduce((s, i) =>
-                        s + (parseFloat(i.price) || 0) * (i.qty || 1), 0
-                      ).toFixed(0)},-
-                    </span>
-                  )}
+
+                {/* Internal Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <FiLock className="w-4 h-4 text-purple-500" />
+                    Internal Notes <span className="text-xs text-gray-400 font-normal">(staff only)</span>
+                  </label>
+                  <textarea
+                    name="internal_notes"
+                    value={formData.internal_notes}
+                    onChange={handleChange}
+                    rows="4"
+                    className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                    placeholder="Staff notes, VIP info, special arrangements, pre-order details…"
+                  />
                 </div>
               </div>
             </div>
-          )}
 
-          {/* Offer Information */}
-          {(formData.claimed_offer || formData.source) && (
+            {/* ── Party Menu Section ── */}
+            <div className="md:col-span-2">
+              <h4 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">
+                🍽️ Party Menu
+              </h4>
+              
+              {menuItems.length > 0 && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMenuSelector(!showMenuSelector)}
+                    className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                  >
+                    {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                    {showMenuSelector ? 'Hide Party Menu' : 'Edit Party Menu'}
+                    {selectedMenuItems.length > 0 && (
+                      <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                        {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
+                      </span>
+                    )}
+                  </button>
+                  {showMenuSelector && (
+                    <div className="mt-3">
+                      {loadingMenu ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <MenuItemSelector 
+                          menuItems={menuItems}
+                          selectedItems={selectedMenuItems}
+                          guests={formData.number_of_guests || 2}
+                          onAddItem={handleAddMenuItem}
+                          onRemoveItem={handleRemoveMenuItem}
+                          onUpdateQuantity={handleUpdateMenuItemQuantity}
+                          getCategoryName={getCategoryName}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Selected Menu Items Display (read-only summary) */}
+              {reservation.selected_menu_items?.length > 0 && (
+                <div className="mt-3 bg-orange-50 border-2 border-orange-200 rounded-xl overflow-hidden">
+                  <div className="divide-y divide-orange-100">
+                    {reservation.selected_menu_items.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                        <div className="flex items-center gap-3">
+                          {item.quantity > 1 && (
+                            <span className="text-xs font-bold bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                              ×{item.quantity}
+                            </span>
+                          )}
+                          <span className="text-sm font-semibold text-gray-800">{item.name}</span>
+                        </div>
+                        {item.price && (
+                          <span className="text-sm font-bold text-[#fe8a24]">
+                            {item.quantity > 1
+                              ? `${(parseFloat(item.price) * item.quantity).toFixed(0)},-`
+                              : `${item.price},-`}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-4 py-2 bg-orange-100 border-t border-orange-200 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-orange-700">
+                      {reservation.selected_menu_items.reduce((s, i) => s + (i.quantity || 1), 0)} items selected
+                    </span>
+                    {reservation.selected_menu_items.some(i => i.price) && (
+                      <span className="text-sm font-bold text-[#fe8a24]">
+                        Total: {reservation.selected_menu_items.reduce((s, i) =>
+                          s + (parseFloat(i.price) || 0) * (i.quantity || 1), 0
+                        ).toFixed(0)},-
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Offer Information */}
+            {(formData.claimed_offer || formData.source) && (
                 <div className="md:col-span-2 space-y-3">
 
                   {/* Source badge */}
