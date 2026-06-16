@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   getFirestore, collection, doc, getDoc, onSnapshot, updateDoc,
 } from 'firebase/firestore';
-import { FiUsers, FiClock, FiSearch, FiChevronLeft, FiChevronRight, FiFilter, FiPhone, FiMail, FiMessageSquare } from 'react-icons/fi';
+import { FiUsers, FiClock, FiSearch, FiChevronLeft, FiChevronRight, FiFilter, FiPhone, FiMail, FiMessageSquare, FiLock, FiFileText } from 'react-icons/fi';
 
 const db = getFirestore();
 
@@ -109,6 +109,35 @@ const fmtEndTime = (d, mins) => {
   const dt = d?.toDate?.() || (d ? new Date(d) : null);
   if (!dt || !mins) return "--:--";
   return new Date(dt.getTime() + mins * 60000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+};
+
+// ─── Note Indicator Component ──────────────────────────────────────────────────
+const NoteIndicator = ({ publicNote, internalNote }) => {
+  const hasPublic = publicNote && publicNote.trim().length > 0;
+  const hasInternal = internalNote && internalNote.trim().length > 0;
+  
+  if (!hasPublic && !hasInternal) return null;
+  
+  return (
+    <div className="flex items-center gap-0.5">
+      {hasPublic && (
+        <div className="relative group">
+          <FiFileText className="w-3.5 h-3.5 text-blue-400" />
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-800 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-slate-600">
+            Public: {publicNote.length > 30 ? publicNote.slice(0, 30) + '...' : publicNote}
+          </div>
+        </div>
+      )}
+      {hasInternal && (
+        <div className="relative group">
+          <FiLock className="w-3.5 h-3.5 text-amber-400" />
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-800 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-slate-600">
+            Internal: {internalNote.length > 30 ? internalNote.slice(0, 30) + '...' : internalNote}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
@@ -1206,6 +1235,13 @@ const handleTableRightClick = useCallback((tableId, e) => {
                       {res.customer_phone && (
                         <span className="text-xs text-slate-400 truncate block">{res.customer_phone}</span>
                       )}
+                      {/* Note indicators in FIRST NAME column */}
+                      <div className="mt-1">
+                        <NoteIndicator 
+                          publicNote={res.special_requests} 
+                          internalNote={res.internal_notes} 
+                        />
+                      </div>
                     </div>
 
                     {/* Last name */}
@@ -1250,26 +1286,34 @@ const handleTableRightClick = useCallback((tableId, e) => {
                     </div>
                   </div>
 
-                  {/* Expanded detail row */}
+                  {/* Expanded detail row - Redesigned */}
                   {isExpanded && (
                     <div className="border-b px-4 py-3"
                       style={{ background: "#162032", borderColor: "#1e293b" }}>
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* Left: details */}
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-6 flex-wrap">
+                      
+                      {/* Top section: Customer info + Tags + Actions */}
+                      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          {/* Customer info */}
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="font-semibold text-white">{res.customer_name || 'Guest'}</span>
+                            <span className="text-xs text-slate-400">·</span>
                             {res.customer_phone && (
-                              <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                              <div className="flex items-center gap-1 text-xs text-slate-300">
                                 <FiPhone className="w-3 h-3 text-slate-500" />
                                 {res.customer_phone}
                               </div>
                             )}
                             {res.customer_email && (
-                              <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                              <div className="flex items-center gap-1 text-xs text-slate-300">
                                 <FiMail className="w-3 h-3 text-slate-500" />
                                 {res.customer_email}
                               </div>
                             )}
+                          </div>
+                          
+                          {/* Tags */}
+                          <div className="flex flex-wrap items-center gap-1.5">
                             {res.ServiceType_Reservation && (
                               <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded capitalize">
                                 {res.ServiceType_Reservation}
@@ -1281,62 +1325,61 @@ const handleTableRightClick = useCallback((tableId, e) => {
                             {res.is_walkin && (
                               <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded">🚶 Walk-in</span>
                             )}
+                            {res.combination_name && (
+                              <span className="text-[10px] bg-purple-900 text-purple-300 px-2 py-0.5 rounded">🔗 {res.combination_name}</span>
+                            )}
                           </div>
+                        </div>
+                        
+                        {/* Action button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onReservationClick && onReservationClick(res); }}
+                          className="text-xs bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-3 py-1.5 rounded-lg font-semibold transition-colors flex-shrink-0">
+                          Open full detail →
+                        </button>
+                      </div>
+
+                      {/* Middle section: 2-column grid for notes and meal status */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        {/* Left: Notes */}
+                        <div className="space-y-2">
+                          {/* Public Notes */}
                           {res.special_requests && (
-                            <div className="flex items-start gap-1.5 text-xs text-slate-400 bg-slate-800 rounded-lg px-3 py-2">
-                              <FiMessageSquare className="w-3 h-3 mt-0.5 flex-shrink-0 text-slate-500" />
-                              <span className="italic">"{res.special_requests}"</span>
-                            </div>
-                          )}
-                          {res.selected_menu_items?.length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                                🍽️ Pre-selected Menu Items
-                              </p>
-                              <div className="bg-slate-800 rounded-lg overflow-hidden border border-slate-700">
-                                {res.selected_menu_items.map((item, i) => (
-                                  <div key={i} className="flex items-center justify-between px-3 py-1.5 border-b border-slate-700 last:border-0">
-                                    <div className="flex items-center gap-2">
-                                      {item.qty > 1 && (
-                                        <span className="text-[10px] font-bold bg-[#fe8a24] text-white px-1.5 py-0.5 rounded-full">
-                                          ×{item.qty}
-                                        </span>
-                                      )}
-                                      <span className="text-xs text-slate-200 font-medium">{item.name}</span>
-                                    </div>
-                                    {item.price && (
-                                      <span className="text-xs font-bold text-[#fe8a24]">
-                                        {item.qty > 1
-                                          ? `${(parseFloat(item.price) * item.qty).toFixed(0)},-`
-                                          : `${item.price},-`}
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                                <div className="px-3 py-1.5 bg-slate-700/50 flex items-center justify-between">
-                                  <span className="text-[10px] text-slate-400">
-                                    {res.selected_menu_items.reduce((s,i)=>s+(i.qty||1),0)} items
-                                  </span>
-                                  {res.selected_menu_items.some(i=>i.price) && (
-                                    <span className="text-xs font-bold text-[#fe8a24]">
-                                      {res.selected_menu_items.reduce((s,i)=>s+(parseFloat(i.price)||0)*(i.qty||1),0).toFixed(0)},-
-                                    </span>
-                                  )}
-                                </div>
+                            <div className="flex items-start gap-2 text-xs bg-slate-800/80 rounded-lg px-3 py-2 border border-blue-900/30">
+                              <FiFileText className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-blue-400" />
+                              <div>
+                                <span className="text-[9px] font-semibold text-blue-400 uppercase tracking-wider">Public</span>
+                                <p className="text-slate-300 mt-0.5">{res.special_requests}</p>
                               </div>
                             </div>
                           )}
+
+                          {/* Internal Notes */}
+                          {res.internal_notes && (
+                            <div className="flex items-start gap-2 text-xs bg-amber-900/10 rounded-lg px-3 py-2 border border-amber-800/30">
+                              <FiLock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-amber-400" />
+                              <div>
+                                <span className="text-[9px] font-semibold text-amber-400 uppercase tracking-wider">Internal</span>
+                                <p className="text-amber-300/80 mt-0.5">{res.internal_notes}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* No notes message */}
+                          {!res.special_requests && !res.internal_notes && (
+                            <div className="text-xs text-slate-600 italic py-1">No notes</div>
+                          )}
                         </div>
 
-                        {/* Right: meal status quick-set + action */}
+                        {/* Right: Meal Status */}
                         <div>
                           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Meal Status</p>
-                          <div className="flex flex-wrap gap-1 mb-2">
+                          <div className="flex flex-wrap gap-1">
                             {Object.entries(MEAL_CFG).map(([k, v]) => (
                               <button key={k}
                                 onClick={(e) => { e.stopPropagation(); updateMealStatus(res.id, k); }}
                                 disabled={updatingMeal === res.id}
-                                className={`text-[10px] px-2 py-0.5 rounded font-semibold transition-all ${
+                                className={`text-[10px] px-2.5 py-1 rounded font-semibold transition-all ${
                                   res.meal_status === k
                                     ? "ring-2 ring-offset-1 ring-offset-slate-900"
                                     : "opacity-60 hover:opacity-100"
@@ -1352,18 +1395,53 @@ const handleTableRightClick = useCallback((tableId, e) => {
                             {res.meal_status && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); updateMealStatus(res.id, null); }}
-                                className="text-[10px] px-2 py-0.5 rounded font-semibold bg-slate-700 text-slate-400 hover:bg-slate-600">
+                                className="text-[10px] px-2.5 py-1 rounded font-semibold bg-slate-700 text-slate-400 hover:bg-slate-600">
                                 Clear
                               </button>
                             )}
                           </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onReservationClick && onReservationClick(res); }}
-                            className="text-xs bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-3 py-1.5 rounded-lg font-semibold transition-colors">
-                            Open full detail →
-                          </button>
                         </div>
                       </div>
+
+                      {/* Bottom: Pre-selected Menu Items - Full width */}
+                      {res.selected_menu_items?.length > 0 && (
+                        <div className="mt-1 pt-3 border-t border-slate-700/50">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">🍽️ Menu Items</span>
+                            <span className="text-[9px] text-slate-600 font-normal">
+                              ({res.selected_menu_items.reduce((s,i) => s + (i.qty || 1), 0)} items)
+                            </span>
+                            {res.selected_menu_items.some(i => i.price) && (
+                              <span className="text-xs font-bold text-[#fe8a24] ml-auto">
+                                Total: {res.selected_menu_items.reduce((s, i) =>
+                                  s + (parseFloat(i.price) || 0) * (i.qty || 1), 0
+                                ).toFixed(0)},-
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5">
+                            {res.selected_menu_items.map((item, i) => (
+                              <div key={i} className="flex items-center justify-between bg-slate-800/60 rounded-lg px-3 py-1.5 border border-slate-700/50 hover:border-slate-600 transition-colors">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {item.qty > 1 && (
+                                    <span className="text-[10px] font-bold bg-[#fe8a24] text-white px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                      ×{item.qty}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-slate-300 truncate">{item.name}</span>
+                                </div>
+                                {item.price && (
+                                  <span className="text-xs font-bold text-[#fe8a24] flex-shrink-0 ml-2">
+                                    {item.qty > 1
+                                      ? `${(parseFloat(item.price) * item.qty).toFixed(0)},-`
+                                      : `${item.price},-`}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

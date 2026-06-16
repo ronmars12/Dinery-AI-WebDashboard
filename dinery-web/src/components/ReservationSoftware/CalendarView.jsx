@@ -1,9 +1,41 @@
 // src/components/reservation-software/CalendarView.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { doc, updateDoc, collection, onSnapshot, getDoc, serverTimestamp } from 'firebase/firestore';
-import { FiX, FiChevronLeft, FiChevronRight, FiCalendar, FiPlus, FiUsers, FiTrash2, FiClock, FiMapPin, FiMoreVertical } from 'react-icons/fi';
+import { FiX, FiChevronLeft, FiChevronRight, FiCalendar, FiPlus, FiUsers, FiTrash2, FiClock, FiMapPin, FiMoreVertical, FiFileText, FiLock } from 'react-icons/fi';
 import { firestore, auth } from '../../firebase';
 
+// ─── Note Indicator Component ──────────────────────────────────────────────────
+const NoteIndicator = ({ publicNote, internalNote }) => {
+  const hasPublic = publicNote && publicNote.trim().length > 0;
+  const hasInternal = internalNote && internalNote.trim().length > 0;
+  
+  if (!hasPublic && !hasInternal) return null;
+  
+  return (
+    <div className="flex items-center gap-0.5 ml-1 flex-shrink-0">
+      {hasPublic && (
+        <div className="relative group">
+          <div className="w-4 h-4 rounded bg-blue-500/20 border border-blue-400/50 flex items-center justify-center hover:bg-blue-500/30 transition-colors cursor-help">
+            <FiFileText className="w-2.5 h-2.5 text-blue-300" />
+          </div>
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-gray-700 shadow-lg max-w-[250px] truncate font-medium">
+            📝 {publicNote.length > 50 ? publicNote.slice(0, 50) + '...' : publicNote}
+          </div>
+        </div>
+      )}
+      {hasInternal && (
+        <div className="relative group">
+          <div className="w-4 h-4 rounded bg-amber-500/20 border border-amber-400/50 flex items-center justify-center hover:bg-amber-500/30 transition-colors cursor-help">
+            <FiLock className="w-2.5 h-2.5 text-amber-300" />
+          </div>
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-gray-700 shadow-lg max-w-[250px] truncate font-medium">
+            🔒 {internalNote.length > 50 ? internalNote.slice(0, 50) + '...' : internalNote}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 const SLOT_HEIGHT = 60;
 const TIME_COL_WIDTH = 70;
 const MIN_DURATION = 15;
@@ -626,6 +658,8 @@ const CalendarView = ({
       const isMultiTable = Array.isArray(r.table_ids) && r.table_ids.length > 1;
       const allTableNames = r.table_names?.join(', ') || r.table_name || '';
       const mealConfig = r.meal_status ? getMealStatusConfig(r.meal_status) : null;
+      const hasPublicNote = r.special_requests && r.special_requests.trim().length > 0;
+      const hasInternalNote = r.internal_notes && r.internal_notes.trim().length > 0;
 
       return (
         <div
@@ -692,30 +726,32 @@ const CalendarView = ({
               }}
             />
           )}
-          <div className="px-2 h-full flex items-center gap-2 overflow-hidden pr-6" style={{ paddingTop: isMultiTable ? 4 : 0 }}>
-            {mealConfig && (
-              <div 
-                className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
-                style={{ backgroundColor: mealConfig.color }}
-                title={mealConfig.label}
-              />
-            )}
-            {r.source === 'mobile_app' && (
-              <span className="text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
-            )}
-            {(r.change_request || r.cancel_reason) && (
-              <span
-                className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
-                style={{
-                  width: 16, height: 16,
-                  backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
-                  fontSize: 9, color: 'white', fontWeight: 'bold',
-                }}
-                title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
-              >
-                {r.cancel_reason ? '✕' : '!'}
-              </span>
-            )}
+        <div className="px-2 h-full flex items-center gap-2 overflow-hidden pr-6" style={{ paddingTop: isMultiTable ? 4 : 0 }}>
+          {mealConfig && (
+            <div 
+              className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
+              style={{ backgroundColor: mealConfig.color }}
+              title={mealConfig.label}
+            />
+          )}
+          {r.source === 'mobile_app' && (
+            <span className="text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
+          )}
+          {/* Note Indicators */}
+          <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
+          {(r.change_request || r.cancel_reason) && (
+            <span
+              className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
+              style={{
+                width: 16, height: 16,
+                backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
+                fontSize: 9, color: 'white', fontWeight: 'bold',
+              }}
+              title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
+            >
+              {r.cancel_reason ? '✕' : '!'}
+            </span>
+          )}
             {isMultiTable && (
               <span
                 className="flex-shrink-0 flex items-center gap-0.5 px-1.5 rounded-full font-bold text-white text-[10px]"
@@ -1094,6 +1130,8 @@ const CalendarView = ({
                       const endTotalMins = startMins + duration;
                       const endTime = { getHours: () => Math.floor(endTotalMins/60)%24, getMinutes: () => endTotalMins%60 };
                       const mealConfig = r.meal_status ? getMealStatusConfig(r.meal_status) : null;
+                      const hasPublicNote = r.special_requests && r.special_requests.trim().length > 0;
+                      const hasInternalNote = r.internal_notes && r.internal_notes.trim().length > 0;
 
                       return (
                         <div key={r.id}
@@ -1134,37 +1172,39 @@ const CalendarView = ({
                             setDragState(null);
                             setContextMenu({ position: { x: e.clientX, y: e.clientY }, reservation: r });
                           }}>
-                          <div className="px-3 py-2 h-full flex flex-col justify-between overflow-hidden">
-                            <div>
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5 min-w-0">
-                                  {mealConfig && (
-                                    <div 
-                                      className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse"
-                                      style={{ backgroundColor: mealConfig.color }}
-                                      title={mealConfig.label}
-                                    />
-                                  )}
-                                  {r.source === 'mobile_app' && (
-                                    <span className="text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
-                                  )}
-                                  {(r.change_request || r.cancel_reason) && (
-                                    <span
-                                      className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
-                                      style={{
-                                        width: 14, height: 14,
-                                        backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
-                                        fontSize: 8, color: 'white', fontWeight: 'bold',
-                                      }}
-                                      title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
-                                    >
-                                      {r.cancel_reason ? '✕' : '!'}
-                                    </span>
-                                  )}
-                                  <span className="text-xs font-bold truncate" style={{ color: styles.text }}>
-                                    {r.customer_name || 'Guest'}
+                        <div className="px-3 py-2 h-full flex flex-col justify-between overflow-hidden">
+                          <div>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {mealConfig && (
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse"
+                                    style={{ backgroundColor: mealConfig.color }}
+                                    title={mealConfig.label}
+                                  />
+                                )}
+                                {r.source === 'mobile_app' && (
+                                  <span className="text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
+                                )}
+                                {/* Note Indicators */}
+                                <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
+                                {(r.change_request || r.cancel_reason) && (
+                                  <span
+                                    className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
+                                    style={{
+                                      width: 14, height: 14,
+                                      backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
+                                      fontSize: 8, color: 'white', fontWeight: 'bold',
+                                    }}
+                                    title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
+                                  >
+                                    {r.cancel_reason ? '✕' : '!'}
                                   </span>
-                                </div>
+                                )}
+                                <span className="text-xs font-bold truncate" style={{ color: styles.text }}>
+                                  {r.customer_name || 'Guest'}
+                                </span>
+                              </div>
                                 <span className="text-xs font-mono font-semibold whitespace-nowrap" style={{ color: styles.border }}>
                                 {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
                                 </span>
@@ -1294,14 +1334,17 @@ const CalendarView = ({
                         const s = getReservationStyles(r.status, r.source);
                         return (
                           <div key={r.id} 
-                            className="px-2 py-1.5 rounded-lg text-xs truncate border-l-3 cursor-pointer hover:opacity-80 transition-all duration-150"
+                            className="px-2 py-1.5 rounded-lg text-xs truncate border-l-3 cursor-pointer hover:opacity-80 transition-all duration-150 flex items-center justify-between"
                             style={{ backgroundColor: s.bg, borderLeftColor: s.border, color: s.text }}
                             onClick={e => { e.stopPropagation(); onReservationClick(r); }}>
-                            <span className="font-mono font-semibold">
-                              {(() => { const d = r.reservation_date?.toDate?.() || new Date(r.reservation_date); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; })()}
-                            </span>
-                            <span className="ml-1.5">· {r.customer_name?.split(' ')[0] || 'Guest'}</span>
-                            <span className="ml-1.5 text-[10px] opacity-60">({r.number_of_guests})</span>
+                            <div className="flex items-center gap-1 min-w-0">
+                              <span className="font-mono font-semibold flex-shrink-0">
+                                {(() => { const d = r.reservation_date?.toDate?.() || new Date(r.reservation_date); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; })()}
+                              </span>
+                              <span className="ml-1 truncate">· {r.customer_name?.split(' ')[0] || 'Guest'}</span>
+                              <span className="text-[10px] opacity-60 flex-shrink-0">({r.number_of_guests})</span>
+                            </div>
+                            <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
                           </div>
                         );
                       })}
