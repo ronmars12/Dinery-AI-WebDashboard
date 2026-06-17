@@ -1317,9 +1317,9 @@ export default function PublicReservationPage() {
       const createdId = newReservation.id;
       setJustCreatedId(createdId);
 
-      // Send confirmation email
+     // Send confirmation email
       try {
-        const functions = getFunctions();
+        const functions = getFunctions(undefined, 'asia-southeast1');  // ← ADD THE REGION HERE
         const sendEmailFn = httpsCallable(functions, 'sendEmail');
         await sendEmailFn({
           to: form.email,
@@ -1357,8 +1357,10 @@ export default function PublicReservationPage() {
             </div>
           `,
         });
-      } catch {
-        // silent — booking is still confirmed, email failure is non-critical
+        console.log('✅ Confirmation email sent successfully');
+      } catch (emailError) {
+        // Silent — booking is still confirmed, email failure is non-critical
+        console.error('Confirmation email failed:', emailError);
       }
 
       await Promise.all(

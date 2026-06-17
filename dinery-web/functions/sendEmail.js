@@ -10,13 +10,13 @@ const sendEmail = onCall(
     enforceAppCheck: false,
     cors: [
       "http://localhost:5173",
+      "http://localhost:5174",
       "http://localhost:3000",
       "https://dinery-9c261.web.app",
       "https://dinery-9c261.firebaseapp.com",
       "https://dinery-ai.netlify.app"
     ],
-    // IMPORTANT: Remove the region line or change to us-central1
-    // region: "asia-southeast1",  // COMMENT THIS OUT OR DELETE IT
+    region: "asia-southeast1",  // ← UNCOMMENT THIS LINE
     timeoutSeconds: 60,
   },
   async (request) => {
