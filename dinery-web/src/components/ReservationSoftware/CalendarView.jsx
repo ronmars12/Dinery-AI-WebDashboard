@@ -36,6 +36,7 @@ const NoteIndicator = ({ publicNote, internalNote }) => {
     </div>
   );
 };
+
 const SLOT_HEIGHT = 60;
 const TIME_COL_WIDTH = 70;
 const MIN_DURATION = 15;
@@ -86,6 +87,21 @@ const CalendarView = ({
   const [combinations, setCombinations] = useState([]);
   const [hoveredReservation, setHoveredReservation] = useState(null);
   
+  // Responsive: detect screen size
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   useEffect(() => { setLocalReservations(reservations); }, [reservations]);
   useEffect(() => { onDateChange(currentDate); }, [viewRange]);
 
@@ -246,9 +262,9 @@ const CalendarView = ({
           onMouseDown={(e) => e.stopPropagation()}
         />
         <div
-          className="fixed z-50 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 min-w-[220px] meal-status-menu animate-in fade-in zoom-in-95 duration-100"
+          className="fixed z-50 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 min-w-[180px] md:min-w-[220px] meal-status-menu animate-in fade-in zoom-in-95 duration-100"
           style={{
-            left: `${Math.min(position.x, window.innerWidth - 240)}px`,
+            left: `${Math.min(position.x, window.innerWidth - (isMobile ? 180 : 240))}px`,
             top: position.y + 320 > window.innerHeight
               ? `${Math.max(0, position.y - 320)}px`
               : `${position.y}px`,
@@ -258,9 +274,9 @@ const CalendarView = ({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="px-4 py-2 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+          <div className="px-3 md:px-4 py-2 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Meal Status</p>
-            <p className="text-sm font-semibold text-gray-900 truncate mt-0.5">{reservation.customer_name}</p>
+            <p className="text-xs md:text-sm font-semibold text-gray-900 truncate mt-0.5">{reservation.customer_name}</p>
           </div>
           
           {menuItems.map(({ status, color, icon, label }) => {
@@ -269,13 +285,13 @@ const CalendarView = ({
               <button
                 key={status || 'clear'}
                 onClick={() => handleSelect(status)}
-                className={`w-full px-4 py-2.5 flex items-center gap-3 transition-all duration-150 ${
+                className={`w-full px-3 md:px-4 py-2 md:py-2.5 flex items-center gap-2 md:gap-3 transition-all duration-150 ${
                   isActive ? 'bg-gray-50' : 'hover:bg-gray-50'
                 }`}
               >
-                <span className="text-base w-6">{icon}</span>
-                <span className={`text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>
-                  {label}
+                <span className="text-sm md:text-base w-5 md:w-6">{icon}</span>
+                <span className={`text-xs md:text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>
+                  {isMobile && label.length > 10 ? label.substring(0, 10) + '...' : label}
                 </span>
                 {isActive && (
                   <span className="ml-auto text-xs font-bold" style={{ color }}>✓</span>
@@ -640,6 +656,11 @@ const CalendarView = ({
       ? (() => { const n = new Date(); return ((n.getHours() - openHour) * 60 + n.getMinutes()) / 15; })()
       : -1;
 
+    // Responsive table column width
+    const responsiveTableColWidth = isMobile ? 100 : TABLE_COL_WIDTH;
+    const responsiveHourWidth = isMobile ? 140 : (isTablet ? 180 : HOUR_WIDTH);
+    const responsiveCellWidth = responsiveHourWidth / 4;
+
     const renderResBar = (r, tableId) => {
       const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
       const isActive = dragState?.id === r.id;
@@ -652,8 +673,8 @@ const CalendarView = ({
         return null;
       }
       const styles = getReservationStyles(r.status, r.source); 
-      const left = slot * TABLE_CELL_WIDTH;
-      const width = durSlots * TABLE_CELL_WIDTH - 2;
+      const left = slot * responsiveCellWidth;
+      const width = durSlots * responsiveCellWidth - 2;
 
       const isMultiTable = Array.isArray(r.table_ids) && r.table_ids.length > 1;
       const allTableNames = r.table_names?.join(', ') || r.table_name || '';
@@ -726,65 +747,66 @@ const CalendarView = ({
               }}
             />
           )}
-        <div className="px-2 h-full flex items-center gap-2 overflow-hidden pr-6" style={{ paddingTop: isMultiTable ? 4 : 0 }}>
-          {mealConfig && (
-            <div 
-              className="w-3 h-3 rounded-full flex-shrink-0 animate-pulse"
-              style={{ backgroundColor: mealConfig.color }}
-              title={mealConfig.label}
-            />
-          )}
-          {r.source === 'mobile_app' && (
-            <span className="text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
-          )}
-          {/* Note Indicators */}
-          <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
-          {(r.change_request || r.cancel_reason) && (
-            <span
-              className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
-              style={{
-                width: 16, height: 16,
-                backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
-                fontSize: 9, color: 'white', fontWeight: 'bold',
-              }}
-              title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
-            >
-              {r.cancel_reason ? '✕' : '!'}
-            </span>
-          )}
+          <div className="px-1 md:px-2 h-full flex items-center gap-1 md:gap-2 overflow-hidden pr-4 md:pr-6" style={{ paddingTop: isMultiTable ? 4 : 0 }}>
+            {mealConfig && (
+              <div 
+                className="w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 animate-pulse"
+                style={{ backgroundColor: mealConfig.color }}
+                title={mealConfig.label}
+              />
+            )}
+            {r.source === 'mobile_app' && (
+              <span className="text-[8px] md:text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
+            )}
+            <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
+            {(r.change_request || r.cancel_reason) && (
+              <span
+                className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
+                style={{
+                  width: isMobile ? 12 : 16, 
+                  height: isMobile ? 12 : 16,
+                  backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
+                  fontSize: isMobile ? 7 : 9, 
+                  color: 'white', fontWeight: 'bold',
+                }}
+                title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
+              >
+                {r.cancel_reason ? '✕' : '!'}
+              </span>
+            )}
             {isMultiTable && (
               <span
-                className="flex-shrink-0 flex items-center gap-0.5 px-1.5 rounded-full font-bold text-white text-[10px]"
+                className="flex-shrink-0 flex items-center gap-0.5 px-1 md:px-1.5 rounded-full font-bold text-white text-[8px] md:text-[10px]"
                 style={{ backgroundColor: styles.border }}
                 title={`Group table: ${allTableNames}`}
               >
                 ⛓ {r.table_ids.length}
               </span>
             )}
-            <span className="text-xs font-mono font-semibold whitespace-nowrap" style={{ color: styles.text }}>
+            <span className="text-[9px] md:text-xs font-mono font-semibold whitespace-nowrap" style={{ color: styles.text }}>
               {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
             </span>
-            {width > 60 && (
-              <span className="text-xs font-medium truncate" style={{ color: styles.text }}>
-                {r.customer_name?.split(' ').slice(-1)[0] || 'Guest'} ({r.number_of_guests})
+            {width > 50 && (
+              <span className="text-[9px] md:text-xs font-medium truncate" style={{ color: styles.text }}>
+                {isMobile ? r.customer_name?.split(' ')[0] || 'Guest' : `${r.customer_name?.split(' ').slice(-1)[0] || 'Guest'} (${r.number_of_guests})`}
               </span>
             )}
-            {width > 120 && isMultiTable && (
+            {width > 100 && isMultiTable && (
               <span
-                className="text-[10px] truncate font-semibold flex-shrink-0"
+                className="text-[8px] md:text-[10px] truncate font-semibold flex-shrink-0 hidden md:inline"
                 style={{ color: styles.border, opacity: 0.8 }}
               >
                 [{allTableNames}]
               </span>
             )}
             {isActive && width > 60 && (
-              <span className="text-[9px] ml-auto whitespace-nowrap font-mono font-semibold" style={{ color: styles.text, opacity: 0.6 }}>
+              <span className="text-[8px] md:text-[9px] ml-auto whitespace-nowrap font-mono font-semibold" style={{ color: styles.text, opacity: 0.6 }}>
                 {Math.round((isActive ? dragState.duration : r.duration_minutes || 75))}m
               </span>
             )}
           </div>
           <div
-            className="absolute top-0 right-0 bottom-0 w-4 flex items-center justify-center cursor-ew-resize opacity-0 group-hover/res:opacity-100 transition-opacity"
+            className="absolute top-0 right-0 bottom-0 w-3 md:w-4 flex items-center justify-center cursor-ew-resize opacity-0 group-hover/res:opacity-100 transition-opacity"
             onMouseDown={(e) => {
               e.preventDefault(); e.stopPropagation();
               const origSlot = minutesToSlot(resDate);
@@ -801,8 +823,8 @@ const CalendarView = ({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col items-center gap-0.5">
-              <div className="w-1 h-4 rounded-full bg-gray-400" />
-              <div className="w-1 h-4 rounded-full bg-gray-400" />
+              <div className="w-0.5 md:w-1 h-3 md:h-4 rounded-full bg-gray-400" />
+              <div className="w-0.5 md:w-1 h-3 md:h-4 rounded-full bg-gray-400" />
             </div>
           </div>
         </div>
@@ -828,26 +850,26 @@ const CalendarView = ({
           className="flex border-b border-gray-200 group hover:bg-gray-50/30 transition-colors"
           style={{ height: TABLE_ROW_HEIGHT }}>
           <div
-            className={`flex-shrink-0 flex items-center justify-between px-3 border-r-2 transition-all duration-150 ${
+            className={`flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all duration-150 ${
               isUnassigned ? 'bg-gradient-to-r from-orange-50 to-orange-50/30 border-orange-200' : 'bg-gray-50/50 group-hover:bg-gray-100/80 border-gray-200'
             }`}
-            style={{ width: TABLE_COL_WIDTH }}
+            style={{ width: responsiveTableColWidth }}
           >
             {isUnassigned ? (
-              <div className="flex items-center gap-2">
-                <FiMapPin className="w-3 h-3 text-orange-400" />
-                <span className="text-xs font-medium text-orange-600 italic">Unassigned</span>
+              <div className="flex items-center gap-1 md:gap-2">
+                <FiMapPin className="w-2.5 h-2.5 md:w-3 md:h-3 text-orange-400" />
+                <span className="text-[10px] md:text-xs font-medium text-orange-600 italic">Unassigned</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  <span className="text-xs font-bold text-gray-600">{table.name.charAt(0)}</span>
+              <div className="flex items-center gap-1 md:gap-2 min-w-0">
+                <div className="w-5 h-5 md:w-6 md:h-6 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[10px] md:text-xs font-bold text-gray-600">{table.name.charAt(0)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-sm font-bold text-gray-800 truncate block">{table.name}</span>
+                  <span className="text-xs md:text-sm font-bold text-gray-800 truncate block">{table.name}</span>
                 </div>
-                <span className="flex items-center gap-1 bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5 text-[10px] font-semibold flex-shrink-0">
-                  <FiUsers className="w-2.5 h-2.5" />{table.maxCapacity}
+                <span className="flex items-center gap-0.5 md:gap-1 bg-blue-100 text-blue-700 rounded-full px-1 md:px-1.5 py-0.5 text-[8px] md:text-[10px] font-semibold flex-shrink-0">
+                  <FiUsers className="w-2 h-2 md:w-2.5 md:h-2.5" />{table.maxCapacity}
                 </span>
               </div>
             )}
@@ -855,26 +877,26 @@ const CalendarView = ({
 
           <div 
             className={`relative overflow-hidden transition-all duration-150 ${isDragTarget ? 'bg-blue-50/20' : ''}`}
-            style={{ width: (closeHour - openHour) * HOUR_WIDTH }}
+            style={{ width: (closeHour - openHour) * responsiveHourWidth }}
           >
             {/* Vertical hour grid lines */}
             {Array.from({ length: closeHour - openHour }, (_, i) => (
-              <div key={i} className="absolute top-0 bottom-0 border-l border-gray-300" style={{ left: i * HOUR_WIDTH }} />
+              <div key={i} className="absolute top-0 bottom-0 border-l border-gray-300" style={{ left: i * responsiveHourWidth }} />
             ))}
             {/* Vertical quarter-hour grid lines */}
             {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => (
-              <div key={`slot-${i}`} className="absolute top-0 bottom-0 border-l border-gray-200" style={{ left: i * TABLE_CELL_WIDTH }} />
+              <div key={`slot-${i}`} className="absolute top-0 bottom-0 border-l border-gray-200" style={{ left: i * responsiveCellWidth }} />
             ))}
             {/* Vertical half-hour markers */}
             {Array.from({ length: (closeHour - openHour) * 2 }, (_, i) => (
-              <div key={`half-${i}`} className="absolute top-0 bottom-0 border-l border-dashed border-gray-300" style={{ left: (i * 2) * (TABLE_CELL_WIDTH / 2) + TABLE_CELL_WIDTH }} />
+              <div key={`half-${i}`} className="absolute top-0 bottom-0 border-l border-dashed border-gray-300" style={{ left: (i * 2) * (responsiveCellWidth / 2) + responsiveCellWidth }} />
             ))}
             
             <div className="absolute inset-0 cursor-crosshair z-0 hover:bg-gradient-to-r hover:from-transparent hover:to-primary/5 transition-colors"
               onClick={(e) => {
                 if (dragging) return;
                 const rect = e.currentTarget.getBoundingClientRect();
-                const slot = Math.floor((e.clientX - rect.left) / TABLE_CELL_WIDTH);
+                const slot = Math.floor((e.clientX - rect.left) / responsiveCellWidth);
                 const totalMins = openHour * 60 + slot * 15;
                 const d = new Date(currentDate);
                 d.setHours(Math.floor(totalMins / 60), totalMins % 60, 0, 0);
@@ -890,32 +912,34 @@ const CalendarView = ({
       <div className="flex-1 overflow-hidden flex flex-col bg-white">
         <div className="flex-1 overflow-auto" ref={scrollRef}>
           <div style={{ width: '100%' }}>
-            {/* Sticky header with enhanced design */}
-            <div className="flex sticky top-0 z-20 bg-white border-b-2 border-gray-200 shadow-sm" style={{ height: 48 }}>
+            {/* Sticky header with enhanced design - Responsive */}
+            <div className="flex sticky top-0 z-20 bg-white border-b-2 border-gray-200 shadow-sm" style={{ height: isMobile ? 40 : 48 }}>
               <div className="flex-shrink-0 bg-gradient-to-r from-gray-800 to-gray-900 flex items-center justify-center border-r-2 border-gray-700"
-                style={{ width: TABLE_COL_WIDTH }}>
+                style={{ width: responsiveTableColWidth }}>
                 <div className="text-center">
-                  <div className="text-xs font-bold text-gray-200 uppercase tracking-wider">Table</div>
-                  <div className="flex items-center gap-1 justify-center text-gray-400 text-[10px] mt-0.5">
-                    <FiUsers className="w-2.5 h-2.5" /> Capacity
-                  </div>
+                  <div className="text-[8px] md:text-xs font-bold text-gray-200 uppercase tracking-wider">Table</div>
+                  {!isMobile && (
+                    <div className="flex items-center gap-1 justify-center text-gray-400 text-[10px] mt-0.5">
+                      <FiUsers className="w-2.5 h-2.5" /> Capacity
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="flex relative" style={{ minWidth: (closeHour - openHour) * HOUR_WIDTH }}>
+              <div className="flex relative overflow-x-auto" style={{ minWidth: (closeHour - openHour) * responsiveHourWidth }}>
                 {Array.from({ length: closeHour - openHour }, (_, hourIndex) => {
                   const hour = openHour + hourIndex;
                   return (
-                    <div key={hourIndex} className="relative border-r border-gray-200"
-                      style={{ width: HOUR_WIDTH, flexShrink: 0 }}>
-                      <div className={`absolute inset-0 flex ${settings?.timeBarShowsStartOfHour ? 'items-start' : 'items-end'} justify-start ${settings?.timeBarShowsStartOfHour ? 'pt-2' : 'pb-2'} pl-2 bg-gradient-to-r from-gray-50 to-transparent`}>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm font-bold text-gray-700">
+                    <div key={hourIndex} className="relative border-r border-gray-200 flex-shrink-0"
+                      style={{ width: responsiveHourWidth }}>
+                      <div className={`absolute inset-0 flex ${settings?.timeBarShowsStartOfHour ? 'items-start' : 'items-end'} justify-start ${settings?.timeBarShowsStartOfHour ? 'pt-1 md:pt-2' : 'pb-1 md:pb-2'} pl-1 md:pl-2 bg-gradient-to-r from-gray-50 to-transparent`}>
+                        <div className="flex items-baseline gap-0.5 md:gap-1">
+                          <span className="text-[10px] md:text-sm font-bold text-gray-700">
                             {String(hour).padStart(2,'0')}
                           </span>
-                          <span className="text-[10px] text-gray-400 font-medium">:00</span>
+                          <span className="text-[8px] md:text-[10px] text-gray-400 font-medium">:00</span>
                         </div>
                       </div>
-                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] text-gray-400 font-medium">:30</div>
+                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] md:text-[9px] text-gray-400 font-medium">:30</div>
                       <div className="absolute top-0 bottom-0 left-1/4 border-l border-gray-200" />
                       <div className="absolute top-0 bottom-0 left-2/4 border-l border-gray-300" />
                       <div className="absolute top-0 bottom-0 left-3/4 border-l border-gray-200" />
@@ -923,9 +947,9 @@ const CalendarView = ({
                   );
                 })}
                 {nowSlot >= 0 && nowSlot <= totalTableSlots && (
-                  <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: nowSlot * TABLE_CELL_WIDTH }}>
+                  <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: nowSlot * responsiveCellWidth }}>
                     <div className="flex items-start">
-                      <div className="w-2 h-2 bg-rose-500 rounded-full -ml-1 mt-0.5 shadow-lg" />
+                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full -ml-1 mt-0.5 shadow-lg" />
                       <div className="w-0.5 h-full bg-rose-500" />
                     </div>
                   </div>
@@ -935,11 +959,11 @@ const CalendarView = ({
 
             <div className="relative">
               {tables.length === 0 ? (
-                <div className="flex items-center justify-center py-20 text-center">
+                <div className="flex items-center justify-center py-12 md:py-20 text-center">
                   <div className="animate-fade-in">
-                    <div className="text-5xl mb-4">🪑</div>
-                    <p className="text-gray-600 font-semibold text-lg">No tables yet</p>
-                    <p className="text-gray-400 text-sm mt-1">Add tables in Table Management first</p>
+                    <div className="text-3xl md:text-5xl mb-3 md:mb-4">🪑</div>
+                    <p className="text-gray-600 font-semibold text-base md:text-lg">No tables yet</p>
+                    <p className="text-gray-400 text-xs md:text-sm mt-1">Add tables in Table Management first</p>
                   </div>
                 </div>
               ) : (
@@ -949,8 +973,8 @@ const CalendarView = ({
               {/* Combinations section */}
               {combinations.length > 0 && (
                 <>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-50 to-purple-100/30 border-y border-purple-200">
-                    <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">⛓ Table Combinations</span>
+                  <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-purple-50 to-purple-100/30 border-y border-purple-200">
+                    <span className="text-[9px] md:text-xs font-bold text-purple-600 uppercase tracking-wider">⛓ Table Combinations</span>
                     <div className="flex-1 h-px bg-gradient-to-r from-purple-200 to-transparent" />
                   </div>
                   {combinations.map(combo => {
@@ -969,29 +993,29 @@ const CalendarView = ({
                       <div key={comboKey} data-table-row={comboKey}
                         className="flex border-b border-purple-100 group hover:bg-purple-50/30 transition-colors"
                         style={{ height: TABLE_ROW_HEIGHT }}>
-                        <div className="flex-shrink-0 flex items-center justify-between px-3 border-r-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/30 group-hover:from-purple-100 group-hover:to-purple-200/30 transition-all"
-                          style={{ width: TABLE_COL_WIDTH }}>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center">
-                              <span className="text-sm">⛓</span>
+                        <div className="flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/30 group-hover:from-purple-100 group-hover:to-purple-200/30 transition-all"
+                          style={{ width: responsiveTableColWidth }}>
+                          <div className="flex items-center gap-1 md:gap-2 min-w-0">
+                            <div className="w-5 h-5 md:w-6 md:h-6 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs md:text-sm">⛓</span>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <span className="text-sm font-bold text-purple-800 truncate block">{combo.name}</span>
+                              <span className="text-xs md:text-sm font-bold text-purple-800 truncate block">{combo.name}</span>
                             </div>
                             {combo.capacity && (
-                              <span className="flex items-center gap-1 bg-purple-200 text-purple-700 rounded-full px-1.5 py-0.5 text-[10px] font-semibold flex-shrink-0">
-                                <FiUsers className="w-2.5 h-2.5" />{combo.capacity}
+                              <span className="flex items-center gap-0.5 md:gap-1 bg-purple-200 text-purple-700 rounded-full px-1 md:px-1.5 py-0.5 text-[8px] md:text-[10px] font-semibold flex-shrink-0">
+                                <FiUsers className="w-2 h-2 md:w-2.5 md:h-2.5" />{combo.capacity}
                               </span>
                             )}
                           </div>
                         </div>
                         <div className={`relative overflow-hidden ${isDragTarget ? 'bg-purple-50/30' : ''}`}
-                          style={{ width: (closeHour - openHour) * HOUR_WIDTH }}>
+                          style={{ width: (closeHour - openHour) * responsiveHourWidth }}>
                           <div className="absolute inset-0 cursor-crosshair z-0 hover:bg-purple-50/10 transition-colors"
                             onClick={(e) => {
                               if (dragging) return;
                               const rect = e.currentTarget.getBoundingClientRect();
-                              const slot = Math.floor((e.clientX - rect.left) / TABLE_CELL_WIDTH);
+                              const slot = Math.floor((e.clientX - rect.left) / responsiveCellWidth);
                               const totalMins = openHour * 60 + slot * 15;
                               const d = new Date(currentDate);
                               d.setHours(Math.floor(totalMins / 60), totalMins % 60, 0, 0);
@@ -1009,9 +1033,9 @@ const CalendarView = ({
 
               {nowSlot >= 0 && tables.length > 0 && (
                 <div className="absolute top-0 bottom-0 z-20 pointer-events-none"
-                  style={{ left: TABLE_COL_WIDTH + nowSlot * TABLE_CELL_WIDTH }}>
+                  style={{ left: responsiveTableColWidth + nowSlot * responsiveCellWidth }}>
                   <div className="flex items-start">
-                    <div className="w-2 h-2 bg-rose-500 rounded-full -ml-1 mt-1 shadow-lg ring-2 ring-rose-200" />
+                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full -ml-1 mt-1 shadow-lg ring-2 ring-rose-200" />
                     <div className="w-0.5 h-full bg-rose-500" />
                   </div>
                 </div>
@@ -1027,42 +1051,50 @@ const CalendarView = ({
     const days = getDaysToDisplay();
     const isWeek = viewRange === 'week';
 
+    // Responsive time column width
+    const responsiveTimeColWidth = isMobile ? 50 : TIME_COL_WIDTH;
+
     return (
       <div className="flex-1 overflow-hidden flex flex-col bg-white">
         {isWeek && (
-          <div className="flex flex-shrink-0 bg-white border-b-2 border-gray-200 shadow-sm" style={{ paddingLeft: TIME_COL_WIDTH }}>
-            {days.map((day, i) => (
-              <div key={i} className={`flex-1 py-4 text-center border-l border-gray-100 transition-all duration-200 ${
-                isToday(day) ? 'bg-gradient-to-b from-amber-50 to-amber-100/30' : 'hover:bg-gray-50'
-              }`}>
-                <div className={`text-xs font-semibold uppercase tracking-wider mb-1 ${
-                  isToday(day) ? 'text-amber-600' : 'text-gray-500'
+          <div className="flex flex-shrink-0 bg-white border-b-2 border-gray-200 shadow-sm overflow-x-auto" style={{ paddingLeft: responsiveTimeColWidth }}>
+            {days.map((day, i) => {
+              const dayRes = getReservationsForDay(day);
+              return (
+                <div key={i} className={`flex-1 py-2 md:py-4 text-center border-l border-gray-100 transition-all duration-200 min-w-[60px] ${
+                  isToday(day) ? 'bg-gradient-to-b from-amber-50 to-amber-100/30' : 'hover:bg-gray-50'
                 }`}>
-                  {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                  <div className={`text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-0.5 md:mb-1 ${
+                    isToday(day) ? 'text-amber-600' : 'text-gray-500'
+                  }`}>
+                    {isMobile ? day.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 1) : day.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </div>
+                  <div className={`text-base md:text-2xl font-bold mt-0.5 ${
+                    isToday(day) ? 'text-amber-700' : 'text-gray-800'
+                  }`}>
+                    {day.getDate()}
+                  </div>
+                  {!isMobile && (
+                    <div className="text-[8px] md:text-xs text-gray-400 mt-0.5 md:mt-1 font-medium">
+                      {dayRes.length} res
+                    </div>
+                  )}
                 </div>
-                <div className={`text-2xl font-bold mt-0.5 ${
-                  isToday(day) ? 'text-amber-700' : 'text-gray-800'
-                }`}>
-                  {day.getDate()}
-                </div>
-                <div className="text-xs text-gray-400 mt-1 font-medium">
-                  {getReservationsForDay(day).length} reservations
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto" ref={scrollRef}>
           <div className="flex" style={{ height: totalHeight }}>
-            <div className="flex-shrink-0 bg-gray-50 border-r-2 border-gray-200 sticky left-0 z-20 shadow-sm" style={{ width: TIME_COL_WIDTH }}>
+            <div className="flex-shrink-0 bg-gray-50 border-r-2 border-gray-200 sticky left-0 z-20 shadow-sm" style={{ width: responsiveTimeColWidth }}>
               {hours.map((hour) => (
-                <div key={hour} style={{ height: SLOT_HEIGHT }} className="border-b border-gray-200 flex items-start justify-end pr-3 pt-2">
+                <div key={hour} style={{ height: SLOT_HEIGHT }} className="border-b border-gray-200 flex items-start justify-end pr-1 md:pr-3 pt-1 md:pt-2">
                   <div className="flex flex-col items-end">
-                    <span className="text-xs font-bold text-gray-600">
-                      {hour === 12 ? '12 PM' : hour > 12 ? `${hour-12} PM` : `${hour} AM`}
+                    <span className="text-[8px] md:text-xs font-bold text-gray-600">
+                      {isMobile ? (hour === 12 ? '12' : hour > 12 ? `${hour-12}` : `${hour}`) : (hour === 12 ? '12 PM' : hour > 12 ? `${hour-12} PM` : `${hour} AM`)}
                     </span>
-                    <span className="text-[9px] text-gray-400 mt-0.5">:00</span>
+                    {!isMobile && <span className="text-[9px] text-gray-400 mt-0.5">:00</span>}
                   </div>
                 </div>
               ))}
@@ -1075,7 +1107,7 @@ const CalendarView = ({
 
               return (
                 <div key={dayIdx} data-day-col={day.toDateString()}
-                  className={`flex-1 relative border-l border-gray-200 min-w-0 transition-all duration-200 ${
+                  className={`flex-1 relative border-l border-gray-200 min-w-[80px] transition-all duration-200 ${
                     isToday(day) && !isWeek ? 'bg-gradient-to-b from-amber-50/50 to-transparent' : 'bg-white'
                   } ${isDropTarget ? 'bg-blue-50/40 shadow-inner' : ''}`}>
                   {hours.map((hour, hourIdx) => {
@@ -1095,9 +1127,9 @@ const CalendarView = ({
                         <div
                           className="absolute inset-0 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent cursor-pointer transition-all duration-150 flex items-center justify-center opacity-0 hover:opacity-100 z-10"
                           onClick={() => { const d = new Date(day); d.setHours(hour, 0, 0, 0); onCreateReservation && onCreateReservation(d); }}>
-                          <div className="flex items-center gap-1.5 bg-primary text-white text-xs px-3 py-1.5 rounded-full shadow-lg font-medium transform hover:scale-105 transition-transform">
-                            <FiPlus className="w-3 h-3" />
-                            <span>{`${String(hour).padStart(2,'0')}:00`}</span>
+                          <div className="flex items-center gap-1 md:gap-1.5 bg-primary text-white text-[8px] md:text-xs px-1.5 md:px-3 py-1 md:py-1.5 rounded-full shadow-lg font-medium transform hover:scale-105 transition-transform">
+                            <FiPlus className="w-2 h-2 md:w-3 md:h-3" />
+                            {!isMobile && <span>{`${String(hour).padStart(2,'0')}:00`}</span>}
                           </div>
                         </div>
                       </div>
@@ -1107,7 +1139,7 @@ const CalendarView = ({
                   {nowMin >= 0 && nowMin < totalHours * 60 && (
                     <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: (nowMin / 60) * SLOT_HEIGHT }}>
                       <div className="flex items-center">
-                        <div className="w-2.5 h-2.5 bg-rose-500 rounded-full shadow-lg shadow-rose-500/50 -ml-1 flex-shrink-0 ring-2 ring-rose-200" />
+                        <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-rose-500 rounded-full shadow-lg shadow-rose-500/50 -ml-1 flex-shrink-0 ring-2 ring-rose-200" />
                         <div className="flex-1 h-0.5 bg-gradient-to-r from-rose-500 to-rose-300" />
                       </div>
                     </div>
@@ -1133,15 +1165,18 @@ const CalendarView = ({
                       const hasPublicNote = r.special_requests && r.special_requests.trim().length > 0;
                       const hasInternalNote = r.internal_notes && r.internal_notes.trim().length > 0;
 
+                      // Check if we should show compact view
+                      const showCompact = height < 50 || isMobile;
+
                       return (
                         <div key={r.id}
-                          className={`absolute rounded-xl overflow-hidden pointer-events-auto ${
+                          className={`absolute rounded-lg md:rounded-xl overflow-hidden pointer-events-auto ${
                             isActive ? 'z-30 shadow-2xl ring-2 ring-primary/50' : 'z-10 hover:shadow-xl hover:z-20'
                           }`}
                           style={{
-                            top: top + 2, left: 4, right: 4, height: height - 4,
+                            top: top + 2, left: 2, right: 2, height: height - 4,
                             background: styles.bg,
-                            borderLeft: `4px solid ${styles.border}`,
+                            borderLeft: showCompact ? `2px solid ${styles.border}` : `4px solid ${styles.border}`,
                             boxShadow: isActive ? `0 8px 24px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 4px 12px rgba(0,0,0,0.1)` : `0 1px 3px rgba(0,0,0,0.08)`),
                             cursor: dragging?.id === r.id && dragging.type === 'move' ? 'grabbing' : 'grab',
                           }}
@@ -1172,73 +1207,83 @@ const CalendarView = ({
                             setDragState(null);
                             setContextMenu({ position: { x: e.clientX, y: e.clientY }, reservation: r });
                           }}>
-                        <div className="px-3 py-2 h-full flex flex-col justify-between overflow-hidden">
-                          <div>
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                {mealConfig && (
-                                  <div 
-                                    className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse"
-                                    style={{ backgroundColor: mealConfig.color }}
-                                    title={mealConfig.label}
-                                  />
-                                )}
-                                {r.source === 'mobile_app' && (
-                                  <span className="text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
-                                )}
-                                {/* Note Indicators */}
-                                <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
-                                {(r.change_request || r.cancel_reason) && (
-                                  <span
-                                    className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
-                                    style={{
-                                      width: 14, height: 14,
-                                      backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
-                                      fontSize: 8, color: 'white', fontWeight: 'bold',
-                                    }}
-                                    title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
-                                  >
-                                    {r.cancel_reason ? '✕' : '!'}
-                                  </span>
-                                )}
-                                <span className="text-xs font-bold truncate" style={{ color: styles.text }}>
-                                  {r.customer_name || 'Guest'}
+                          <div className={`px-1 md:px-3 py-1 md:py-2 h-full flex flex-col justify-between overflow-hidden`}>
+                            <div>
+                              <div className="flex items-center justify-between gap-1 md:gap-2">
+                                <div className="flex items-center gap-0.5 md:gap-1.5 min-w-0">
+                                  {mealConfig && (
+                                    <div 
+                                      className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full flex-shrink-0 animate-pulse"
+                                      style={{ backgroundColor: mealConfig.color }}
+                                      title={mealConfig.label}
+                                    />
+                                  )}
+                                  {r.source === 'mobile_app' && (
+                                    <span className="text-[6px] md:text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
+                                  )}
+                                  {!showCompact && (
+                                    <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
+                                  )}
+                                  {(r.change_request || r.cancel_reason) && (
+                                    <span
+                                      className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
+                                      style={{
+                                        width: showCompact ? 10 : 14, 
+                                        height: showCompact ? 10 : 14,
+                                        backgroundColor: r.cancel_reason ? COLORS.purple : COLORS.info,
+                                        fontSize: showCompact ? 6 : 8, 
+                                        color: 'white', fontWeight: 'bold',
+                                      }}
+                                      title={r.cancel_reason ? `Cancel request: ${r.cancel_reason}` : `Change request: ${r.change_request}`}
+                                    >
+                                      {r.cancel_reason ? '✕' : '!'}
+                                    </span>
+                                  )}
+                                  {!showCompact && (
+                                    <span className="text-[10px] md:text-xs font-bold truncate" style={{ color: styles.text }}>
+                                      {isMobile ? r.customer_name?.split(' ')[0] || 'Guest' : r.customer_name || 'Guest'}
+                                    </span>
+                                  )}
+                                  {showCompact && (
+                                    <span className="text-[8px] md:text-xs font-bold truncate" style={{ color: styles.text }}>
+                                      {r.customer_name?.split(' ')[0] || 'Guest'}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[8px] md:text-xs font-mono font-semibold whitespace-nowrap" style={{ color: styles.border }}>
+                                  {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
                                 </span>
                               </div>
-                                <span className="text-xs font-mono font-semibold whitespace-nowrap" style={{ color: styles.border }}>
-                                {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
-                                </span>
-                              </div>
-                              {height > 50 && (
-                                <div className="text-xs opacity-60 mt-1 font-medium" style={{ color: styles.text }}>
+                              {!showCompact && height > 50 && (
+                                <div className="text-[8px] md:text-xs opacity-60 mt-0.5 md:mt-1 font-medium" style={{ color: styles.text }}>
                                   → {`${String(endTime.getHours()).padStart(2,'0')}:${String(endTime.getMinutes()).padStart(2,'0')}`}
                                 </div>
                               )}
                             </div>
-                            {height > 70 && (
-                              <div className="flex items-center gap-3 mt-1">
-                                <div className="flex items-center gap-1.5">
-                                  <div className="flex items-center gap-1" style={{ color: styles.border }}>
-                                    <FiUsers className="w-3 h-3" />
-                                    <span className="text-xs font-semibold">{r.number_of_guests}</span>
+                            {!showCompact && height > 70 && (
+                              <div className="flex items-center gap-1 md:gap-3 mt-1">
+                                <div className="flex items-center gap-0.5 md:gap-1.5">
+                                  <div className="flex items-center gap-0.5 md:gap-1" style={{ color: styles.border }}>
+                                    <FiUsers className="w-2 h-2 md:w-3 md:h-3" />
+                                    <span className="text-[8px] md:text-xs font-semibold">{r.number_of_guests}</span>
                                   </div>
                                 </div>
                                 {r.ServiceType_Reservation && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                                  <span className="text-[7px] md:text-[10px] px-1 md:px-2 py-0.5 rounded-full font-medium"
                                     style={{ backgroundColor: styles.border + '18', color: styles.text }}>
-                                    {r.ServiceType_Reservation}
+                                    {isMobile ? r.ServiceType_Reservation.slice(0, 3) : r.ServiceType_Reservation}
                                   </span>
                                 )}
-                                {r.table_name && height > 90 && (
-                                  <span className="text-[10px] truncate font-medium" style={{ color: styles.text, opacity: 0.7 }}>
+                                {r.table_name && height > 90 && !isMobile && (
+                                  <span className="text-[8px] md:text-[10px] truncate font-medium" style={{ color: styles.text, opacity: 0.7 }}>
                                     🪑 {r.table_name}
                                   </span>
                                 )}
                               </div>
                             )}
                             
-                            {isToday(day) && height > 100 && (
-                              <div className="flex gap-1 mt-2 flex-wrap">
+                            {isToday(day) && height > 100 && !isMobile && (
+                              <div className="flex gap-0.5 md:gap-1 mt-1 md:mt-2 flex-wrap">
                                 {['arrived', 'food_delivered', 'dessert', 'bill_delivered', 'table_cleared'].map((status) => {
                                   const config = getMealStatusConfig(status);
                                   const isActiveStatus = r.meal_status === status;
@@ -1256,7 +1301,7 @@ const CalendarView = ({
                                           console.error('Failed to update meal status:', err);
                                         }
                                       }}
-                                      className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all duration-150 ${
+                                      className={`flex-shrink-0 w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center transition-all duration-150 ${
                                         isActiveStatus ? 'scale-110 ring-2 ring-offset-1 shadow-md' : 'opacity-40 hover:opacity-100 hover:scale-105'
                                       }`}
                                       style={{ 
@@ -1265,19 +1310,21 @@ const CalendarView = ({
                                       }}
                                       title={config.label}
                                     >
-                                      <span style={{ fontSize: '8px' }}>{config.icon}</span>
+                                      <span style={{ fontSize: isMobile ? '6px' : '8px' }}>{config.icon}</span>
                                     </button>
                                   );
                                 })}
                               </div>
                             )}
                           </div>
-                          <div
-                            className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center cursor-ns-resize hover:bg-black/5 rounded-b-xl transition-colors"
-                            onMouseDown={(e) => handleMouseDownResize(e, r)}
-                            onClick={(e) => e.stopPropagation()}>
-                            <div className="w-8 h-0.5 rounded-full" style={{ backgroundColor: styles.border, opacity: 0.4 }} />
-                          </div>
+                          {!showCompact && (
+                            <div
+                              className="absolute bottom-0 left-0 right-0 h-2 md:h-3 flex items-center justify-center cursor-ns-resize hover:bg-black/5 rounded-b-xl transition-colors"
+                              onMouseDown={(e) => handleMouseDownResize(e, r)}
+                              onClick={(e) => e.stopPropagation()}>
+                              <div className="w-4 md:w-8 h-0.5 rounded-full" style={{ backgroundColor: styles.border, opacity: 0.4 }} />
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1295,13 +1342,14 @@ const CalendarView = ({
     const days = getDaysToDisplay();
     const weeks = [];
     for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+    
     return (
-      <div className="flex-1 overflow-auto p-6 bg-gray-50">
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xl">
+      <div className="flex-1 overflow-auto p-2 md:p-6 bg-gray-50">
+        <div className="bg-white rounded-xl md:rounded-2xl border border-gray-200 overflow-hidden shadow-lg md:shadow-xl">
           <div className="grid grid-cols-7 bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
             {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
-              <div key={d} className="py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                {d.slice(0, 3)}
+              <div key={d} className="py-2 md:py-4 text-center text-[8px] md:text-xs font-bold text-gray-600 uppercase tracking-wider">
+                {isMobile ? d.slice(0, 1) : d.slice(0, 3)}
               </div>
             ))}
           </div>
@@ -1312,45 +1360,48 @@ const CalendarView = ({
                 const inMonth = isCurrentMonth(day);
                 return (
                   <div key={di}
-                    className={`min-h-[140px] p-3 cursor-pointer group transition-all duration-200 ${
+                    className={`min-h-[80px] md:min-h-[140px] p-1 md:p-3 cursor-pointer group transition-all duration-200 ${
                       inMonth ? 'bg-white hover:bg-gradient-to-b hover:from-orange-50 hover:to-transparent' : 'bg-gray-50/50'
                     } ${isToday(day) ? 'ring-2 ring-primary ring-inset' : ''}`}
                     onClick={() => { setCurrentDate(day); setViewRange('day'); onDateChange(day); }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-sm font-semibold ${
-                        isToday(day) ? 'bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center shadow-md' : 
+                    <div className="flex items-center justify-between mb-1 md:mb-2">
+                      <span className={`text-xs md:text-sm font-semibold ${
+                        isToday(day) ? 'bg-primary text-white w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-md' : 
                         inMonth ? 'text-gray-900' : 'text-gray-400'
                       }`}>
                         {day.getDate()}
                       </span>
                       {dayRes.length > 0 && (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">
+                        <span className="text-[8px] md:text-xs bg-orange-100 text-orange-700 px-1 md:px-2 py-0.5 rounded-full font-semibold">
                           {dayRes.length}
                         </span>
                       )}
                     </div>
-                    <div className="space-y-1.5">
-                      {dayRes.slice(0, 3).map(r => {
+                    <div className="space-y-0.5 md:space-y-1.5">
+                      {dayRes.slice(0, isMobile ? 2 : 3).map(r => {
                         const s = getReservationStyles(r.status, r.source);
+                        const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
                         return (
                           <div key={r.id} 
-                            className="px-2 py-1.5 rounded-lg text-xs truncate border-l-3 cursor-pointer hover:opacity-80 transition-all duration-150 flex items-center justify-between"
+                            className="px-1 md:px-2 py-0.5 md:py-1.5 rounded-lg text-[7px] md:text-xs truncate border-l-2 md:border-l-3 cursor-pointer hover:opacity-80 transition-all duration-150 flex items-center justify-between"
                             style={{ backgroundColor: s.bg, borderLeftColor: s.border, color: s.text }}
                             onClick={e => { e.stopPropagation(); onReservationClick(r); }}>
-                            <div className="flex items-center gap-1 min-w-0">
-                              <span className="font-mono font-semibold flex-shrink-0">
-                                {(() => { const d = r.reservation_date?.toDate?.() || new Date(r.reservation_date); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; })()}
+                            <div className="flex items-center gap-0.5 md:gap-1 min-w-0">
+                              <span className="font-mono font-semibold flex-shrink-0 text-[6px] md:text-[10px]">
+                                {`${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
                               </span>
-                              <span className="ml-1 truncate">· {r.customer_name?.split(' ')[0] || 'Guest'}</span>
-                              <span className="text-[10px] opacity-60 flex-shrink-0">({r.number_of_guests})</span>
+                              {!isMobile && (
+                                <span className="ml-0.5 md:ml-1 truncate">· {r.customer_name?.split(' ')[0] || 'Guest'}</span>
+                              )}
+                              <span className="text-[6px] md:text-[10px] opacity-60 flex-shrink-0">({r.number_of_guests})</span>
                             </div>
-                            <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
+                            {!isMobile && <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />}
                           </div>
                         );
                       })}
-                      {dayRes.length > 3 && (
-                        <div className="text-xs text-gray-400 px-2 pt-1 font-medium">
-                          +{dayRes.length - 3} more
+                      {dayRes.length > (isMobile ? 2 : 3) && (
+                        <div className="text-[7px] md:text-xs text-gray-400 px-1 md:px-2 pt-0.5 md:pt-1 font-medium">
+                          +{dayRes.length - (isMobile ? 2 : 3)} more
                         </div>
                       )}
                     </div>
@@ -1368,31 +1419,40 @@ const CalendarView = ({
     <div className="h-full flex flex-col bg-gray-50 select-none"
       style={{ cursor: dragging ? (dragging.type === 'resize' ? 'ns-resize' : dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'default' }}>
 
+      {/* Header - Responsive */}
       <div className="bg-white border-b border-gray-200 shadow-lg flex-shrink-0">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <button onClick={() => navigateDate(-1)} className="p-2 hover:bg-orange-50 text-primary rounded-xl transition-all duration-200 hover:scale-110">
-              <FiChevronLeft className="w-5 h-5" />
-            </button>
-            <button onClick={() => navigateDate(1)} className="p-2 hover:bg-orange-50 text-primary rounded-xl transition-all duration-200 hover:scale-110">
-              <FiChevronRight className="w-5 h-5" />
-            </button>
-            <div className="h-6 w-px bg-gray-200 mx-1" />
-            <button onClick={() => { const t = new Date(); setCurrentDate(t); onDateChange(t); }}
-              className="px-4 py-2 rounded-xl text-sm font-semibold shadow-md transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5"
-              style={{ background: 'linear-gradient(to right, #fe8a24, #e57a1a)', color: '#ffffff' }}>
-              Today
-            </button>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-2xl">
-              <FiCalendar className="w-4 h-4 text-primary" />
-              <h2 className="text-base font-bold text-gray-800">{getDateRangeText()}</h2>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 py-2 md:py-4 gap-2 md:gap-0">
+          {/* Left: Navigation */}
+          <div className="flex items-center gap-1 md:gap-2 w-full md:w-auto justify-between md:justify-start">
+            <div className="flex items-center gap-1 md:gap-2">
+              <button onClick={() => navigateDate(-1)} className="p-1.5 md:p-2 hover:bg-orange-50 text-primary rounded-xl transition-all duration-200 hover:scale-110">
+                <FiChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+              <button onClick={() => navigateDate(1)} className="p-1.5 md:p-2 hover:bg-orange-50 text-primary rounded-xl transition-all duration-200 hover:scale-110">
+                <FiChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+              </button>
+              <div className="h-4 md:h-6 w-px bg-gray-200 mx-0.5 md:mx-1" />
+              <button onClick={() => { const t = new Date(); setCurrentDate(t); onDateChange(t); }}
+                className="px-2 md:px-4 py-1 md:py-2 rounded-xl text-[10px] md:text-sm font-semibold shadow-md transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap"
+                style={{ background: 'linear-gradient(to right, #fe8a24, #e57a1a)', color: '#ffffff' }}>
+                Today
+              </button>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-2xl">
-              <FiUsers className="w-3.5 h-3.5 text-primary" />
-              <span className="text-sm font-bold text-primary">
+            
+            {/* Date Range - Hidden on very small screens */}
+            <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-2 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-xl md:rounded-2xl">
+              <FiCalendar className="w-3 h-3 md:w-4 md:h-4 text-primary flex-shrink-0" />
+              <h2 className="text-[10px] md:text-base font-bold text-gray-800 truncate max-w-[120px] md:max-w-none">
+                {isMobile ? getDateRangeText().slice(0, 15) + (getDateRangeText().length > 15 ? '...' : '') : getDateRangeText()}
+              </h2>
+            </div>
+          </div>
+
+          {/* Middle: Stats - Hidden on mobile */}
+          {!isMobile && (
+            <div className="flex items-center gap-2 md:gap-4 px-3 md:px-4 py-1 md:py-2 bg-primary/10 rounded-xl md:rounded-2xl">
+              <FiUsers className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />
+              <span className="text-[10px] md:text-sm font-bold text-primary whitespace-nowrap">
                 {(() => {
                   const dayRes = getReservationsForDay(currentDate);
                   const totalGuests = dayRes.reduce((sum, r) => sum + (r.number_of_guests || 0), 0);
@@ -1400,119 +1460,95 @@ const CalendarView = ({
                 })()}
               </span>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center gap-3">
+          {/* Right: Controls */}
+          <div className="flex items-center gap-1 md:gap-3 w-full md:w-auto justify-end">
             <div className="relative">
               <input type="date" value={formatDateForInput(currentDate)}
                 onChange={e => { const d = new Date(e.target.value); setCurrentDate(d); onDateChange(d); }}
-               className="pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none bg-gray-50 transition-all" style={{ color: '#1f2937' }} />
-              <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
+                className="pl-6 md:pl-10 pr-2 md:pr-4 py-1 md:py-2 border-2 border-gray-200 rounded-xl text-[10px] md:text-sm focus:outline-none bg-gray-50 transition-all w-[90px] md:w-auto"
+                style={{ color: '#1f2937' }} />
+              <FiCalendar className="absolute left-1.5 md:left-3 top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-primary pointer-events-none" />
             </div>
             <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm">
               {['day','week','month'].map(r => (
                 <button key={r} onClick={() => setViewRange(r)}
-                    className={`px-4 py-2 text-sm font-semibold capitalize transition-all duration-200`}
-                    style={{
-                      background: viewRange === r ? 'linear-gradient(to right, #fe8a24, #e57a1a)' : '#ffffff',
-                      color: viewRange === r ? '#ffffff' : '#1f2937',
-                    }}>
-                  {r}
+                  className={`px-2 md:px-4 py-1 md:py-2 text-[8px] md:text-sm font-semibold capitalize transition-all duration-200 whitespace-nowrap`}
+                  style={{
+                    background: viewRange === r ? 'linear-gradient(to right, #fe8a24, #e57a1a)' : '#ffffff',
+                    color: viewRange === r ? '#ffffff' : '#1f2937',
+                  }}>
+                  {isMobile ? (r === 'day' ? 'D' : r === 'week' ? 'W' : 'M') : r}
                 </button>
               ))}
             </div>
           </div>
         </div>
 
+        {/* Date range picker for month view - Responsive */}
         {viewRange === 'month' && (
-          <div className="px-6 pb-4 flex items-center gap-4 border-t border-gray-100 pt-4 bg-gray-50/30">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">FROM</label>
+          <div className="px-3 md:px-6 pb-2 md:pb-4 flex flex-wrap items-center gap-2 md:gap-4 border-t border-gray-100 pt-2 md:pt-4 bg-gray-50/30">
+            <label className="text-[8px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">FROM</label>
             <input type="date" value={startDate ? formatDateForInput(startDate) : ''}
               onChange={e => { const d = new Date(e.target.value); onStartDateChange(d); onDateChange(d); }}
-              className="px-3 py-1.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-white" />
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">TO</label>
+              className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-gray-200 rounded-xl text-[10px] md:text-sm focus:outline-none focus:border-primary bg-white w-[90px] md:w-auto" />
+            <label className="text-[8px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">TO</label>
             <input type="date" value={endDate ? formatDateForInput(endDate) : ''}
               min={startDate ? formatDateForInput(startDate) : ''}
               onChange={e => onEndDateChange(new Date(e.target.value))}
-              className="px-3 py-1.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-white" />
+              className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-gray-200 rounded-xl text-[10px] md:text-sm focus:outline-none focus:border-primary bg-white w-[90px] md:w-auto" />
           </div>
         )}
       </div>
 
       {viewRange === 'month' ? renderMonthView() : viewRange === 'day' ? renderDayTableView() : renderGrid()}
 
-      {/* Footer with legend - UPDATED with Current Time indicator */}
-      <div className="flex-shrink-0 border-t-2 border-gray-200 px-6 py-3 bg-white shadow-inner">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-6 flex-wrap">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Booking Status</span>
-              {[
-                { color: '#f59e0b', label: 'Pending' },
-                { color: '#10b981', label: 'Confirmed' },
-                { color: '#3b82f6', label: 'Completed' },
-                { color: '#ef4444', label: 'Cancelled' },
-                { color: '#9333ea', label: 'Mobile App' }
-              ].map(({color, label}) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: color }} />
-                  <span className="text-xs text-gray-600 font-medium">{label}</span>
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Meal Progress</span>
-              {[
-                { icon: '🔴', label: 'Arrived' },
-                { icon: '🔵', label: 'Food' },
-                { icon: '🟣', label: 'Dessert' },
-                { icon: '🟡', label: 'Bill' },
-                { icon: '🟢', label: 'Cleared' },
-                { icon: '⚫', label: 'No Show' },
-              ].map(({icon, label}) => (
-                <div key={label} className="flex items-center gap-1">
-                  <span className="text-xs">{icon}</span>
-                  <span className="text-xs text-gray-600 font-medium">{label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* NEW: Current Time Indicator in Legend */}
-            <div className="flex items-center gap-3 border-l-2 border-gray-200 pl-4">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Timeline</span>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-2 ring-rose-200" style={{ backgroundColor: '#f43f5e' }} />
-                <span className="text-xs text-gray-600 font-medium">Current Time</span>
-                <span className="text-[10px] text-gray-400 font-mono ml-1">
-                  {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+      {/* Footer with legend - Responsive */}
+      <div className="flex-shrink-0 border-t-2 border-gray-200 px-2 md:px-6 py-2 md:py-3 bg-white shadow-inner overflow-x-auto">
+        <div className="flex items-center justify-between flex-wrap gap-1 md:gap-2 min-w-[600px] md:min-w-0">
+          <div className="flex items-center gap-2 md:gap-6 flex-wrap">
+            <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden sm:inline">Status</span>
+            {[
+              { color: '#f59e0b', label: 'Pending' },
+              { color: '#10b981', label: 'Confirmed' },
+              { color: '#3b82f6', label: 'Completed' },
+              { color: '#ef4444', label: 'Cancelled' },
+              { color: '#9333ea', label: 'Mobile' }
+            ].map(({color, label}) => (
+              <div key={label} className="flex items-center gap-0.5 md:gap-1.5">
+                <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full shadow-sm" style={{ backgroundColor: color }} />
+                <span className="text-[7px] md:text-xs text-gray-600 font-medium">
+                  {isMobile && label === 'Pending' ? 'P' : isMobile && label === 'Confirmed' ? 'C' : isMobile && label === 'Completed' ? 'D' : isMobile && label === 'Cancelled' ? 'X' : isMobile ? '📱' : label}
                 </span>
               </div>
-            </div>
+            ))}
           </div>
           
-          <div className="flex items-center gap-5 text-xs text-gray-400 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[9px]" style={{ backgroundColor: COLORS.info }}>!</span>
-              <span>Change request</span>
+          {!isMobile && (
+            <div className="flex items-center gap-2 md:gap-5 text-[8px] md:text-xs text-gray-400 flex-wrap">
+              <div className="flex items-center gap-0.5 md:gap-1.5">
+                <span className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[6px] md:text-[9px]" style={{ backgroundColor: COLORS.info }}>!</span>
+                <span>Change</span>
+              </div>
+              <div className="flex items-center gap-0.5 md:gap-1.5">
+                <span className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[6px] md:text-[9px]" style={{ backgroundColor: COLORS.purple }}>✕</span>
+                <span>Cancel</span>
+              </div>
+              <div className="flex items-center gap-0.5 md:gap-1">
+                <span className="text-primary text-[10px] md:text-sm">🖱</span>
+                <span className="hidden sm:inline">Drag to move</span>
+              </div>
+              <div className="flex items-center gap-0.5 md:gap-1">
+                <span className="text-primary text-[10px] md:text-sm">↕</span>
+                <span className="hidden sm:inline">Resize</span>
+              </div>
+              <div className="flex items-center gap-0.5 md:gap-1">
+                <span className="text-primary text-[10px] md:text-sm">✚</span>
+                <span className="hidden sm:inline">Click slot</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[9px]" style={{ backgroundColor: COLORS.purple }}>✕</span>
-              <span>Cancel request</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-primary">🖱</span>
-              <span>Drag to move</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-primary">↕</span>
-              <span>Resize edges</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-primary">✚</span>
-              <span>Click slot</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

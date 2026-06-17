@@ -13,15 +13,12 @@ const sortTables = (tables) => {
     const nameA = a.name?.toString() || '';
     const nameB = b.name?.toString() || '';
     
-    // Check if both are numbers
     const numA = parseFloat(nameA);
     const numB = parseFloat(nameB);
     
     if (!isNaN(numA) && !isNaN(numB)) {
-      // Both are numbers - sort numerically
       return numA - numB;
     } else {
-      // Not both numbers - sort alphabetically
       return nameA.localeCompare(nameB);
     }
   });
@@ -40,45 +37,45 @@ const getMealStatusConfig = (mealStatus) => {
   return map[mealStatus?.toLowerCase()] || null;
 };
 
-const inputCls = "w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-800 focus:outline-none focus:border-[#fe8a24] focus:bg-white transition-all placeholder:text-gray-300";
-const labelCls = "block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5";
+const inputCls = "w-full border-2 border-gray-100 bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-800 focus:outline-none focus:border-[#fe8a24] focus:bg-white transition-all placeholder:text-gray-300";
+const labelCls = "block text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-1 sm:mb-1.5";
 
-// ── Step indicator — defined OUTSIDE so it never remounts ──
+// ── Step indicator ──
 const StepPill = ({ step, current, label }) => (
-  <div className="flex items-center gap-1.5">
-    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+  <div className="flex items-center gap-1 sm:gap-1.5">
+    <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${
       current > step ? 'bg-green-500 text-white' :
       current === step ? 'bg-[#fe8a24] text-white' :
       'bg-gray-200 text-gray-400'
     }`}>
       {current > step ? '✓' : step}
     </div>
-    <span className={`text-xs font-semibold ${current === step ? 'text-gray-800' : 'text-gray-400'}`}>{label}</span>
+    <span className={`text-[10px] sm:text-xs font-semibold ${current === step ? 'text-gray-800' : 'text-gray-400'}`}>{label}</span>
   </div>
 );
 
-// ── TimeSlotGrid — defined OUTSIDE ──
+// ── TimeSlotGrid ──
 const TimeSlotGrid = ({ loadingSettings, timeSlots, selectedSlot, setSelectedSlot, openTime, closeTime, compact }) => (
   <div>
     <p className={labelCls}>
       <FiClock className="inline w-3 h-3 mr-1"/>Time Slot{' '}
-      <span className="text-gray-300 normal-case font-normal">({openTime}–{closeTime})</span>
+      <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">({openTime}–{closeTime})</span>
     </p>
     {loadingSettings ? (
-      <div className="flex items-center justify-center py-8 bg-gray-50 rounded-xl">
-        <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin"/>
+      <div className="flex items-center justify-center py-6 sm:py-8 bg-gray-50 rounded-xl">
+        <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin"/>
       </div>
     ) : timeSlots.length === 0 ? (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center text-sm text-red-500 font-medium">No available slots</div>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 text-center text-[10px] sm:text-sm text-red-500 font-medium">No available slots</div>
     ) : (
       <>
-        <div className={`grid grid-cols-4 gap-1.5 ${compact ? 'max-h-48' : 'max-h-64'} overflow-y-auto pr-1`}>
+        <div className={`grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-1.5 ${compact ? 'max-h-40 sm:max-h-48' : 'max-h-56 sm:max-h-64'} overflow-y-auto pr-1`}>
           {timeSlots.map((slot, i) => {
             const isSel = selectedSlot?.startTime === slot.startTime;
             const label = slot.startTime;
             return (
               <button key={i} type="button" onClick={() => setSelectedSlot(slot)}
-                className={`py-2.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${
                   isSel
                     ? 'bg-[#fe8a24] text-white shadow-md scale-105'
                     : 'bg-gray-50 border border-gray-200 text-gray-600 hover:border-[#fe8a24] hover:text-[#fe8a24] hover:bg-orange-50'
@@ -89,13 +86,13 @@ const TimeSlotGrid = ({ loadingSettings, timeSlots, selectedSlot, setSelectedSlo
           })}
         </div>
         {selectedSlot && (
-          <div className="mt-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <div className="mt-2 bg-green-50 border border-green-200 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <FiCheck className="w-4 h-4 text-green-600"/>
-              <span className="text-sm font-bold text-green-700">{selectedSlot.label}</span>
+              <FiCheck className="w-3 h-3 sm:w-4 sm:h-4 text-green-600"/>
+              <span className="text-[10px] sm:text-sm font-bold text-green-700">{selectedSlot.label}</span>
             </div>
             <button type="button" onClick={() => setSelectedSlot(null)} className="text-green-500 hover:text-green-700">
-              <FiX className="w-4 h-4"/>
+              <FiX className="w-3 h-3 sm:w-4 sm:h-4"/>
             </button>
           </div>
         )}
@@ -104,27 +101,27 @@ const TimeSlotGrid = ({ loadingSettings, timeSlots, selectedSlot, setSelectedSlo
   </div>
 );
 
-// ── TableSelector — defined OUTSIDE ──
+// ── TableSelector ──
 const TableSelector = ({
   tables, combinations, selectedTableIds, selectedCombination,
   setSelectedTableIds, setSelectedCombination, setTableError,
   tableError, guests, combinedCapacity, capacityOk, preSelectedTableId,
 }) => (
   <div className="space-y-3">
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <p className={labelCls}>🪑 Assign Table</p>
       {selectedTableIds.length > 0 && (
-        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${capacityOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+        <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${capacityOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
           Cap {combinedCapacity} {capacityOk ? '✓' : `— need ${guests}`}
         </span>
       )}
     </div>
-    {tableError && <p className="text-xs text-red-500 font-semibold flex items-center gap-1">⚠ {tableError}</p>}
+    {tableError && <p className="text-[10px] sm:text-xs text-red-500 font-semibold flex items-center gap-1">⚠ {tableError}</p>}
 
     {combinations.length > 0 && (
       <div>
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Combinations</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">Combinations</p>
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {combinations.map(combo => {
             const isSel = selectedCombination?.id === combo.id;
             return (
@@ -134,16 +131,16 @@ const TableSelector = ({
                   if (isSel) { setSelectedCombination(null); setSelectedTableIds([]); }
                   else { setSelectedCombination(combo); setSelectedTableIds(combo.tableIds); }
                 }}
-                className={`relative flex flex-col gap-0.5 px-3 py-2 rounded-xl border-2 text-xs font-semibold transition-all ${
+                className={`relative flex flex-col gap-0.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border-2 text-[10px] sm:text-xs font-semibold transition-all ${
                   isSel ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-400'
                 }`}>
                 {isSel && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                    <FiCheck className="w-2.5 h-2.5 text-white"/>
+                  <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                    <FiCheck className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white"/>
                   </span>
                 )}
-                <span className="font-bold">{combo.name}</span>
-                <span className="text-gray-400">{combo.minCapacity}–{combo.maxCapacity} pax</span>
+                <span className="font-bold text-[10px] sm:text-xs">{combo.name}</span>
+                <span className="text-gray-400 text-[8px] sm:text-[10px]">{combo.minCapacity}–{combo.maxCapacity} pax</span>
               </button>
             );
           })}
@@ -151,82 +148,82 @@ const TableSelector = ({
       </div>
     )}
 
-      {tables.length === 0 ? (
-        <p className="text-sm text-gray-400 italic">No tables available yet.</p>
-      ) : (
-        <div>
-          {combinations.length > 0 && (
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Individual Tables</p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            {sortTables(tables).map(t => {
-              const isSel = selectedTableIds.includes(t.id);
-              const isPreSel = t.id === preSelectedTableId;
-              return (
-              <button key={t.id} type="button"
-                onClick={() => {
-                  setTableError('');
-                  setSelectedTableIds(prev => prev.includes(t.id) ? prev.filter(x => x !== t.id) : [...prev, t.id]);
-                }}
-                className={`relative flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
-                  isSel     ? 'border-[#fe8a24] bg-orange-50 text-[#fe8a24]' :
-                  isPreSel  ? 'border-orange-300 bg-orange-50/50 text-orange-400' :
-                              'border-gray-200 text-gray-600 hover:border-[#fe8a24]'
-                }`}>
-                {isSel && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#fe8a24] rounded-full flex items-center justify-center">
-                    <FiCheck className="w-2.5 h-2.5 text-white"/>
-                  </span>
-                )}
-                <span>{t.name}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isSel ? 'bg-[#fe8a24]/20' : 'bg-gray-100'}`}>
-                  <FiUsers className="inline w-2.5 h-2.5 mr-0.5"/>{t.maxCapacity}
+    {tables.length === 0 ? (
+      <p className="text-xs sm:text-sm text-gray-400 italic">No tables available yet.</p>
+    ) : (
+      <div>
+        {combinations.length > 0 && (
+          <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">Individual Tables</p>
+        )}
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          {sortTables(tables).map(t => {
+            const isSel = selectedTableIds.includes(t.id);
+            const isPreSel = t.id === preSelectedTableId;
+            return (
+            <button key={t.id} type="button"
+              onClick={() => {
+                setTableError('');
+                setSelectedTableIds(prev => prev.includes(t.id) ? prev.filter(x => x !== t.id) : [...prev, t.id]);
+              }}
+              className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border-2 text-[10px] sm:text-xs font-bold transition-all ${
+                isSel     ? 'border-[#fe8a24] bg-orange-50 text-[#fe8a24]' :
+                isPreSel  ? 'border-orange-300 bg-orange-50/50 text-orange-400' :
+                            'border-gray-200 text-gray-600 hover:border-[#fe8a24]'
+              }`}>
+              {isSel && (
+                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#fe8a24] rounded-full flex items-center justify-center">
+                  <FiCheck className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white"/>
                 </span>
-              </button>
-            );
-          })}
-        </div>
+              )}
+              <span className="text-[10px] sm:text-xs">{t.name}</span>
+              <span className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full ${isSel ? 'bg-[#fe8a24]/20' : 'bg-gray-100'}`}>
+                <FiUsers className="inline w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5"/>{t.maxCapacity}
+              </span>
+            </button>
+          );
+        })}
       </div>
-    )}
+    </div>
+  )}
 
-    {selectedCombination && (
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex flex-wrap gap-1.5">
-        <span className="text-xs font-bold text-blue-700 w-full">🔗 {selectedCombination.name}</span>
-        {selectedCombination.tableNames.map((n, i) => (
-          <span key={i} className="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">{n}</span>
-        ))}
+  {selectedCombination && (
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-2 sm:p-3 flex flex-wrap gap-1 sm:gap-1.5">
+      <span className="text-[10px] sm:text-xs font-bold text-blue-700 w-full">🔗 {selectedCombination.name}</span>
+      {selectedCombination.tableNames.map((n, i) => (
+        <span key={i} className="text-[8px] sm:text-[10px] bg-blue-100 text-blue-600 px-1.5 sm:px-2 py-0.5 rounded-full font-medium">{n}</span>
+      ))}
+    </div>
+  )}
+    {!selectedCombination && selectedTableIds.length > 1 && (
+      <div className="bg-orange-50 border border-orange-200 rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-orange-700 font-medium">
+        🔗 Combined: {sortTables(tables.filter(t => selectedTableIds.includes(t.id))).map(t => t.name).join(' + ')} · {combinedCapacity} guests total
       </div>
     )}
-      {!selectedCombination && selectedTableIds.length > 1 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl px-3 py-2 text-xs text-orange-700 font-medium">
-          🔗 Combined: {sortTables(tables.filter(t => selectedTableIds.includes(t.id))).map(t => t.name).join(' + ')} · {combinedCapacity} guests total
-        </div>
-      )}
   </div>
 );
 
-// ── GuestPicker — defined OUTSIDE ──
+// ── GuestPicker ──
 const GuestPicker = ({ guests, setGuests, maxGuests, showCustomGuests, setShowCustomGuests, customGuests, setCustomGuests }) => (
   <div>
     <p className={labelCls}><FiUsers className="inline w-3 h-3 mr-1"/>Guests</p>
-    <div className="flex flex-wrap gap-2 mb-2">
+    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
       {[1,2,3,4,5,6,7,8,9,10].map(g => (
         <button key={g} type="button"
           onClick={() => { setGuests(g); setShowCustomGuests(false); }}
-          className={`w-10 h-10 rounded-xl text-sm font-bold transition-all relative ${
+          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-bold transition-all relative ${
             guests === g && !showCustomGuests
               ? 'bg-[#fe8a24] text-white shadow-md scale-105'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}>
           {g}
           {guests === g && !showCustomGuests && (
-            <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-white border-2 border-[#fe8a24]"/>
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white border-2 border-[#fe8a24]"/>
           )}
         </button>
       ))}
       <button type="button"
         onClick={() => setShowCustomGuests(s => !s)}
-        className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${
+        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-bold transition-all ${
           showCustomGuests ? 'bg-[#fe8a24] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
         }`}>
         +
@@ -240,12 +237,11 @@ const GuestPicker = ({ guests, setGuests, maxGuests, showCustomGuests, setShowCu
   </div>
 );
 
-// ── MenuItemSelector — Party/Group Menu ──
+// ── MenuItemSelector ──
 const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemoveItem, onUpdateQuantity, getCategoryName }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Group items by category
   const itemsByCategory = menuItems.reduce((acc, item) => {
     const catId = item.category || 'uncategorized';
     if (!acc[catId]) acc[catId] = [];
@@ -253,15 +249,12 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
     return acc;
   }, {});
 
-  // Filter items based on search and guest capacity
   const filteredItems = Object.keys(itemsByCategory).reduce((acc, catId) => {
     const items = itemsByCategory[catId].filter(item => {
-      // Search filter
       if (searchQuery) {
         const name = item.name?.en || item.name || '';
         if (!name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       }
-      // Guest capacity filter
       const minCap = item.minCapacity || 0;
       const maxCap = item.maxCapacity || 0;
       if (minCap > 0 && guests < minCap) return false;
@@ -272,50 +265,43 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
     return acc;
   }, {});
 
-  // Check if item is selected
   const isSelected = (itemId) => selectedItems.some(si => si.id === itemId);
-
-  // Get selected item quantity
   const getQuantity = (itemId) => {
     const found = selectedItems.find(si => si.id === itemId);
     return found ? found.quantity : 0;
   };
-
-  // Calculate total items selected
   const totalItems = selectedItems.reduce((sum, si) => sum + si.quantity, 0);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="space-y-2 sm:space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className={labelCls}>🍽️ Party Menu Selection</p>
         {totalItems > 0 && (
-          <span className="text-xs font-bold bg-[#fe8a24]/10 text-[#fe8a24] px-2.5 py-1 rounded-full">
+          <span className="text-[10px] sm:text-xs font-bold bg-[#fe8a24]/10 text-[#fe8a24] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
             {totalItems} items selected
           </span>
         )}
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-        <FiSearch className="w-4 h-4 text-gray-400" />
+      <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
+        <FiSearch className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 flex-shrink-0" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search menu items…"
-          className="bg-transparent text-sm text-gray-700 focus:outline-none w-full"
+          className="bg-transparent text-xs sm:text-sm text-gray-700 focus:outline-none w-full"
         />
         {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
-            <FiX className="w-4 h-4" />
+          <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
+            <FiX className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
         )}
       </div>
 
-      {/* Menu items grid */}
-      <div className="max-h-60 overflow-y-auto pr-1 space-y-2">
+      <div className="max-h-48 sm:max-h-60 overflow-y-auto pr-1 space-y-2">
         {Object.keys(filteredItems).length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">
+          <p className="text-xs sm:text-sm text-gray-400 text-center py-3 sm:py-4">
             {searchQuery ? 'No items match your search' : 'No menu items available for this party size'}
           </p>
         ) : (
@@ -328,16 +314,16 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
               <div key={catId} className="border border-gray-200 rounded-xl overflow-hidden">
                 <button
                   onClick={() => setExpandedCategory(isExpanded ? null : catId)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
-                  <span className="text-xs font-semibold text-gray-700">{catName}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">{items.length} items</span>
-                    {isExpanded ? <FiChevronDown className="w-4 h-4 text-gray-400" /> : <FiChevronRight className="w-4 h-4 text-gray-400" />}
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-700 truncate">{catName}</span>
+                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                    <span className="text-[10px] sm:text-xs text-gray-400">{items.length} items</span>
+                    {isExpanded ? <FiChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" /> : <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />}
                   </div>
                 </button>
                 {isExpanded && (
-                  <div className="p-2 space-y-1.5">
+                  <div className="p-1.5 sm:p-2 space-y-1 sm:space-y-1.5">
                     {items.map((item) => {
                       const selected = isSelected(item.id);
                       const qty = getQuantity(item.id);
@@ -347,16 +333,16 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                       return (
                         <div
                           key={item.id}
-                          className={`flex items-center justify-between p-2 rounded-lg transition-all ${
+                          className={`flex flex-col sm:flex-row sm:items-center justify-between p-1.5 sm:p-2 rounded-lg transition-all gap-1.5 sm:gap-2 ${
                             selected ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50 border border-gray-100 hover:border-gray-300'
                           }`}
                         >
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-800 truncate">{itemName}</p>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="text-xs font-bold text-[#fe8a24]">{price},-</span>
+                            <p className="text-[10px] sm:text-sm font-semibold text-gray-800 truncate">{itemName}</p>
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-0.5">
+                              <span className="text-[10px] sm:text-xs font-bold text-[#fe8a24]">{price},-</span>
                               {(item.minCapacity > 0 || item.maxCapacity > 0) && (
-                                <span className="text-[10px] text-gray-400">
+                                <span className="text-[8px] sm:text-[10px] text-gray-400">
                                   👥 {item.minCapacity > 0 && item.maxCapacity > 0
                                     ? `${item.minCapacity}–${item.maxCapacity} guests`
                                     : item.minCapacity > 0
@@ -365,43 +351,43 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                                 </span>
                               )}
                               {item.allergens?.length > 0 && (
-                                <span className="text-[10px] text-amber-600">⚠️ Allergens</span>
+                                <span className="text-[8px] sm:text-[10px] text-amber-600">⚠️ Allergens</span>
                               )}
                             </div>
                           </div>
 
                           {selected ? (
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
                               <button
                                 type="button"
                                 onClick={() => onUpdateQuantity(item.id, qty - 1)}
-                                className="w-7 h-7 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 flex items-center justify-center transition-colors"
                               >
-                                <FiMinus className="w-3 h-3" />
+                                <FiMinus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                               </button>
-                              <span className="text-sm font-bold text-gray-700 w-6 text-center">{qty}</span>
+                              <span className="text-xs sm:text-sm font-bold text-gray-700 w-5 sm:w-6 text-center">{qty}</span>
                               <button
                                 type="button"
                                 onClick={() => onUpdateQuantity(item.id, qty + 1)}
-                                className="w-7 h-7 rounded-lg bg-[#fe8a24] hover:bg-[#ff9d47] text-white flex items-center justify-center transition-colors"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#fe8a24] hover:bg-[#ff9d47] text-white flex items-center justify-center transition-colors"
                               >
-                                <FiPlus className="w-3 h-3" />
+                                <FiPlus className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => onRemoveItem(item.id)}
-                                className="w-7 h-7 rounded-lg bg-red-100 hover:bg-red-200 text-red-500 flex items-center justify-center transition-colors ml-1"
+                                className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-red-100 hover:bg-red-200 text-red-500 flex items-center justify-center transition-colors"
                               >
-                                <FiTrash2 className="w-3 h-3" />
+                                <FiTrash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                               </button>
                             </div>
                           ) : (
                             <button
                               type="button"
                               onClick={() => onAddItem(item)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-xs font-semibold transition-colors"
+                              className="flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-[10px] sm:text-xs font-semibold transition-colors flex-shrink-0"
                             >
-                              <FiPlus className="w-3 h-3" /> Add
+                              <FiPlus className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> Add
                             </button>
                           )}
                         </div>
@@ -415,15 +401,14 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
         )}
       </div>
 
-      {/* Selected items summary */}
       {selectedItems.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-          <p className="text-xs font-semibold text-green-700 mb-2">Selected Items:</p>
-          <div className="flex flex-wrap gap-1.5">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-2 sm:p-3">
+          <p className="text-[10px] sm:text-xs font-semibold text-green-700 mb-1.5 sm:mb-2">Selected Items:</p>
+          <div className="flex flex-wrap gap-1 sm:gap-1.5">
             {selectedItems.map((si) => (
-              <span key={si.id} className="inline-flex items-center gap-1 bg-white border border-green-200 rounded-full px-2.5 py-1 text-xs font-medium text-gray-700">
-                {si.name}
-                <span className="bg-[#fe8a24] text-white rounded-full px-1.5 text-[10px] font-bold">×{si.quantity}</span>
+              <span key={si.id} className="inline-flex items-center gap-0.5 sm:gap-1 bg-white border border-green-200 rounded-full px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[8px] sm:text-xs font-medium text-gray-700">
+                <span className="truncate max-w-[60px] sm:max-w-none">{si.name}</span>
+                <span className="bg-[#fe8a24] text-white rounded-full px-1 sm:px-1.5 text-[8px] sm:text-[10px] font-bold">×{si.quantity}</span>
               </span>
             ))}
           </div>
@@ -474,13 +459,12 @@ const CreateReservationModal = ({
   });
   const [toTime, setToTime] = useState(() => {
     const now = new Date();
-    const end = new Date(now.getTime() + 60 * 60000); // default 60 min
+    const end = new Date(now.getTime() + 60 * 60000);
     return `${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
   });
   const [untilClose, setUntilClose]       = useState(false);
   const sittingTime                       = 60;
 
-  // Party Menu state
   const [menuItems, setMenuItems] = useState([]);
   const [menuCategories, setMenuCategories] = useState([]);
   const [selectedMenuItems, setSelectedMenuItems] = useState([]);
@@ -492,8 +476,8 @@ const CreateReservationModal = ({
     customer_last_name:      '',
     customer_email:          '',
     customer_phone:          '',
-    special_requests:        '',        // Public notes (visible to customer)
-    internal_notes:          '',        // Internal notes (staff only)
+    special_requests:        '',
+    internal_notes:          '',
     ServiceType_Reservation: 'dine-in',
     status:                  'confirmed',
     meal_status:             '',
@@ -507,7 +491,6 @@ const CreateReservationModal = ({
     setTimeout(() => { setToast(null); onClose(); }, 1800);
   };
 
-  // Load tables and combinations
   useEffect(() => {
     if (!selectedRestaurant?.id) return;
     const fetchAll = async () => {
@@ -526,7 +509,6 @@ const CreateReservationModal = ({
     fetchAll();
   }, [selectedRestaurant?.id]);
 
-  // Load menu items and categories
   useEffect(() => {
     if (!selectedRestaurant?.id) return;
     const loadMenu = async () => {
@@ -552,7 +534,6 @@ const CreateReservationModal = ({
     loadMenu();
   }, [selectedRestaurant?.id]);
 
-  // Load settings
   useEffect(() => {
     const load = async () => {
       if (!selectedRestaurant?.id) { setLoadingSettings(false); return; }
@@ -567,7 +548,6 @@ const CreateReservationModal = ({
     load();
   }, [selectedRestaurant?.id]);
 
-  // Set default times - skip if manually changed
   useEffect(() => {
     if (isTimeManuallyChanged) return;
     
@@ -597,8 +577,6 @@ const CreateReservationModal = ({
   }, [selectedRestaurant?.id, selectedDate, formData.reservation_date, isTimeManuallyChanged]);
 
   useEffect(() => {
-    // This only runs once when the component mounts
-    // It won't override manual changes because we check if the values are already set
     if (!fromTime || !toTime) {
       const now = new Date();
       const mins = now.getMinutes();
@@ -625,14 +603,11 @@ const CreateReservationModal = ({
   const { openTime, closeTime, maxGuests } = (() => {
     const maxFromSettings = 999;
 
-    // Prefer day-specific interval settings if available
     const dayName = (formData.reservation_date || new Date()).toLocaleDateString('en-US', { weekday: 'long' });
     const daySettings = settings?.dayIntervals?.[dayName];
 
-    // Fall back to restaurant customHours
     const ch = selectedRestaurant?.customHours?.[0];
 
-    // Find the matching customHours slot for the current day
     const matchingHours = selectedRestaurant?.customHours?.find(slot =>
       slot.days?.some(d => d.name === dayName && !d.closed)
     );
@@ -656,7 +631,6 @@ const CreateReservationModal = ({
     const startOffset = daySettings?.startOffset || 0;
     const endOffset = daySettings?.endOffset || 0;
 
-    // Get day-specific open/close times from restaurant customHours
     const matchingHours = selectedRestaurant?.customHours?.find(slot =>
       slot.days?.some(d => d.name === dayName && !d.closed)
     );
@@ -680,10 +654,8 @@ const CreateReservationModal = ({
   const oMin = oH * 60 + oM;
   let cMin = cH * 60 + cM;
 
-  // Past-midnight: closeTime <= openTime → treat close as next day
   if (cMin <= oMin) cMin += 24 * 60;
 
-  // Sanity cap: never generate more than 18 hours of slots
   const maxMin = oMin + 18 * 60;
   const effOpen  = oMin + startOffset;
   const effClose = Math.min(cMin - endOffset, maxMin);
@@ -710,7 +682,6 @@ const CreateReservationModal = ({
 
   const blocked = settings?.blockedTimeSlots?.[dayName] || [];
   
-  // Filter past slots for today
   const now = new Date();
   const resDate = formData.reservation_date || new Date();
   const isToday = resDate.toDateString() === now.toDateString();
@@ -738,7 +709,6 @@ const CreateReservationModal = ({
     }
     if (modalMode === 'full') {
       const base = new Date(formData.reservation_date || selectedDate || new Date());
-      // If a slot was selected via "Select Slot" tab, use that time
       if (showTimeSlots && selectedSlot) {
         base.setHours(selectedSlot.startH, selectedSlot.startMin, 0, 0);
       } else {
@@ -755,7 +725,6 @@ const CreateReservationModal = ({
     return selectedDate ? new Date(selectedDate) : new Date();
   };
 
-  // ── Menu item handlers ──
   const handleAddMenuItem = (item) => {
     setSelectedMenuItems(prev => {
       const existing = prev.find(si => si.id === item.id);
@@ -780,7 +749,6 @@ const CreateReservationModal = ({
     );
   };
 
-  // Get category name by ID
   const getCategoryName = (catId) => {
     if (catId === 'uncategorized') return 'Uncategorized';
     const cat = menuCategories.find(c => c.id === catId);
@@ -791,12 +759,10 @@ const CreateReservationModal = ({
     setError(''); setTableError('');
     const name = `${formData.customer_first_name?.trim() || ''} ${formData.customer_last_name?.trim() || ''}`.trim() || (isWalkIn ? 'Walk-in Guest' : '');
     if (!isWalkIn && !formData.customer_first_name?.trim()) { setError('First name is required'); return; }
-    // Email is now optional - removed validation
     if (isQuickBook && !selectedSlot) { setError('Please select a time slot'); return; }
     if (settings?.requireTableAssignment && selectedTableIds.length===0) { setTableError('Please assign at least one table.'); return; }
     try {
       setSaving(true);
-      // Load settings for email contact info
       let emailSettings = null;
       try {
         const col = selectedRestaurant?._collection || 'restaurants';
@@ -810,13 +776,11 @@ const CreateReservationModal = ({
       }
       const currentUser = auth.currentUser;
       if (!currentUser) throw new Error('Not authenticated');
-      // For staff, use the restaurant's Owner_ID instead of their own uid
         let ownerUid = currentUser.uid;
         if (isStaff) {
           if (selectedRestaurant?.Owner_ID) {
             ownerUid = selectedRestaurant.Owner_ID;
           } else {
-            // Owner_ID missing — abort with clear error
             setError('Restaurant owner info missing. Please contact your administrator.');
             setSaving(false);
             return;
@@ -846,7 +810,6 @@ const CreateReservationModal = ({
             const [th, tm] = closeTime.split(':').map(Number);
             return Math.max(15, (th * 60 + tm) - (fh * 60 + fm));
           }
-          // Full mode + Select Slot tab: use guest-based duration from settings
           if (modalMode === 'full' && showTimeSlots && selectedSlot) {
             return getEffectiveDuration(guests);
           }
@@ -862,8 +825,8 @@ const CreateReservationModal = ({
         reservation_date:  reservationDate,
         ServiceType_Reservation: formData.ServiceType_Reservation,
         status:            formData.status||'confirmed',
-        special_requests:  formData.special_requests.trim(),      // Public notes
-        internal_notes:    formData.internal_notes.trim(),        // Internal notes
+        special_requests:  formData.special_requests.trim(),
+        internal_notes:    formData.internal_notes.trim(),
         selected_menu_items: selectedMenuItems.map(item => ({
           id: item.id,
           name: item.name,
@@ -916,7 +879,6 @@ const CreateReservationModal = ({
           updated_at:serverTimestamp(),
         }).catch(e=>console.warn('Table update failed:',tid,e))
       ));
-      // Send confirmation email - only if email is provided
       if (!isWalkIn && formData.customer_email?.trim()) {
         try {
           const { getFunctions, httpsCallable } = await import('firebase/functions');
@@ -927,7 +889,6 @@ const CreateReservationModal = ({
             ? selectedCombination.name
             : tables.filter(t => selectedTableIds.includes(t.id)).map(t => t.name).join(' + ') || '—';
           
-          // Build menu items HTML
           const menuItemsHtml = selectedMenuItems.length > 0 ? `
             <div style="margin-top:16px;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
               <p style="margin:0 0 8px;font-weight:bold;color:#1e293b;font-size:13px;">🍽️ Pre-selected Menu Items</p>
@@ -991,9 +952,9 @@ const CreateReservationModal = ({
 
   const ManualTimePicker = (
   <>
-    <div className="grid grid-cols-2 gap-3">
-      <div className="bg-gray-50 border-2 border-gray-100 rounded-xl px-4 py-3 focus-within:border-[#fe8a24] transition-colors">
-        <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">From</p>
+    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+      <div className="bg-gray-50 border-2 border-gray-100 rounded-xl px-2 sm:px-4 py-1.5 sm:py-3 focus-within:border-[#fe8a24] transition-colors">
+        <p className="text-[8px] sm:text-[10px] text-gray-400 font-semibold uppercase mb-0.5 sm:mb-1">From</p>
         <input
           type="time"
           value={fromTime}
@@ -1022,11 +983,11 @@ const CreateReservationModal = ({
             }
           }}
           step="1800"
-          className="text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent"
+          className="text-xs sm:text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent"
         />
       </div>
-      <div className={`bg-gray-50 border-2 rounded-xl px-4 py-3 transition-colors ${untilClose ? 'opacity-50 border-gray-100' : 'border-gray-100 focus-within:border-[#fe8a24]'}`}>
-        <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">To</p>
+      <div className={`bg-gray-50 border-2 rounded-xl px-2 sm:px-4 py-1.5 sm:py-3 transition-colors ${untilClose ? 'opacity-50 border-gray-100' : 'border-gray-100 focus-within:border-[#fe8a24]'}`}>
+        <p className="text-[8px] sm:text-[10px] text-gray-400 font-semibold uppercase mb-0.5 sm:mb-1">To</p>
         <input
           type="time"
           value={untilClose ? closeTime : toTime}
@@ -1039,13 +1000,12 @@ const CreateReservationModal = ({
             }
           }}
           step="1800"
-          className="text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent disabled:text-gray-400"
+          className="text-xs sm:text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent disabled:text-gray-400"
         />
       </div>
     </div>
     
-    {/* Quick time presets */}
-    <div className="flex flex-wrap gap-1.5 mt-2">
+    <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
       <button
         type="button"
         onClick={() => {
@@ -1067,7 +1027,7 @@ const CreateReservationModal = ({
             setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
           }
         }}
-        className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+        className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
       >
         Now
       </button>
@@ -1088,15 +1048,14 @@ const CreateReservationModal = ({
               setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
             }
           }}
-          className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+          className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
         >
           Open ({openTime})
         </button>
       )}
     </div>
     
-    {/* Quick duration buttons */}
-    <div className="flex flex-wrap gap-1.5 mt-1">
+    <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1">
       {[30, 45, 60, 75, 90, 120].map(duration => (
         <button
           key={duration}
@@ -1114,14 +1073,14 @@ const CreateReservationModal = ({
               setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
             }
           }}
-          className="px-3 py-1 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+          className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
         >
           {duration}m
         </button>
       ))}
     </div>
     
-    <label className="flex items-center gap-2 mt-2 cursor-pointer">
+    <label className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 cursor-pointer">
       <input type="checkbox" checked={untilClose}
         onChange={e => { 
           setUntilClose(e.target.checked); 
@@ -1140,12 +1099,11 @@ const CreateReservationModal = ({
             }
           }
         }}
-        className="w-4 h-4 accent-[#fe8a24]" />
-      <span className="text-sm text-gray-500">Until close <span className="text-gray-300">({closeTime})</span></span>
+        className="w-3.5 h-3.5 sm:w-4 sm:h-4 accent-[#fe8a24]" />
+      <span className="text-[10px] sm:text-sm text-gray-500">Until close <span className="text-gray-300">({closeTime})</span></span>
     </label>
     
-    {/* Display current selection */}
-    <div className="mt-3 flex items-center gap-2 text-sm bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
+    <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm bg-blue-50 border border-blue-200 rounded-xl px-2 sm:px-4 py-1.5 sm:py-2.5">
       <span className="font-semibold text-blue-700">Selected:</span>
       <span className="font-mono font-bold text-gray-800">{fromTime || '--:--'}</span>
       <span className="text-gray-400">→</span>
@@ -1155,75 +1113,68 @@ const CreateReservationModal = ({
         const [ffh, ffm] = fromTime.split(':').map(Number);
         let dur = (th * 60 + tm) - (ffh * 60 + ffm);
         if (dur < 0) dur += 24 * 60;
-        return dur > 0 ? <span className="text-xs text-gray-400 ml-1">({dur} min)</span> : null;
+        return dur > 0 ? <span className="text-[10px] sm:text-xs text-gray-400 ml-0.5 sm:ml-1">({dur} min)</span> : null;
       })()}
-      {untilClose && <span className="text-xs text-[#fe8a24] font-semibold ml-1">(until close)</span>}
+      {untilClose && <span className="text-[10px] sm:text-xs text-[#fe8a24] font-semibold ml-0.5 sm:ml-1">(until close)</span>}
     </div>
   </>
 );
 
   const sessionButtons = (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
       {['dine-in','takeaway','delivery'].map(t => (
         <button key={t} type="button"
           onClick={() => setFormData(p=>({...p,ServiceType_Reservation:t}))}
-          className={`py-2.5 rounded-xl text-xs font-semibold border-2 transition-all capitalize ${
+          className={`py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-semibold border-2 transition-all capitalize ${
             formData.ServiceType_Reservation===t
               ? 'border-[#fe8a24] bg-orange-50 text-[#fe8a24]'
               : 'border-gray-200 text-gray-500 hover:border-[#fe8a24]'
           }`}>
-          {t}
+          {t === 'dine-in' ? '🍽 Dine-in' : t === 'takeaway' ? '🥡 Takeaway' : '🛵 Delivery'}
         </button>
       ))}
     </div>
   );
 
-  // Shared props for TableSelector
   const tableSelectorProps = {
     tables, combinations, selectedTableIds, selectedCombination,
     setSelectedTableIds, setSelectedCombination, setTableError,
     tableError, guests, combinedCapacity, capacityOk, preSelectedTableId,
   };
 
-  // Shared props for GuestPicker
-  const guestPickerProps = {
-    guests, setGuests, maxGuests, showCustomGuests, setShowCustomGuests, customGuests, setCustomGuests,
-  };
-
-  // Shared props for TimeSlotGrid
   const timeSlotProps = {
     loadingSettings, timeSlots, selectedSlot, setSelectedSlot, openTime, closeTime,
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl bg-green-500 text-white font-semibold text-sm">
+        <div className="fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-4 rounded-2xl shadow-2xl bg-green-500 text-white font-semibold text-[10px] sm:text-sm max-w-[90vw]">
           ✅ {toast}
         </div>
       )}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col ${modalMode==='full' ? 'max-w-4xl' : 'max-w-lg'}`}>
+      <div className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[92vh] flex flex-col ${modalMode==='full' ? 'max-w-4xl' : 'max-w-lg'}`}>
 
         {/* Header */}
-        <div className={`bg-gradient-to-r ${headerBg} px-6 py-4 flex items-center justify-between flex-shrink-0`}>
-          <div>
-            <p className="text-white font-bold text-base">{modeLabel}</p>
-            {isWalkIn && <p className="text-white/60 text-xs mt-0.5">{walkInLabel}</p>}
-            {preSelectedTableName && <p className="text-white/70 text-xs mt-0.5">🪑 Table {preSelectedTableName} pre-selected</p>}
-            {selectedRestaurant?.customHours?.[0] && <p className="text-white/50 text-xs mt-0.5">Hours: {openTime} – {closeTime}</p>}
+        <div className={`bg-gradient-to-r ${headerBg} px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 flex-shrink-0`}>
+          <div className="min-w-0">
+            <p className="text-white font-bold text-sm sm:text-base">{modeLabel}</p>
+            {isWalkIn && <p className="text-white/60 text-[10px] sm:text-xs mt-0.5 truncate">{walkInLabel}</p>}
+            {preSelectedTableName && <p className="text-white/70 text-[10px] sm:text-xs mt-0.5">🪑 Table {preSelectedTableName} pre-selected</p>}
+            {selectedRestaurant?.customHours?.[0] && <p className="text-white/50 text-[10px] sm:text-xs mt-0.5 hidden sm:block">Hours: {openTime} – {closeTime}</p>}
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/15 rounded-full transition-colors text-white/70 hover:text-white">
-            <FiX className="w-5 h-5"/>
+          <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/15 rounded-full transition-colors text-white/70 hover:text-white flex-shrink-0">
+            <FiX className="w-4 h-4 sm:w-5 sm:h-5"/>
           </button>
         </div>
 
         {/* Step indicator */}
         {isQuickBook && (
-          <div className="flex items-center gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50 flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 px-3 sm:px-6 py-2 sm:py-3 border-b border-gray-100 bg-gray-50 flex-shrink-0">
             <StepPill step={1} current={step} label="Time & Table"/>
-            <div className="flex-1 h-px bg-gray-200"/>
+            <div className="flex-1 h-px bg-gray-200 min-w-[20px]"/>
             <StepPill step={2} current={step} label="Guest Details"/>
           </div>
         )}
@@ -1231,22 +1182,22 @@ const CreateReservationModal = ({
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
           {error && (
-            <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium">
+            <div className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-[10px] sm:text-sm font-medium">
               ⚠ {error}
             </div>
           )}
 
-   {/* ══ WALK-IN ══ */}
+          {/* ══ WALK-IN ══ */}
           {isWalkIn && (
-            <div className="p-6 space-y-6">
+            <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
 
               {/* 1. Guests */}
               <div>
                 <p className={labelCls}><FiUsers className="inline w-3 h-3 mr-1"/>Guests</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {[1,2,3,4,5,6,7,8,9,10].map(g => (
                     <button key={g} type="button" onClick={() => setGuests(g)}
-                      className={`w-11 h-11 rounded-xl text-sm font-bold transition-all ${
+                      className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                         guests === g
                           ? 'bg-[#fe8a24] text-white shadow-md scale-105'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1256,7 +1207,7 @@ const CreateReservationModal = ({
                   ))}
                   <button type="button"
                     onClick={() => setShowCustomGuests(s => !s)}
-                    className={`w-11 h-11 rounded-xl text-sm font-bold transition-all ${
+                    className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                       showCustomGuests ? 'bg-[#fe8a24] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}>
                     +
@@ -1272,7 +1223,7 @@ const CreateReservationModal = ({
               {/* 2. Sitting Time */}
               <div>
                 <p className={labelCls}><FiClock className="inline w-3 h-3 mr-1"/>Sitting Time</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {[15, 30, 45, 60, 75, 90, 105, 120, 135, 150].map(mins => {
                     const [fh, fm] = fromTime.split(':').map(Number);
                     const endMins = fh * 60 + fm + mins;
@@ -1288,7 +1239,7 @@ const CreateReservationModal = ({
                     return (
                       <button key={mins} type="button"
                         onClick={() => { setIsTimeManuallyChanged(true); setToTime(endStr); }}
-                        className={`px-3 h-11 rounded-xl text-sm font-bold transition-all ${
+                        className={`px-2 sm:px-3 h-8 sm:h-11 rounded-xl text-[10px] sm:text-sm font-bold transition-all ${
                           isSelected
                             ? 'bg-[#fe8a24] text-white shadow-md scale-105'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -1299,14 +1250,13 @@ const CreateReservationModal = ({
                   })}
                   <button type="button"
                     onClick={() => setUntilClose(u => !u)}
-                    className={`px-3 h-11 rounded-xl text-sm font-bold transition-all ${
+                    className={`px-2 sm:px-3 h-8 sm:h-11 rounded-xl text-[10px] sm:text-sm font-bold transition-all ${
                       untilClose ? 'bg-[#fe8a24] text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}>
                     +
                   </button>
                 </div>
-                {/* Current time display */}
-                <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                <div className="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm text-gray-500">
                   <span className="font-mono font-semibold text-gray-700">{fromTime}</span>
                   <span>→</span>
                   <span className="font-mono font-semibold text-gray-700">{untilClose ? closeTime : toTime}</span>
@@ -1314,37 +1264,25 @@ const CreateReservationModal = ({
                     const [th, tm] = toTime.split(':').map(Number);
                     const [ffh, ffm] = fromTime.split(':').map(Number);
                     const dur = (th * 60 + tm) - (ffh * 60 + ffm);
-                    return dur > 0 ? <span className="text-xs text-gray-400">({dur} min)</span> : null;
+                    return dur > 0 ? <span className="text-[10px] sm:text-xs text-gray-400">({dur} min)</span> : null;
                   })()}
-                  {untilClose && <span className="text-xs text-[#fe8a24] font-semibold">Until close</span>}
+                  {untilClose && <span className="text-[10px] sm:text-xs text-[#fe8a24] font-semibold">Until close</span>}
                 </div>
               </div>
 
               {/* 3. Session */}
               <div>
                 <p className={labelCls}>Session</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {['dine-in','takeaway','delivery'].map(t => (
-                    <button key={t} type="button"
-                      onClick={() => setFormData(p => ({...p, ServiceType_Reservation: t}))}
-                      className={`py-3 rounded-xl text-sm font-semibold border-2 transition-all capitalize ${
-                        formData.ServiceType_Reservation === t
-                          ? 'border-[#fe8a24] bg-orange-50 text-[#fe8a24]'
-                          : 'border-gray-200 text-gray-500 hover:border-[#fe8a24]'
-                      }`}>
-                      {t === 'dine-in' ? '🍽 Dine-in' : t === 'takeaway' ? '🥡 Takeaway' : '🛵 Delivery'}
-                    </button>
-                  ))}
-                </div>
+                {sessionButtons}
               </div>
 
               {/* 4. Table */}
               <TableSelector {...tableSelectorProps}/>
 
-              {/* 5. Public Notes - Walk-in */}
+              {/* 5. Public Notes */}
               <div>
                 <label className={labelCls}>
-                  <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal">(visible to customer)</span>
+                  <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(visible to customer)</span>
                 </label>
                 <textarea 
                   value={formData.special_requests}
@@ -1355,27 +1293,27 @@ const CreateReservationModal = ({
                 />
               </div>
 
-              {/* 6. Party Menu - Walk-in (below Public Notes) */}
+              {/* 6. Party Menu */}
               {menuItems.length > 0 && (
                 <div>
                   <button
                     type="button"
                     onClick={() => setShowMenuSelector(!showMenuSelector)}
-                    className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                    className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
                   >
-                    {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                    {showMenuSelector ? <FiChevronDown className="w-3 h-3 sm:w-4 sm:h-4" /> : <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />}
                     {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
                     {selectedMenuItems.length > 0 && (
-                      <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
                         {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
                       </span>
                     )}
                   </button>
                   {showMenuSelector && (
-                    <div className="mt-3">
+                    <div className="mt-2 sm:mt-3">
                       {loadingMenu ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                        <div className="flex items-center justify-center py-6 sm:py-8">
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
                         </div>
                       ) : (
                         <MenuItemSelector 
@@ -1393,10 +1331,10 @@ const CreateReservationModal = ({
                 </div>
               )}
 
-              {/* 7. Internal Notes - Walk-in */}
+              {/* 7. Internal Notes */}
               <div>
                 <label className={labelCls}>
-                  <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal">(staff only)</span>
+                  <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(staff only)</span>
                 </label>
                 <textarea 
                   value={formData.internal_notes}
@@ -1412,61 +1350,58 @@ const CreateReservationModal = ({
 
           {/* ══ QUICK BOOK STEP 2 ══ */}
           {isQuickBook && step===2 && (
-            <div className="p-6 space-y-5">
-              {/* Summary chips */}
-              <div className="flex flex-wrap gap-2">
-                <span className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                  <FiUsers className="w-3 h-3"/> {guests} guests
+            <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <span className="flex items-center gap-1 sm:gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+                  <FiUsers className="w-2.5 h-2.5 sm:w-3 sm:h-3"/> {guests} guests
                 </span>
                 {selectedSlot && (
-                  <span className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-                    <FiClock className="w-3 h-3"/> {selectedSlot.label}
+                  <span className="flex items-center gap-1 sm:gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
+                    <FiClock className="w-2.5 h-2.5 sm:w-3 sm:h-3"/> {selectedSlot.label}
                   </span>
                 )}
                 {selectedTableIds.length > 0 && (
-                  <span className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                  <span className="flex items-center gap-1 sm:gap-1.5 bg-orange-50 border border-orange-200 text-orange-700 text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
                     🪑 {tables.filter(t=>selectedTableIds.includes(t.id)).map(t=>t.name).join(' + ')}
                   </span>
                 )}
                 {selectedMenuItems.length > 0 && (
-                  <span className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                  <span className="flex items-center gap-1 sm:gap-1.5 bg-green-50 border border-green-200 text-green-700 text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
                     🍽️ {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} menu items
                   </span>
                 )}
               </div>
 
-              {/* Customer fields inline */}
-             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}><FiUser className="inline w-3 h-3 mr-1"/>First Name *</label>
-                <input type="text" value={formData.customer_first_name}
-                  onChange={e=>setFormData(p=>({...p,customer_first_name:e.target.value}))}
-                  className={inputCls} placeholder="John"/>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}><FiUser className="inline w-3 h-3 mr-1"/>First Name *</label>
+                  <input type="text" value={formData.customer_first_name}
+                    onChange={e=>setFormData(p=>({...p,customer_first_name:e.target.value}))}
+                    className={inputCls} placeholder="John"/>
+                </div>
+                <div>
+                  <label className={labelCls}>Last Name</label>
+                  <input type="text" value={formData.customer_last_name}
+                    onChange={e=>setFormData(p=>({...p,customer_last_name:e.target.value}))}
+                    className={inputCls} placeholder="Doe"/>
+                </div>
               </div>
               <div>
-                <label className={labelCls}>Last Name</label>
-                <input type="text" value={formData.customer_last_name}
-                  onChange={e=>setFormData(p=>({...p,customer_last_name:e.target.value}))}
-                  className={inputCls} placeholder="Doe"/>
-              </div>
-            </div>
-              <div>
-                <label className={labelCls}><FiPhone className="inline w-3 h-3 mr-1"/>Phone <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
+                <label className={labelCls}><FiPhone className="inline w-3 h-3 mr-1"/>Phone <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(optional)</span></label>
                 <input type="tel" value={formData.customer_phone}
                   onChange={e=>setFormData(p=>({...p,customer_phone:e.target.value}))}
                   className={inputCls} placeholder="+1 234 567 8900"/>
               </div>
               <div>
-              <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
+                <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(optional)</span></label>
                 <input type="email" value={formData.customer_email}
                   onChange={e=>setFormData(p=>({...p,customer_email:e.target.value}))}
                   className={inputCls} placeholder="email@example.com"/>
               </div>
               
-              {/* Public Notes - Quick Book */}
               <div>
                 <label className={labelCls}>
-                  <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal">(visible to customer)</span>
+                  <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(visible to customer)</span>
                 </label>
                 <textarea 
                   value={formData.special_requests}
@@ -1477,27 +1412,26 @@ const CreateReservationModal = ({
                 />
               </div>
 
-              {/* Party Menu - Quick Book (below Public Notes) */}
               {menuItems.length > 0 && (
                 <div>
                   <button
                     type="button"
                     onClick={() => setShowMenuSelector(!showMenuSelector)}
-                    className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                    className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
                   >
-                    {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                    {showMenuSelector ? <FiChevronDown className="w-3 h-3 sm:w-4 sm:h-4" /> : <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />}
                     {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
                     {selectedMenuItems.length > 0 && (
-                      <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
                         {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
                       </span>
                     )}
                   </button>
                   {showMenuSelector && (
-                    <div className="mt-3">
+                    <div className="mt-2 sm:mt-3">
                       {loadingMenu ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                        <div className="flex items-center justify-center py-6 sm:py-8">
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
                         </div>
                       ) : (
                         <MenuItemSelector 
@@ -1515,10 +1449,9 @@ const CreateReservationModal = ({
                 </div>
               )}
 
-              {/* Internal Notes - Quick Book */}
               <div>
                 <label className={labelCls}>
-                  <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal">(staff only)</span>
+                  <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(staff only)</span>
                 </label>
                 <textarea 
                   value={formData.internal_notes}
@@ -1538,45 +1471,44 @@ const CreateReservationModal = ({
 
           {/* ══ FULL CREATE ══ */}
           {modalMode==='full' && (
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-3 sm:p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
                 {/* Left: Customer Information + Public Notes + Party Menu + Internal Notes */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider pb-2 border-b-2 border-[#fe8a24]/30">
+                <div className="space-y-3 sm:space-y-4">
+                  <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider pb-2 border-b-2 border-[#fe8a24]/30">
                     👤 Customer Information
                   </h4>
-                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelCls}><FiUser className="inline w-3 h-3 mr-1"/>First Name *</label>
-                    <input type="text" value={formData.customer_first_name}
-                      onChange={e=>setFormData(p=>({...p,customer_first_name:e.target.value}))}
-                      className={inputCls} placeholder="John"/>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}><FiUser className="inline w-3 h-3 mr-1"/>First Name *</label>
+                      <input type="text" value={formData.customer_first_name}
+                        onChange={e=>setFormData(p=>({...p,customer_first_name:e.target.value}))}
+                        className={inputCls} placeholder="John"/>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Last Name</label>
+                      <input type="text" value={formData.customer_last_name}
+                        onChange={e=>setFormData(p=>({...p,customer_last_name:e.target.value}))}
+                        className={inputCls} placeholder="Doe"/>
+                    </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Last Name</label>
-                    <input type="text" value={formData.customer_last_name}
-                      onChange={e=>setFormData(p=>({...p,customer_last_name:e.target.value}))}
-                      className={inputCls} placeholder="Doe"/>
-                  </div>
-                </div>
-                  <div>
-                   <label className={labelCls}><FiPhone className="inline w-3 h-3 mr-1"/>Phone <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
+                    <label className={labelCls}><FiPhone className="inline w-3 h-3 mr-1"/>Phone <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(optional)</span></label>
                     <input type="tel" value={formData.customer_phone}
                       onChange={e=>setFormData(p=>({...p,customer_phone:e.target.value}))}
                       className={inputCls} placeholder="+1 234 567 8900"/>
                   </div>
                   <div>
-                  <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email <span className="text-gray-300 normal-case font-normal">(optional)</span></label>
+                    <label className={labelCls}><FiMail className="inline w-3 h-3 mr-1"/>Email <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(optional)</span></label>
                     <input type="email" value={formData.customer_email}
                       onChange={e=>setFormData(p=>({...p,customer_email:e.target.value}))}
                       className={inputCls} placeholder="email@example.com"/>
                   </div>
                   
-                  {/* Public Notes - Full Create (Left Side) */}
                   <div>
                     <label className={labelCls}>
-                      <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal">(visible to customer)</span>
+                      <FiGlobe className="inline w-3 h-3 mr-1"/>Public Notes <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(visible to customer)</span>
                     </label>
                     <textarea 
                       value={formData.special_requests}
@@ -1586,40 +1518,27 @@ const CreateReservationModal = ({
                       placeholder="Special requests, dietary needs, accessibility, celebrations…"
                     />
                   </div>
-                  {/* Internal Notes - Full Create (Left Side, below Party Menu) */}
-                  <div>
-                    <label className={labelCls}>
-                      <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal">(staff only)</span>
-                    </label>
-                    <textarea 
-                      value={formData.internal_notes}
-                      onChange={e=>setFormData(p=>({...p,internal_notes:e.target.value}))}
-                      rows="3" 
-                      className={inputCls+' resize-none'} 
-                      placeholder="Staff notes, special arrangements, VIP info, pre-order details…"
-                    />
-                  </div>
-                  {/* Party Menu - Full Create (Left Side, below Public Notes) */}
+
                   {menuItems.length > 0 && (
                     <div>
                       <button
                         type="button"
                         onClick={() => setShowMenuSelector(!showMenuSelector)}
-                        className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                        className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
                       >
-                        {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
+                        {showMenuSelector ? <FiChevronDown className="w-3 h-3 sm:w-4 sm:h-4" /> : <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />}
                         {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
                         {selectedMenuItems.length > 0 && (
-                          <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                          <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
                             {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
                           </span>
                         )}
                       </button>
                       {showMenuSelector && (
-                        <div className="mt-3">
+                        <div className="mt-2 sm:mt-3">
                           {loadingMenu ? (
-                            <div className="flex items-center justify-center py-8">
-                              <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                            <div className="flex items-center justify-center py-6 sm:py-8">
+                              <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
                             </div>
                           ) : (
                             <MenuItemSelector 
@@ -1637,16 +1556,26 @@ const CreateReservationModal = ({
                     </div>
                   )}
 
-                  
+                  <div>
+                    <label className={labelCls}>
+                      <FiLock className="inline w-3 h-3 mr-1"/>Internal Notes <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">(staff only)</span>
+                    </label>
+                    <textarea 
+                      value={formData.internal_notes}
+                      onChange={e=>setFormData(p=>({...p,internal_notes:e.target.value}))}
+                      rows="3" 
+                      className={inputCls+' resize-none'} 
+                      placeholder="Staff notes, special arrangements, VIP info, pre-order details…"
+                    />
+                  </div>
                 </div>
 
                 {/* Right: Reservation Details */}
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider pb-2 border-b-2 border-[#fe8a24]/30">
+                <div className="space-y-3 sm:space-y-4">
+                  <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider pb-2 border-b-2 border-[#fe8a24]/30">
                     📅 Reservation Details
                   </h4>
 
-                  {/* Date */}
                   <div>
                     <label className={labelCls}>Date *</label>
                     <input type="date"
@@ -1655,13 +1584,12 @@ const CreateReservationModal = ({
                       className={inputCls}/>
                   </div>
 
-                  {/* Time */}
                   <div>
                     <label className={labelCls}><FiClock className="inline w-3 h-3 mr-1"/>Time *</label>
-                    <div className="flex bg-gray-100 rounded-xl p-1 mb-3 gap-1">
+                    <div className="flex bg-gray-100 rounded-xl p-0.5 sm:p-1 mb-2 sm:mb-3 gap-0.5 sm:gap-1">
                       {['Manual Entry','Select Slot'].map((lbl,i)=>(
                         <button key={lbl} type="button" onClick={()=>setShowTimeSlots(i===1)}
-                          className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${(showTimeSlots?i===1:i===0)?'bg-white text-[#fe8a24] shadow-sm':'text-gray-500'}`}>
+                          className={`flex-1 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold rounded-lg transition-all ${(showTimeSlots?i===1:i===0)?'bg-white text-[#fe8a24] shadow-sm':'text-gray-500'}`}>
                           {lbl}
                         </button>
                       ))}
@@ -1669,15 +1597,13 @@ const CreateReservationModal = ({
                     {!showTimeSlots ? ManualTimePicker : <TimeSlotGrid {...timeSlotProps} compact/>}
                   </div>
 
-                  {/* Guests */}
                   <div>
                     <label className={labelCls}><FiUsers className="inline w-3 h-3 mr-1"/>Guests *</label>
                     <input type="number" value={guests} onChange={e=>setGuests(parseInt(e.target.value)||1)}
                       min="1" max={maxGuests} className={inputCls}/>
                   </div>
 
-                  {/* Status + Service */}
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className={labelCls}>Status</label>
                       <select value={formData.status} onChange={e=>setFormData(p=>({...p,status:e.target.value}))} className={inputCls}>
@@ -1697,7 +1623,6 @@ const CreateReservationModal = ({
                     </div>
                   </div>
 
-                  {/* Meal status */}
                   <div>
                     <label className={labelCls}>Meal Status</label>
                     <select value={formData.meal_status||''} onChange={e=>setFormData(p=>({...p,meal_status:e.target.value}))} className={inputCls}>
@@ -1711,7 +1636,7 @@ const CreateReservationModal = ({
                       <option value="clear_out">⚪ Clear Out</option>
                     </select>
                     {formData.meal_status && (() => { const mc=getMealStatusConfig(formData.meal_status); return mc ? (
-                      <div className="mt-1.5 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium" style={{backgroundColor:mc.color+'18',color:mc.color}}>
+                      <div className="mt-1 sm:mt-1.5 flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-sm font-medium" style={{backgroundColor:mc.color+'18',color:mc.color}}>
                         {mc.icon} {mc.label}
                       </div>
                     ) : null; })()}
@@ -1725,8 +1650,8 @@ const CreateReservationModal = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-shrink-0">
-          <div className="text-xs text-gray-400 flex items-center gap-3">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2 sm:gap-0 flex-shrink-0">
+          <div className="text-[10px] sm:text-xs text-gray-400 flex flex-wrap items-center gap-1.5 sm:gap-3">
             {selectedTableIds.length > 0 && (
               <span className="text-[#fe8a24] font-semibold">
                 🪑 {sortTables(tables.filter(t=>selectedTableIds.includes(t.id))).map(t=>t.name).join(' + ')}
@@ -1738,21 +1663,21 @@ const CreateReservationModal = ({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {isQuickBook && step===2 && (
               <button onClick={()=>setStep(1)}
-                className="flex items-center gap-1.5 px-4 py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-white transition-colors">
-                <FiArrowLeft className="w-4 h-4"/> Back
+                className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl text-[10px] sm:text-sm font-semibold hover:bg-white transition-colors">
+                <FiArrowLeft className="w-3 h-3 sm:w-4 sm:h-4"/> Back
               </button>
             )}
             <button onClick={onClose}
-              className="px-4 py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-white transition-colors">
+              className="px-3 sm:px-4 py-1.5 sm:py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl text-[10px] sm:text-sm font-semibold hover:bg-white transition-colors">
               Cancel
             </button>
             {(isWalkIn || modalMode==='full') ? (
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-xl text-sm font-bold transition-all shadow-sm disabled:opacity-50">
-                <FiSave className="w-4 h-4"/>
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm disabled:opacity-50">
+                <FiSave className="w-3 h-3 sm:w-4 sm:h-4"/>
                 {saving ? 'Saving…' : isWalkIn ? 'Save Walk-in' : 'Create Reservation'}
               </button>
             ) : isQuickBook && step===1 ? (
@@ -1762,14 +1687,14 @@ const CreateReservationModal = ({
                   if(selectedTableIds.length===0){setTableError('Please assign a table first.');return;}
                   setError('');setTableError('');setStep(2);
                 }}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm"
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm"
                 style={{backgroundColor:selectedSlot&&selectedTableIds.length>0?'#fe8a24':'#e5e7eb',color:selectedSlot&&selectedTableIds.length>0?'white':'#9ca3af'}}>
-                Next <FiChevronRight className="w-4 h-4"/>
+                Next <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4"/>
               </button>
             ) : (
               <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-xl text-sm font-bold transition-all shadow-sm disabled:opacity-50">
-                <FiCheck className="w-4 h-4"/>
+                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm disabled:opacity-50">
+                <FiCheck className="w-3 h-3 sm:w-4 sm:h-4"/>
                 {saving ? 'Confirming…' : 'Confirm Booking'}
               </button>
             )}

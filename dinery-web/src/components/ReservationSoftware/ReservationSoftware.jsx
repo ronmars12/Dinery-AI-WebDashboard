@@ -7,7 +7,7 @@ import ListView from './ListView';
 import ReservationModal from './ReservationModal';
 import CreateReservationModal from './CreateReservationModal';
 import ReservationTableView from './ReservationTableView';
-import { FiPlus, FiCalendar, FiList, FiSettings } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiList, FiSettings, FiChevronDown } from 'react-icons/fi';
 import ReservationSettings from './ReservationSettings';
 
 const ReservationSoftware = () => {
@@ -38,6 +38,22 @@ const ReservationSoftware = () => {
   const isStaff           = !!staffRestaurantId;
   const db = firestore;
   const [preSelectedTable, setPreSelectedTable] = useState(null);
+  
+  // Responsive: detect screen size
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
@@ -126,68 +142,178 @@ const ReservationSoftware = () => {
     { key: 'list',              label: 'List',            icon: <FiList className="w-4 h-4" /> },
   ];
 
+  // Get responsive view tabs
+  const getViewTabs = () => {
+    if (isMobile) {
+      return VIEW_TABS.map(({ key, label, icon }) => ({
+        key,
+        label: key === 'calendar' ? '' : key === 'reservation-table' ? '' : '',
+        icon
+      }));
+    }
+    return VIEW_TABS;
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-50" style={{ height: "100vh", maxHeight: "100%" }}>
-      <div className="bg-white border-b-4 border-[#fe8a24] px-6 py-6 shadow-sm flex-shrink-0">
-        <div className="flex items-start justify-between mb-4 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Reservation Software</h1>
-            <p className="text-gray-600 mt-1">Manage your restaurant reservations</p>
-          </div>
-
-          <div className="flex items-end gap-4">
-          {restaurants.length > 0 && !isStaff && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Select Restaurant</label>
+      {/* Header - Clean & Modern */}
+      <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+        
+        {/* Top Row: Restaurant Name + Actions */}
+        <div className="flex items-center justify-between px-4 md:px-6 py-2.5">
+          {/* Left: Restaurant Name */}
+          <div className="flex items-center gap-3 min-w-0">
+            {restaurants.length > 0 && !isStaff && (
+              <div className="relative">
                 <select
                   value={selectedRestaurant?.id || ''}
                   onChange={(e) => { const r = restaurants.find(r => r.id === e.target.value); setSelectedRestaurant(r); }}
-                  className="px-4 py-2.5 border-2 border-orange-200 rounded-lg focus:outline-none focus:border-[#fe8a24] transition-colors min-w-[300px] h-[46px]"
+                  className="appearance-none bg-transparent border-0 focus:ring-0 text-base md:text-lg font-bold text-gray-900 pr-6 cursor-pointer hover:text-[#fe8a24] transition-colors"
                 >
-                  {restaurants.map(r => (<option key={r.id} value={r.id}>{r.name}</option>))}
+                  {restaurants.map(r => (
+                    <option key={r.id} value={r.id} className="font-normal">
+                      {r.name}
+                    </option>
+                  ))}
                 </select>
+                <FiChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
             )}
+            {restaurants.length === 1 && !isStaff && (
+              <span className="text-base md:text-lg font-bold text-gray-900 truncate">
+                {selectedRestaurant?.name}
+              </span>
+            )}
+            {selectedRestaurant?.address && !isMobile && (
+              <span className="text-sm text-gray-400 truncate hidden lg:inline">
+                • {selectedRestaurant.address}
+              </span>
+            )}
+          </div>
 
-            <button onClick={handleWalkIn}
-              className="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all h-[46px] whitespace-nowrap">
-              Walk-in
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-2">
+            {/* Walk-in */}
+            <button 
+              onClick={handleWalkIn}
+              className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm"
+            >
+              <span className="text-base">🚶</span>
+              {!isMobile && 'Walk-in'}
             </button>
-            <button onClick={() => { setModalMode('quickbook'); setSelectedReservationDate(null); setShowCreateModal(true); }}
-              className="flex items-center gap-2 bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-6 py-3 rounded-lg font-semibold shadow-md transition-all h-[46px] whitespace-nowrap">
-              <FiPlus className="w-5 h-5" /> Quick Book
+
+            {/* Quick Book */}
+            <button 
+              onClick={() => { setModalMode('quickbook'); setSelectedReservationDate(null); setShowCreateModal(true); }}
+              className="flex items-center gap-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm shadow-sm"
+            >
+              <FiPlus className="w-4 h-4" /> 
+              {isMobile ? 'Quick' : 'Quick Book'}
             </button>
-            <button onClick={() => { setModalMode('full'); setSelectedReservationDate(null); setShowCreateModal(true); }}
-              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-300 px-6 py-3 rounded-lg font-semibold shadow-md transition-all h-[46px] whitespace-nowrap">
-              <FiPlus className="w-5 h-5" /> Create Booking
-            </button>
-           {(!isStaff || staffRole === 'admin' || staffRole === 'manager') && (
-              <button onClick={() => setShowSettings(true)}
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold transition-all h-[46px] whitespace-nowrap">
-                <FiSettings className="w-5 h-5" /> Settings
+
+            {/* Create Booking - Desktop only */}
+            {!isMobile && (
+              <button 
+                onClick={() => { setModalMode('full'); setSelectedReservationDate(null); setShowCreateModal(true); }}
+                className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm"
+              >
+                <FiPlus className="w-4 h-4" /> Create
+              </button>
+            )}
+
+            {/* Settings */}
+            {(!isStaff || staffRole === 'admin' || staffRole === 'manager') && (
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm"
+              >
+                <FiSettings className="w-4 h-4" /> 
+                {isMobile ? '' : 'Settings'}
               </button>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {VIEW_TABS.map(({ key, label, icon }) => (
-            <button key={key} onClick={() => setViewMode(key)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
-                viewMode === key ? 'bg-[#fe8a24] text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}>
-              {icon} {label}
-            </button>
-          ))}
+        {/* Bottom Row: View Tabs + Stats */}
+        <div className="flex items-center justify-between px-4 md:px-6 pb-2.5 pt-1 border-t border-gray-100">
+          {/* View Tabs */}
+          <div className="flex items-center gap-1">
+            {getViewTabs().map(({ key, label, icon }) => (
+              <button 
+                key={key} 
+                onClick={() => setViewMode(key)}
+                className={`flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm ${
+                  viewMode === key 
+                    ? 'bg-[#fe8a24] text-white shadow-sm' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {icon} 
+                {!isMobile && label}
+                {isMobile && key === 'calendar' && '📅'}
+                {isMobile && key === 'reservation-table' && '📋'}
+                {isMobile && key === 'list' && '📄'}
+              </button>
+            ))}
+          </div>
+
+          {/* Stats */}
+          {!isMobile && (
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="font-medium">
+                <span className="text-gray-900 font-bold">
+                  {reservations.filter(r => {
+                    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+                    const today = new Date();
+                    return rd.toDateString() === today.toDateString() && r.status !== 'cancelled';
+                  }).length}
+                </span> today
+              </span>
+              <span className="font-medium">
+                <span className="text-gray-900 font-bold">
+                  {reservations.filter(r => r.status === 'pending').length}
+                </span> pending
+              </span>
+              <span className="font-medium text-green-600">
+                <span className="text-green-700 font-bold">
+                  {reservations.filter(r => r.status === 'confirmed').length}
+                </span> confirmed
+              </span>
+            </div>
+          )}
+
+          {/* Mobile Stats - simplified */}
+          {isMobile && (
+            <div className="flex items-center gap-3 text-[10px] text-gray-500">
+              <span className="font-medium">
+                <span className="text-gray-900 font-bold">
+                  {reservations.filter(r => {
+                    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+                    const today = new Date();
+                    return rd.toDateString() === today.toDateString() && r.status !== 'cancelled';
+                  }).length}
+                </span>
+              </span>
+              <span className="text-gray-300">|</span>
+              <span className="font-medium text-amber-600">
+                {reservations.filter(r => r.status === 'pending').length}
+              </span>
+              <span className="text-gray-300">|</span>
+              <span className="font-medium text-green-600">
+                {reservations.filter(r => r.status === 'confirmed').length}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="flex-1 overflow-hidden min-h-0">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading reservations...</p>
+              <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-sm sm:text-base text-gray-600">Loading reservations...</p>
             </div>
           </div>
         ) : viewMode === 'calendar' ? (
@@ -237,6 +363,7 @@ const ReservationSoftware = () => {
         )}
       </div>
 
+      {/* Modals */}
       {showEditModal && selectedReservation && (
         <ReservationModal reservation={selectedReservation} onClose={handleCloseEditModal} />
       )}
@@ -256,8 +383,8 @@ const ReservationSoftware = () => {
         />
       )}
       {showSettings && (!isStaff || staffRole === 'admin' || staffRole === 'manager') && (
-          <ReservationSettings selectedRestaurant={selectedRestaurant} onClose={() => setShowSettings(false)} />
-        )}
+        <ReservationSettings selectedRestaurant={selectedRestaurant} onClose={() => setShowSettings(false)} />
+      )}
     </div>
   );
 };

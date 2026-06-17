@@ -44,12 +44,10 @@ const MEAL_STATUS_COLORS = {
 
 const statusFill = (t, mealStatus, derivedStatus) => {
   if (mealStatus && MEAL_STATUS_COLORS[mealStatus]) return MEAL_STATUS_COLORS[mealStatus];
-  // ✅ Only use derivedStatus (computed from reservations for viewDate)
-  // Never fall back to t.current_status — it's stale and unreliable
   if (derivedStatus === "seated")   return "#ef4444";
   if (derivedStatus === "reserved") return "#f59e0b";
   if (t.online === false)           return "#8b5cf6";
-  return "#22c55e"; // ✅ Default to free if no reservation found for this date
+  return "#22c55e";
 };
 
 function getTableColor(table, zone, mealStatus, derivedStatus) {
@@ -171,6 +169,25 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
   const containerRef = useRef(null);
   const splitterRef  = useRef(null);
 
+  // Responsive: detect screen size
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1024);
+      // Auto-adjust split for tablet/mobile
+      if (width < 1024) {
+        setSplitPct(prev => Math.min(prev, 45));
+      }
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   // Splitter drag handlers
   const onSplitterMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -182,17 +199,19 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
     const onMove = (e) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      const pct = Math.min(70, Math.max(20, ((e.clientX - rect.left) / rect.width) * 100));
+      const maxPct = isMobile ? 70 : 80;
+      const minPct = isMobile ? 15 : 20;
+      const pct = Math.min(maxPct, Math.max(minPct, ((e.clientX - rect.left) / rect.width) * 100));
       setSplitPct(Math.round(pct));
     };
     const onUp = () => setIsResizing(false);
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, [isResizing]);
+  }, [isResizing, isMobile]);
 
   // Selection
-  const [selectedTableIds, setSelectedTableIds] = useState([]); // multi-select
+  const [selectedTableIds, setSelectedTableIds] = useState([]);
 
   // Right panel
   const [viewDate,     setViewDate]     = useState(selectedDate || new Date());
@@ -203,8 +222,8 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
   const [showFilter,   setShowFilter]   = useState(false);
   const [guestFilter,  setGuestFilter]  = useState({ min: "", max: "" });
   const [timeFilter,   setTimeFilter]   = useState({ from: "", to: "" });
-  const [tableFilter,  setTableFilter]  = useState(""); // table name filter
-  const [dateRange,    setDateRange]    = useState({ start: "", end: "" }); // month range filter (YYYY-MM-DD)
+  const [tableFilter,  setTableFilter]  = useState("");
+  const [dateRange,    setDateRange]    = useState({ start: "", end: "" });
 
   useEffect(() => { if (selectedDate) setViewDate(selectedDate); }, [selectedDate]);
 
@@ -214,7 +233,6 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
     const col = selectedRestaurant._collection || "restaurants";
     const rid = selectedRestaurant.id;
 
-    // Reset state on restaurant change
     setTables([]);
     setPositions({});
     setShapes({});
@@ -226,19 +244,16 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
     let loadedTables = [];
 
-    // Load tables first via snapshot
     const unsub = onSnapshot(collection(db, col, rid, "tables"), snap => {
       loadedTables = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setTables(loadedTables);
     });
 
-    // Load floor map layout
     getDoc(doc(db, col, rid, "tableMap", "layout")).then(snap => {
       if (snap.exists()) {
         const d = snap.data();
         const savedPositions = d.positions || {};
 
-        // Auto-place any tables missing from saved positions
         const autoFill = (currentTables) => {
           const filled = { ...savedPositions };
           let idx = 0;
@@ -262,11 +277,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
         if (d.gridStyle)  setGridStyle(d.gridStyle);
         if (d.canvasSize) setCanvasSize(d.canvasSize);
       } else {
-        // No saved map — auto-layout all tables
-        setPositions(prev => {
-          // Will be populated by the tables snapshot effect below
-          return prev;
-        });
+        setPositions(prev => prev);
       }
       setLoading(false);
     }).catch(e => { console.error("Map load error:", e); setLoading(false); });
@@ -274,7 +285,6 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
     return () => unsub();
   }, [selectedRestaurant?.id]);
 
-  // Auto-place tables that have no position (e.g. new tables added after map was saved, or no map exists)
   useEffect(() => {
     if (tables.length === 0) return;
     setPositions(prev => {
@@ -340,7 +350,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
     };
   }, [tablePopover, mealPickerRes]);
 
- const handleTableClick = useCallback((tableId, e) => {
+  const handleTableClick = useCallback((tableId, e) => {
     e.stopPropagation();
     if (isPanning.current) return;
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -355,57 +365,44 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
     }
   }, []);
 
-const handleTableRightClick = useCallback((tableId, e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  if (isPanning.current) return;
-  
-  // Debug: Check if function is triggered
-  console.log("🔍 Right-click on table:", tableId, "viewDate:", viewDate);
-  
-  // Find today's active reservation for this table
-  const dayS = new Date(viewDate); 
-  dayS.setHours(0, 0, 0, 0);
-  const dayE = new Date(viewDate); 
-  dayE.setHours(23, 59, 59, 999);
-  
-  const tableRes = (reservations || []).filter(r => {
-    if (r.status === 'cancelled' || r.status === 'completed') return false;
-    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-    if (rd < dayS || rd > dayE) return false;
-    return r.table_id === tableId || (Array.isArray(r.table_ids) && r.table_ids.includes(tableId));
-  }).sort((a, b) => {
-    const da = a.reservation_date?.toDate?.() || new Date(a.reservation_date);
-    const db2 = b.reservation_date?.toDate?.() || new Date(b.reservation_date);
-    return da - db2;
-  });
+  const handleTableRightClick = useCallback((tableId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isPanning.current) return;
+    
+    const dayS = new Date(viewDate); 
+    dayS.setHours(0, 0, 0, 0);
+    const dayE = new Date(viewDate); 
+    dayE.setHours(23, 59, 59, 999);
+    
+    const tableRes = (reservations || []).filter(r => {
+      if (r.status === 'cancelled' || r.status === 'completed') return false;
+      const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+      if (rd < dayS || rd > dayE) return false;
+      return r.table_id === tableId || (Array.isArray(r.table_ids) && r.table_ids.includes(tableId));
+    }).sort((a, b) => {
+      const da = a.reservation_date?.toDate?.() || new Date(a.reservation_date);
+      const db2 = b.reservation_date?.toDate?.() || new Date(b.reservation_date);
+      return da - db2;
+    });
 
-  // Debug: Show found reservations
-  console.log(`📋 Found ${tableRes.length} reservation(s) for table ${tableId}:`, tableRes);
+    if (tableRes.length === 0) return;
 
-  if (tableRes.length === 0) {
-    console.log('❌ No active reservation for this table');
-    return;
-  }
+    const now = new Date();
+    const activeRes = tableRes.find(r => {
+      const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+      const resEnd = new Date(rd.getTime() + (r.duration_minutes || 90) * 60000);
+      return now >= rd && now <= resEnd;
+    }) || tableRes[0];
 
-  // If multiple reservations, pick the most recent/current one
-  const now = new Date();
-  const activeRes = tableRes.find(r => {
-    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-    const resEnd = new Date(rd.getTime() + (r.duration_minutes || 90) * 60000);
-    return now >= rd && now <= resEnd;
-  }) || tableRes[0];
-
-  console.log("✅ Selected reservation for meal picker:", activeRes.id, activeRes.customer_name);
-
-  setTablePopover(null);
-  setMealPickerRes({
-    resId: activeRes.id,
-    name: activeRes.customer_name || 'Guest',
-    x: e.clientX,
-    y: e.clientY,
-  });
-}, [reservations, viewDate]);
+    setTablePopover(null);
+    setMealPickerRes({
+      resId: activeRes.id,
+      name: activeRes.customer_name || 'Guest',
+      x: e.clientX,
+      y: e.clientY,
+    });
+  }, [reservations, viewDate]);
 
   // ── Meal status update ──
   const updateMealStatus = async (resId, status) => {
@@ -423,17 +420,14 @@ const handleTableRightClick = useCallback((tableId, e) => {
   };
 
   // ── Filter reservations ──
-  // When dateRange is set, use that range instead of the single viewDate
   const hasDateRange = dateRange.start || dateRange.end;
-  // Month values are "YYYY-MM" — convert to first/last day of that month
   const rangeStart = dateRange.start
     ? new Date(dateRange.start + "-01T00:00:00")
     : null;
   const rangeEnd = dateRange.end
     ? (() => {
         const [y, m] = dateRange.end.split("-").map(Number);
-        // Last day of selected end month
-        const d = new Date(y, m, 0); // day 0 of next month = last day of this month
+        const d = new Date(y, m, 0);
         d.setHours(23, 59, 59, 999);
         return d;
       })()
@@ -442,7 +436,6 @@ const handleTableRightClick = useCallback((tableId, e) => {
   const dayEnd   = new Date(viewDate); dayEnd.setHours(23,59,59,999);
 
   const filteredReservations = (reservations || []).filter(r => {
-    // Date filter — use range if set, otherwise single day
     const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
     if (hasDateRange) {
       if (rangeStart && rd < rangeStart) return false;
@@ -450,12 +443,9 @@ const handleTableRightClick = useCallback((tableId, e) => {
     } else {
       if (rd < dayStart || rd > dayEnd) return false;
     }
-    // Status filter
     if (statusFilter !== "all" && r.status?.toLowerCase() !== statusFilter) return false;
-    // Guest count filter
     if (guestFilter.min && (r.number_of_guests || 0) < parseInt(guestFilter.min)) return false;
     if (guestFilter.max && (r.number_of_guests || 0) > parseInt(guestFilter.max)) return false;
-    // Time filter
     if (timeFilter.from) {
       const [fh, fm] = timeFilter.from.split(":").map(Number);
       const rdH = rd.getHours(), rdM = rd.getMinutes();
@@ -466,12 +456,10 @@ const handleTableRightClick = useCallback((tableId, e) => {
       const rdH = rd.getHours(), rdM = rd.getMinutes();
       if (rdH * 60 + rdM > th * 60 + tm) return false;
     }
-    // Table name filter
     if (tableFilter) {
       const tnames = (r.table_names || (r.table_name ? [r.table_name] : [])).join(" ").toLowerCase();
       if (!tnames.includes(tableFilter.toLowerCase())) return false;
     }
-    // Search
     if (searchQ) {
       const q = searchQ.toLowerCase();
       const name  = (r.customer_name  || "").toLowerCase();
@@ -501,7 +489,7 @@ const handleTableRightClick = useCallback((tableId, e) => {
   const CANVAS = canvasSize;
   const selectedTable = selectedTableIds.length === 1 ? tables.find(t => t.id === selectedTableIds[0]) : null;
 
-  // Build meal status map: tableId → meal_status from today's reservations
+  // Build meal status map
   const tableMealStatus = {};
   (reservations || []).forEach(r => {
     if (!r.meal_status) return;
@@ -516,17 +504,13 @@ const handleTableRightClick = useCallback((tableId, e) => {
   });
 
   const tableDerivedStatus = {};
-  // ✅ Always use single-day view for floor map table colors (ignore dateRange)
   const mapDayStart = new Date(viewDate); mapDayStart.setHours(0, 0, 0, 0);
   const mapDayEnd   = new Date(viewDate); mapDayEnd.setHours(23, 59, 59, 999);
 
   (reservations || []).forEach(r => {
     if (r.status === 'cancelled' || r.status === 'completed') return;
     const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-
-    // ✅ Only count reservations for the currently viewed date
     if (rd < mapDayStart || rd > mapDayEnd) return;
-
     const ids = Array.isArray(r.table_ids) ? r.table_ids : (r.table_id ? [r.table_id] : []);
     const now = new Date();
     const resEnd = new Date(rd.getTime() + (r.duration_minutes || 90) * 60000);
@@ -539,6 +523,28 @@ const handleTableRightClick = useCallback((tableId, e) => {
     });
   });
 
+  // Get responsive grid columns
+  const getGridColumns = () => {
+    if (isMobile) {
+      return "32px 60px 40px 1fr 1fr 40px";
+    }
+    if (isTablet) {
+      return "32px 70px 60px 1fr 1fr 80px 60px";
+    }
+    return "36px 80px 90px 60px 1fr 1fr 110px 100px 48px";
+  };
+
+  // Get responsive column headers
+  const getColumnHeaders = () => {
+    if (isMobile) {
+      return ["#", "TIME", "STA", "NAME", "TABLE", ""];
+    }
+    if (isTablet) {
+      return ["#", "TIME", "STA", "NAME", "TABLE", "MEAL", ""];
+    }
+    return ["#", "TIME", "STATUS", "PAX", "FIRST NAME", "LAST NAME", "TABLE", "MEAL", ""];
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-full" style={{ background: "#0f172a" }}>
       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#fe8a24]" />
@@ -546,19 +552,37 @@ const handleTableRightClick = useCallback((tableId, e) => {
   );
 
   return (
-    <div ref={containerRef} className="flex h-full min-h-0 overflow-hidden bg-gray-900" style={{ height: "100%", maxHeight: "100%", cursor: isResizing ? "col-resize" : "default" }}>
+    <div 
+      ref={containerRef} 
+      className="flex flex-col md:flex-row h-full min-h-0 overflow-hidden bg-gray-900" 
+      style={{ 
+        height: "100%", 
+        maxHeight: "100%", 
+        cursor: isResizing ? "col-resize" : "default",
+        flexDirection: isMobile ? "column" : "row"
+      }}
+    >
 
       {/* ══════════════════════════════════════════════
           LEFT: Floor Map
       ══════════════════════════════════════════════ */}
-      <div className="flex flex-col h-full min-h-0" style={{ width: `${splitPct}%`, minWidth: 200, flexShrink: 0 }}>
+      <div 
+        className="flex flex-col h-full min-h-0" 
+        style={{ 
+          width: isMobile ? "100%" : `${splitPct}%`,
+          minWidth: isMobile ? "100%" : 200, 
+          maxHeight: isMobile ? "50vh" : "100%",
+          flexShrink: 0,
+          flexGrow: isMobile ? 1 : 0
+        }}
+      >
 
         {/* Map header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0"
+        <div className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0 flex-wrap gap-1"
           style={{ background: "#1e293b", borderColor: "#334155" }}>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-bold text-white uppercase tracking-wider">Floor Plan</span>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-slate-400 hidden sm:inline">
               {viewDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </span>
             {selectedTableIds.length > 0 && (
@@ -567,22 +591,24 @@ const handleTableRightClick = useCallback((tableId, e) => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1">
-            {/* Legend dots */}
-            {[["#22c55e","free"],["#f59e0b","reserved"],["#ef4444","seated"],["#8b5cf6","internal"]].map(([c,l])=>(
-              <div key={l} className="flex items-center gap-0.5 mr-1">
-                <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: c }} />
-                <span className="text-[10px] text-slate-400">{l}</span>
-              </div>
-            ))}
-            <div className="w-px h-3 mx-1" style={{ background: "#334155" }} />
+          <div className="flex items-center gap-1 flex-wrap">
+            {/* Legend dots - hide on mobile */}
+            <div className="hidden md:flex items-center gap-1">
+              {[["#22c55e","free"],["#f59e0b","reserved"],["#ef4444","seated"],["#8b5cf6","internal"]].map(([c,l])=>(
+                <div key={l} className="flex items-center gap-0.5 mr-1">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: c }} />
+                  <span className="text-[10px] text-slate-400">{l}</span>
+                </div>
+              ))}
+              <div className="w-px h-3 mx-1" style={{ background: "#334155" }} />
+            </div>
             <button onClick={() => setZoom(z => Math.min(3, +(z+0.1).toFixed(2)))}
               className="w-6 h-6 rounded text-slate-300 hover:bg-slate-700 flex items-center justify-center text-sm font-bold">+</button>
-            <span className="text-[10px] text-slate-400 w-8 text-center">{Math.round(zoom*100)}%</span>
+            <span className="text-[10px] text-slate-400 w-8 text-center hidden sm:inline">{Math.round(zoom*100)}%</span>
             <button onClick={() => setZoom(z => Math.max(0.15, +(z-0.1).toFixed(2)))}
               className="w-6 h-6 rounded text-slate-300 hover:bg-slate-700 flex items-center justify-center text-sm font-bold">−</button>
             <button onClick={() => { setZoom(0.65); setPan({x:20,y:20}); }}
-              className="text-[10px] px-1.5 py-0.5 rounded text-slate-400 hover:bg-slate-700">Reset</button>
+              className="text-[10px] px-1.5 py-0.5 rounded text-slate-400 hover:bg-slate-700 hidden sm:inline">Reset</button>
             {selectedTableIds.length > 0 && (
               <button onClick={() => setSelectedTableIds([])}
                 className="text-[10px] px-1.5 py-0.5 rounded text-slate-400 hover:bg-slate-700 ml-1">
@@ -652,7 +678,7 @@ const handleTableRightClick = useCallback((tableId, e) => {
                     onClick={(e) => handleTableClick(table.id, e)}
                     onContextMenu={(e) => handleTableRightClick(table.id, e)}
                   >
-                    {/* Chairs — lighter on dark bg */}
+                    {/* Chairs */}
                     {shape === "round"
                       ? circleChairs(cx, cy, w/2, pax).map((c,i) => (
                           <g key={i} transform={`rotate(${c.deg},${c.cx},${c.cy})`}>
@@ -734,8 +760,8 @@ const handleTableRightClick = useCallback((tableId, e) => {
               return da - db2;
             });
 
-            // Position popover — keep it inside the map
-            const popW = 220, popH = Math.min(40 + tableRes.length * 44, 300);
+            const popW = isMobile ? 200 : 220;
+            const popH = Math.min(40 + tableRes.length * 44, 300);
             const mapRect = wrapRef.current?.getBoundingClientRect();
             const mapW = mapRect?.width || 400;
             const mapH = mapRect?.height || 400;
@@ -771,7 +797,7 @@ const handleTableRightClick = useCallback((tableId, e) => {
 
                 {/* Action buttons */}
                 <div style={{ padding: '8px 10px', borderBottom: '1px solid #334155' }}
-                  className="flex gap-1.5">
+                  className="flex gap-1.5 flex-wrap">
                   <button
                    onClick={() => {
                       const tId = tablePopover.tableId;
@@ -783,11 +809,11 @@ const handleTableRightClick = useCallback((tableId, e) => {
                       setTablePopover(null);
                       onNewBookingFromTable?.(tId, tName, base);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 text-[10px] font-semibold text-white bg-[#fe8a24] hover:bg-[#ff9d47] rounded-lg py-1.5 transition-colors">
+                    className="flex-1 flex items-center justify-center gap-1 text-[10px] font-semibold text-white bg-[#fe8a24] hover:bg-[#ff9d47] rounded-lg py-1.5 transition-colors min-w-[60px]">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                     </svg>
-                    New booking
+                    New
                   </button>
                   <button
                    onClick={() => {
@@ -799,7 +825,7 @@ const handleTableRightClick = useCallback((tableId, e) => {
                       setTablePopover(null);
                       onWalkInFromTable?.(tId, tName, base);
                     }}
-                    className="flex-1 flex items-center justify-center gap-1 text-[10px] font-semibold text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-lg py-1.5 transition-colors">
+                    className="flex-1 flex items-center justify-center gap-1 text-[10px] font-semibold text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-lg py-1.5 transition-colors min-w-[60px]">
                     🚶 Walk in
                   </button>
                 </div>
@@ -846,7 +872,7 @@ const handleTableRightClick = useCallback((tableId, e) => {
                                 {r.customer_name || 'Guest'}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-0.5">
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                               <span className="text-[10px] text-slate-400">👥 {r.number_of_guests}</span>
                               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
                                 style={{ background: sCfg.bg + '33', color: sCfg.bg }}>
@@ -878,9 +904,9 @@ const handleTableRightClick = useCallback((tableId, e) => {
             );
           })()}
 
-          {/* ── Meal status picker (right-click from table popover) ── */}
+          {/* ── Meal status picker ── */}
           {mealPickerRes && (() => {
-            const pickerW = 220;
+            const pickerW = isMobile ? 180 : 220;
             const pickerH = Object.keys(MEAL_CFG).length * 44 + 80;
             const vw = window.innerWidth, vh = window.innerHeight;
             let px = mealPickerRes.x + 8;
@@ -917,7 +943,6 @@ const handleTableRightClick = useCallback((tableId, e) => {
                     return (
                      <button key={k}
                         onClick={async () => {
-                          console.log(`🍽️ Updating meal status for ${mealPickerRes.resId} to:`, isActive ? null : k);
                           await updateMealStatus(mealPickerRes.resId, isActive ? null : k);
                           setMealPickerRes(null);
                         }}
@@ -929,7 +954,6 @@ const handleTableRightClick = useCallback((tableId, e) => {
                       </button>
                     );
                   })}
-                  {/* Clear option */}
                   {(() => {
                     const currentRes = (reservations || []).find(r => r.id === mealPickerRes.resId);
                     return currentRes?.meal_status ? (
@@ -950,35 +974,42 @@ const handleTableRightClick = useCallback((tableId, e) => {
           })()}
         </div>
 
-        {/* Map footer hint */}
-        <div className="px-3 py-1.5 flex-shrink-0 border-t flex items-center gap-3"
+        {/* Map footer hint - hide on mobile */}
+        <div className="px-3 py-1.5 flex-shrink-0 border-t flex items-center gap-3 hidden md:flex"
           style={{ background: "#1e293b", borderColor: "#334155" }}>
-                    <span className="text-[10px] text-slate-500">Click table for details · Right-click table for meal status · Shift+click multi-select · Scroll to zoom · Drag to pan</span>
+          <span className="text-[10px] text-slate-500">Click table · Right-click meal · Shift+click multi · Scroll zoom · Drag pan</span>
           <span className="ml-auto text-[10px] text-slate-500">{tables.length} tables · {filteredReservations.length} reservations</span>
+        </div>
+        {/* Mobile footer hint */}
+        <div className="px-3 py-1.5 flex-shrink-0 border-t flex items-center gap-3 md:hidden"
+          style={{ background: "#1e293b", borderColor: "#334155" }}>
+          <span className="text-[9px] text-slate-500">Tap table · Hold for meal</span>
+          <span className="ml-auto text-[9px] text-slate-500">{tables.length} tables</span>
         </div>
       </div>
 
-      {/* Draggable splitter */}
-      <div
-        ref={splitterRef}
-        onMouseDown={onSplitterMouseDown}
-        className="flex-shrink-0 relative group"
-        style={{ width: 6, background: "#1e293b", cursor: "col-resize", zIndex: 10 }}
-      >
-        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 rounded-full transition-all"
-          style={{ background: isResizing ? "#fe8a24" : "#334155" }} />
-        <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="flex flex-col gap-0.5">
-            {[0,1,2].map(i => <div key={i} className="w-0.5 h-3 rounded-full" style={{ background: "#64748b" }} />)}
+      {/* Draggable splitter - hide on mobile */}
+      {!isMobile && (
+        <div
+          ref={splitterRef}
+          onMouseDown={onSplitterMouseDown}
+          className="flex-shrink-0 relative group"
+          style={{ width: 6, background: "#1e293b", cursor: "col-resize", zIndex: 10 }}
+        >
+          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 rounded-full transition-all"
+            style={{ background: isResizing ? "#fe8a24" : "#334155" }} />
+          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex flex-col gap-0.5">
+              {[0,1,2].map(i => <div key={i} className="w-0.5 h-3 rounded-full" style={{ background: "#64748b" }} />)}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ══════════════════════════════════════════════
           RIGHT: Reservation Grid
       ══════════════════════════════════════════════ */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0" style={{ borderLeft: "none" }}>
-
         {/* Grid toolbar */}
         <div className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0 flex-wrap"
           style={{ background: "#1e293b", borderColor: "#334155" }}>
@@ -991,7 +1022,10 @@ const handleTableRightClick = useCallback((tableId, e) => {
             </button>
             <button onClick={() => { const d = new Date(); setViewDate(d); onDateChange && onDateChange(d); }}
               className="text-xs font-semibold text-white px-2 py-0.5 hover:bg-slate-700 rounded transition-colors">
-              {viewDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              {isMobile 
+                ? viewDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                : viewDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+              }
             </button>
             <button onClick={() => { const d=new Date(viewDate); d.setDate(d.getDate()+1); setViewDate(d); onDateChange && onDateChange(d); }}
               className="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-400">
@@ -999,11 +1033,11 @@ const handleTableRightClick = useCallback((tableId, e) => {
             </button>
           </div>
 
-          {/* Status filters */}
-          <div className="flex items-center gap-1">
-            {[["all","All"],["confirmed","✓ Confirmed"],["pending","Pending"],["cancelled","Cancelled"],["completed","Done"]].map(([k,l]) => (
+          {/* Status filters - simplified on mobile */}
+          <div className="flex items-center gap-1 overflow-x-auto flex-nowrap">
+            {[["all","All"],["confirmed","✓"],["pending","P"],["cancelled","C"],["completed","Done"]].map(([k,l]) => (
               <button key={k} onClick={() => setStatusFilter(k)}
-                className={`text-xs px-3 py-1 rounded-lg font-semibold transition-all ${
+                className={`text-xs px-2 md:px-3 py-1 rounded-lg font-semibold transition-all whitespace-nowrap ${
                   statusFilter === k
                     ? k === "confirmed" ? "bg-green-600 text-white"
                     : k === "cancelled" ? "bg-red-600 text-white"
@@ -1011,123 +1045,106 @@ const handleTableRightClick = useCallback((tableId, e) => {
                     : k === "completed" ? "bg-blue-600 text-white"
                     : "bg-[#fe8a24] text-white"
                     : "text-slate-400 hover:bg-slate-700 hover:text-white"
-                }`}>{l}</button>
+                }`}>
+                {isMobile && k !== "all" ? l : k === "all" ? l : l}
+              </button>
             ))}
           </div>
 
           {/* Search */}
           <div className="ml-auto flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1">
-            <FiSearch className="w-3 h-3 text-slate-500" />
+            <FiSearch className="w-3 h-3 text-slate-500 flex-shrink-0" />
             <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-              placeholder="Search guest…"
-              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none w-28" />
+              placeholder={isMobile ? "Search…" : "Search guest…"}
+              className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none w-20 md:w-28" />
             {searchQ && <button onClick={() => setSearchQ("")} className="text-slate-500 hover:text-white text-xs">×</button>}
           </div>
 
           {/* Filter toggle */}
           <button onClick={() => setShowFilter(f => !f)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all border ${
+            className={`flex items-center gap-1.5 px-2 md:px-3 py-1 rounded-lg text-xs font-semibold transition-all border ${
               showFilter || guestFilter.min || guestFilter.max || timeFilter.from || timeFilter.to || tableFilter || dateRange.start || dateRange.end
                 ? "bg-[#fe8a24] border-[#fe8a24] text-white"
                 : "border-slate-600 text-slate-400 hover:border-slate-400 hover:text-white"
             }`}>
             <FiFilter className="w-3 h-3" />
-            {splitPct < 45 ? "" : "Filter"}
+            {!isMobile && "Filter"}
             {(guestFilter.min || guestFilter.max || timeFilter.from || timeFilter.to || tableFilter || dateRange.start || dateRange.end) && (
               <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
             )}
           </button>
 
-          {/* Count */}
+          {/* Count - hide on mobile */}
           <span className="text-xs text-slate-400 whitespace-nowrap hidden sm:inline">
-            {filteredReservations.length} res · {filteredReservations.reduce((s,r)=>s+(r.number_of_guests||0),0)} guests
+            {filteredReservations.length} res
           </span>
         </div>
 
-        {/* Filter panel */}
+        {/* Filter panel - responsive grid */}
         {showFilter && (
-          <div className="px-3 py-2.5 border-b flex flex-wrap items-end gap-4"
+          <div className="px-3 py-2.5 border-b flex flex-wrap items-end gap-3 md:gap-4"
             style={{ background: "#162032", borderColor: "#334155" }}>
 
             {/* Date range */}
-            <div>
+            <div className="flex-1 min-w-[120px] md:min-w-[160px]">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                Month Range
+                Month
                 {(dateRange.start || dateRange.end) && (
                   <span className="text-[#fe8a24] font-bold">●</span>
                 )}
               </p>
-              <div className="flex items-center gap-1.5">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-500 uppercase">From month</span>
-                  <input type="month" value={dateRange.start}
-                    onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))}
-                    className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-36"
-                    style={{ colorScheme: "dark" }} />
-                </div>
-                <span className="text-slate-500 text-sm self-end pb-1">→</span>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[9px] text-slate-500 uppercase">To month</span>
-                  <input type="month" value={dateRange.end}
-                    min={dateRange.start || undefined}
-                    onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))}
-                    className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-36"
-                    style={{ colorScheme: "dark" }} />
-                </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <input type="month" value={dateRange.start}
+                  onChange={e => setDateRange(p => ({ ...p, start: e.target.value }))}
+                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-28 md:w-36"
+                  style={{ colorScheme: "dark" }} />
+                <span className="text-slate-500 text-sm">→</span>
+                <input type="month" value={dateRange.end}
+                  min={dateRange.start || undefined}
+                  onChange={e => setDateRange(p => ({ ...p, end: e.target.value }))}
+                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-28 md:w-36"
+                  style={{ colorScheme: "dark" }} />
                 {(dateRange.start || dateRange.end) && (
                   <button onClick={() => setDateRange({ start: "", end: "" })}
-                    className="self-end pb-1 text-slate-500 hover:text-red-400 transition-colors text-lg leading-none" title="Clear month range">×</button>
+                    className="text-slate-500 hover:text-red-400 transition-colors text-lg leading-none" title="Clear">×</button>
                 )}
               </div>
-              {(dateRange.start || dateRange.end) && (
-                <p className="text-[10px] text-[#fe8a24] mt-1">
-                  {dateRange.start && dateRange.end
-                    ? `Showing ${new Date(dateRange.start + "-01").toLocaleDateString("en-US",{month:"long",year:"numeric"})} → ${new Date(dateRange.end + "-01").toLocaleDateString("en-US",{month:"long",year:"numeric"})}`
-                    : dateRange.start
-                    ? `From ${new Date(dateRange.start + "-01").toLocaleDateString("en-US",{month:"long",year:"numeric"})} onwards`
-                    : `Up to ${new Date(dateRange.end + "-01").toLocaleDateString("en-US",{month:"long",year:"numeric"})}`
-                  } · overrides single-day view
-                </p>
-              )}
             </div>
 
-            {/* Divider */}
-            <div className="w-px self-stretch" style={{ background: "#334155" }} />
-
             {/* Time from–to */}
-            <div>
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Time from–to</p>
-              <div className="flex items-center gap-1">
+            <div className="flex-1 min-w-[100px] md:min-w-[140px]">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Time</p>
+              <div className="flex items-center gap-1 flex-wrap">
                 <input type="time" value={timeFilter.from}
                   onChange={e => setTimeFilter(p => ({ ...p, from: e.target.value }))}
-                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-24" />
+                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-20 md:w-24" />
                 <span className="text-slate-500 text-xs">–</span>
                 <input type="time" value={timeFilter.to}
                   onChange={e => setTimeFilter(p => ({ ...p, to: e.target.value }))}
-                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-24" />
+                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-20 md:w-24" />
               </div>
             </div>
 
             {/* Guests */}
-            <div>
+            <div className="flex-1 min-w-[80px] md:min-w-[120px]">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Guests</p>
               <div className="flex items-center gap-1">
                 <input type="number" min="1" max="99" value={guestFilter.min} placeholder="min"
                   onChange={e => setGuestFilter(p => ({ ...p, min: e.target.value }))}
-                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-16" />
+                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-12 md:w-16" />
                 <span className="text-slate-500 text-xs">–</span>
                 <input type="number" min="1" max="99" value={guestFilter.max} placeholder="max"
                   onChange={e => setGuestFilter(p => ({ ...p, max: e.target.value }))}
-                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-16" />
+                  className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-12 md:w-16" />
               </div>
             </div>
 
             {/* Table name */}
-            <div>
+            <div className="flex-1 min-w-[80px] md:min-w-[120px]">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Table</p>
-              <input type="text" value={tableFilter} placeholder="e.g. VIP, 5"
+              <input type="text" value={tableFilter} placeholder="e.g. VIP"
                 onChange={e => setTableFilter(e.target.value)}
-                className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-28" />
+                className="bg-slate-800 border border-slate-600 text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-full" />
             </div>
 
             {/* Clear all */}
@@ -1138,21 +1155,23 @@ const handleTableRightClick = useCallback((tableId, e) => {
                 setTableFilter("");
                 setDateRange({ start: "", end: "" });
               }}
-              className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-red-900 hover:text-red-300 transition-colors self-end font-medium">
-              Clear all filters
+              className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-red-900 hover:text-red-300 transition-colors font-medium whitespace-nowrap">
+              Clear
             </button>
           </div>
         )}
 
-        {/* Column headers */}
-        <div className="grid flex-shrink-0 border-b"
+        {/* Column headers - responsive */}
+        <div 
+          className="grid flex-shrink-0 border-b overflow-x-auto"
           style={{
-            gridTemplateColumns: selectedTableIds.length === 0
-              ? "36px 80px 90px 60px 1fr 1fr 110px 100px 48px"
-              : "36px 80px 90px 60px 1fr 1fr 110px 100px 48px",
-            background: "#1e293b", borderColor: "#334155",
-          }}>
-          {["#","TIME","STATUS","PAX","FIRST NAME","LAST NAME","TABLE","MEAL",""].map((h,i) => (
+            gridTemplateColumns: getGridColumns(),
+            background: "#1e293b", 
+            borderColor: "#334155",
+            minWidth: isMobile ? "400px" : "auto"
+          }}
+        >
+          {getColumnHeaders().map((h, i) => (
             <div key={i} className="px-2 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider truncate">
               {h}
             </div>
@@ -1187,12 +1206,13 @@ const handleTableRightClick = useCallback((tableId, e) => {
                 <div key={res.id}>
                   {/* Main row */}
                   <div
-                    className="grid items-center border-b cursor-pointer transition-colors group"
+                    className="grid items-center border-b cursor-pointer transition-colors group overflow-x-auto"
                     style={{
-                      gridTemplateColumns: "36px 80px 90px 60px 1fr 1fr 110px 100px 48px",
+                      gridTemplateColumns: getGridColumns(),
                       background: isExpanded ? "#1e3a5f" : isEven ? "#0f172a" : "#111827",
                       borderColor: "#1e293b",
-                      minHeight: "52px",
+                      minHeight: isMobile ? "48px" : "52px",
+                      minWidth: isMobile ? "400px" : "auto"
                     }}
                     onClick={() => setExpandedRes(isExpanded ? null : res.id)}
                     onContextMenu={(e) => {
@@ -1212,70 +1232,102 @@ const handleTableRightClick = useCallback((tableId, e) => {
                     {/* Time */}
                     <div className="px-2 py-3">
                       <div className="text-sm font-bold text-white">{fmtTime(rd)}</div>
-                      <div className="text-sm text-slate-300">{fmtEndTime(rd, res.duration_minutes)}</div>
+                      {!isMobile && <div className="text-sm text-slate-300">{fmtEndTime(rd, res.duration_minutes)}</div>}
                     </div>
 
-                    {/* Status */}
-                    <div className="px-2 py-3">
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
-                        style={{ background: sCfg.bg, color: sCfg.text }}>
-                        {sCfg.label}
-                      </span>
-                    </div>
+                    {/* Status - simplified on mobile */}
+                    {!isMobile && (
+                      <div className="px-2 py-3">
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                          style={{ background: sCfg.bg, color: sCfg.text }}>
+                          {sCfg.label}
+                        </span>
+                      </div>
+                    )}
+                    {isMobile && (
+                      <div className="px-1 py-2">
+                        <span className="w-2 h-2 rounded-full inline-block" 
+                          style={{ background: sCfg.bg }} />
+                      </div>
+                    )}
 
-                    {/* Pax */}
-                    <div className="px-2 py-2 flex items-center gap-1">
-                      <FiUsers className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                      <span className="text-sm font-semibold text-white">{res.number_of_guests || "—"}</span>
-                    </div>
+                    {/* Pax - show only on desktop */}
+                    {!isMobile && !isTablet && (
+                      <div className="px-2 py-2 flex items-center gap-1">
+                        <FiUsers className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                        <span className="text-sm font-semibold text-white">{res.number_of_guests || "—"}</span>
+                      </div>
+                    )}
 
-                    {/* First name */}
+                    {/* Name */}
                     <div className="px-2 py-2">
                       <span className="text-sm font-semibold text-white truncate block">{firstName}</span>
-                      {res.customer_phone && (
+                      {!isMobile && res.customer_phone && (
                         <span className="text-xs text-slate-400 truncate block">{res.customer_phone}</span>
                       )}
-                      {/* Note indicators in FIRST NAME column */}
-                      <div className="mt-1">
-                        <NoteIndicator 
-                          publicNote={res.special_requests} 
-                          internalNote={res.internal_notes} 
-                        />
-                      </div>
-                    </div>
-
-                    {/* Last name */}
-                    <div className="px-2 py-2">
-                      <span className="text-sm text-slate-300 truncate block">{lastName}</span>
-                      {res.customer_email && (
-                        <span className="text-xs text-slate-400 truncate block">{res.customer_email}</span>
+                      {!isMobile && (
+                        <div className="mt-1">
+                          <NoteIndicator 
+                            publicNote={res.special_requests} 
+                            internalNote={res.internal_notes} 
+                          />
+                        </div>
                       )}
                     </div>
 
-                    {/* Table — hide when a specific table is already selected */}
+                    {/* Last name / Table - conditional */}
+                    {!isMobile && !isTablet && (
+                      <div className="px-2 py-2">
+                        <span className="text-sm text-slate-300 truncate block">{lastName}</span>
+                        {res.customer_email && (
+                          <span className="text-xs text-slate-400 truncate block">{res.customer_email}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Table */}
                     <div className="px-2 py-2">
                       <span className="text-xs font-bold bg-slate-700 text-slate-200 px-2.5 py-1 rounded truncate block max-w-full">
                         {tableNames}
                       </span>
-                      {res.combination_name && (
+                      {!isMobile && res.combination_name && (
                         <span className="text-xs text-blue-400 mt-0.5 block truncate">🔗 {res.combination_name}</span>
                       )}
                     </div>
 
-                    <div className="px-2 py-2">
-                      {mCfg ? (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
-                          style={{
-                            background: mCfg.bg || mCfg.color,
-                            color: mCfg.color === '#f1f5f9' || mCfg.bg ? mCfg.color : "#fff",
-                            border: mCfg.bg ? `1px solid ${mCfg.color}40` : 'none',
-                          }}>
-                          {mCfg.icon} {mCfg.label}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-slate-600">—</span>
-                      )}
-                    </div>
+                    {/* Meal - hide on mobile */}
+                    {!isMobile && !isTablet && (
+                      <div className="px-2 py-2">
+                        {mCfg ? (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+                            style={{
+                              background: mCfg.bg || mCfg.color,
+                              color: mCfg.color === '#f1f5f9' || mCfg.bg ? mCfg.color : "#fff",
+                              border: mCfg.bg ? `1px solid ${mCfg.color}40` : 'none',
+                            }}>
+                            {mCfg.icon} {mCfg.label}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600">—</span>
+                        )}
+                      </div>
+                    )}
+                    {isTablet && (
+                      <div className="px-2 py-2">
+                        {mCfg ? (
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+                            style={{
+                              background: mCfg.bg || mCfg.color,
+                              color: mCfg.color === '#f1f5f9' || mCfg.bg ? mCfg.color : "#fff",
+                              border: mCfg.bg ? `1px solid ${mCfg.color}40` : 'none',
+                            }}>
+                            {mCfg.icon}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-600">—</span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Expand arrow */}
                     <div className="px-2 py-2 flex items-center justify-center">
@@ -1286,28 +1338,28 @@ const handleTableRightClick = useCallback((tableId, e) => {
                     </div>
                   </div>
 
-                  {/* Expanded detail row - Redesigned */}
+                  {/* Expanded detail row - Responsive */}
                   {isExpanded && (
-                    <div className="border-b px-4 py-3"
+                    <div className="border-b px-3 md:px-4 py-3"
                       style={{ background: "#162032", borderColor: "#1e293b" }}>
                       
                       {/* Top section: Customer info + Tags + Actions */}
                       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                         <div className="flex flex-wrap items-center gap-3">
                           {/* Customer info */}
-                          <div className="flex items-center gap-3 text-sm">
+                          <div className="flex flex-wrap items-center gap-2 md:gap-3 text-sm">
                             <span className="font-semibold text-white">{res.customer_name || 'Guest'}</span>
-                            <span className="text-xs text-slate-400">·</span>
+                            <span className="text-xs text-slate-400 hidden md:inline">·</span>
                             {res.customer_phone && (
                               <div className="flex items-center gap-1 text-xs text-slate-300">
                                 <FiPhone className="w-3 h-3 text-slate-500" />
-                                {res.customer_phone}
+                                <span className="hidden sm:inline">{res.customer_phone}</span>
                               </div>
                             )}
-                            {res.customer_email && (
+                            {res.customer_email && !isMobile && (
                               <div className="flex items-center gap-1 text-xs text-slate-300">
                                 <FiMail className="w-3 h-3 text-slate-500" />
-                                {res.customer_email}
+                                <span className="hidden sm:inline">{res.customer_email}</span>
                               </div>
                             )}
                           </div>
@@ -1325,9 +1377,6 @@ const handleTableRightClick = useCallback((tableId, e) => {
                             {res.is_walkin && (
                               <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded">🚶 Walk-in</span>
                             )}
-                            {res.combination_name && (
-                              <span className="text-[10px] bg-purple-900 text-purple-300 px-2 py-0.5 rounded">🔗 {res.combination_name}</span>
-                            )}
                           </div>
                         </div>
                         
@@ -1335,12 +1384,12 @@ const handleTableRightClick = useCallback((tableId, e) => {
                         <button
                           onClick={(e) => { e.stopPropagation(); onReservationClick && onReservationClick(res); }}
                           className="text-xs bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-3 py-1.5 rounded-lg font-semibold transition-colors flex-shrink-0">
-                          Open full detail →
+                          Open →
                         </button>
                       </div>
 
-                      {/* Middle section: 2-column grid for notes and meal status */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                      {/* Middle section: 2-column responsive grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-3">
                         {/* Left: Notes */}
                         <div className="space-y-2">
                           {/* Public Notes */}
@@ -1389,7 +1438,7 @@ const handleTableRightClick = useCallback((tableId, e) => {
                                   color: v.color,
                                   ringColor: v.color,
                                 }}>
-                                {v.icon} {v.label}
+                                {v.icon} {!isMobile && v.label}
                               </button>
                             ))}
                             {res.meal_status && (
@@ -1403,10 +1452,10 @@ const handleTableRightClick = useCallback((tableId, e) => {
                         </div>
                       </div>
 
-                      {/* Bottom: Pre-selected Menu Items - Full width */}
+                      {/* Bottom: Pre-selected Menu Items */}
                       {res.selected_menu_items?.length > 0 && (
                         <div className="mt-1 pt-3 border-t border-slate-700/50">
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">🍽️ Menu Items</span>
                             <span className="text-[9px] text-slate-600 font-normal">
                               ({res.selected_menu_items.reduce((s,i) => s + (i.qty || 1), 0)} items)
@@ -1450,20 +1499,24 @@ const handleTableRightClick = useCallback((tableId, e) => {
           )}
         </div>
 
-        {/* Grid footer stats */}
-        <div className="px-3 py-2 border-t flex items-center gap-4 flex-shrink-0"
+        {/* Grid footer stats - responsive */}
+        <div className="px-3 py-2 border-t flex items-center gap-2 md:gap-4 flex-shrink-0 flex-wrap"
           style={{ background: "#1e293b", borderColor: "#334155" }}>
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span><span className="text-white font-bold">{filteredReservations.length}</span> reservations</span>
-            <span><span className="text-white font-bold">{filteredReservations.reduce((s,r)=>s+(r.number_of_guests||0),0)}</span> guests</span>
-            <span><span className="text-green-400 font-bold">{filteredReservations.filter(r=>r.status==="confirmed").length}</span> confirmed</span>
-            <span><span className="text-yellow-400 font-bold">{filteredReservations.filter(r=>r.status==="pending").length}</span> pending</span>
-            <span><span className="text-red-400 font-bold">{filteredReservations.filter(r=>r.status==="cancelled").length}</span> cancelled</span>
+          <div className="flex items-center gap-2 md:gap-3 text-xs text-slate-400 flex-wrap">
+            <span><span className="text-white font-bold">{filteredReservations.length}</span> res</span>
+            {!isMobile && (
+              <>
+                <span><span className="text-white font-bold">{filteredReservations.reduce((s,r)=>s+(r.number_of_guests||0),0)}</span> guests</span>
+                <span><span className="text-green-400 font-bold">{filteredReservations.filter(r=>r.status==="confirmed").length}</span> ✓</span>
+                <span><span className="text-yellow-400 font-bold">{filteredReservations.filter(r=>r.status==="pending").length}</span> P</span>
+                <span><span className="text-red-400 font-bold">{filteredReservations.filter(r=>r.status==="cancelled").length}</span> C</span>
+              </>
+            )}
           </div>
           {selectedTableIds.length > 0 && (
             <button onClick={() => setSelectedTableIds([])}
               className="ml-auto text-xs text-slate-400 hover:text-white bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg transition-colors">
-              Show all tables
+              Show all
             </button>
           )}
         </div>

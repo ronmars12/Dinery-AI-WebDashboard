@@ -55,18 +55,18 @@ const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
   return (
     <div>
       {/* Summary bar */}
-      <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center gap-4">
-        <div className="text-center">
+      <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center gap-4 overflow-x-auto">
+        <div className="text-center flex-shrink-0">
           <p className="text-lg font-bold text-gray-800">{categories.length}</p>
           <p className="text-[10px] text-gray-400 uppercase">Categories</p>
         </div>
-        <div className="w-px h-8 bg-gray-200" />
-        <div className="text-center">
+        <div className="w-px h-8 bg-gray-200 flex-shrink-0" />
+        <div className="text-center flex-shrink-0">
           <p className="text-lg font-bold text-gray-800">{totalItems}</p>
           <p className="text-[10px] text-gray-400 uppercase">Items</p>
         </div>
-        <div className="w-px h-8 bg-gray-200" />
-        <div className="text-center">
+        <div className="w-px h-8 bg-gray-200 flex-shrink-0" />
+        <div className="text-center flex-shrink-0">
           <p className="text-lg font-bold text-green-600">
             {categories.filter(c => c.active !== false).length}
           </p>
@@ -83,24 +83,24 @@ const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
           return (
             <div key={cat.id}>
               <div
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 hover:bg-gray-50 transition-colors cursor-pointer"
                 onClick={() => subs.length > 0 && setExpanded(p => ({ ...p, [cat.id]: !p[cat.id] }))}
               >
-                <div className="w-3 h-3 rounded-full flex-shrink-0"
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0"
                   style={{ backgroundColor: cat.color || '#fe8a24' }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-800 truncate">
                     {cat.name?.en || 'Unnamed'}
                   </p>
                   {subs.length > 0 && (
-                    <span className="text-xs text-gray-400">{subs.length} subcategories</span>
+                    <span className="text-[10px] sm:text-xs text-gray-400">{subs.length} subcategories</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                  <span className="text-[10px] sm:text-xs font-bold bg-gray-100 text-gray-600 px-1.5 sm:px-2 py-0.5 rounded-full">
                     {count} items
                   </span>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                  <span className={`text-[8px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded-full ${
                     cat.active !== false
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-400'
@@ -108,7 +108,7 @@ const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
                     {cat.active !== false ? 'on' : 'off'}
                   </span>
                   {subs.length > 0 && (
-                    <svg className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    <svg className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''} flex-shrink-0`}
                       fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -116,9 +116,9 @@ const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
                 </div>
               </div>
               {isOpen && subs.map(sub => (
-                <div key={sub.id} className="flex items-center gap-3 pl-10 pr-4 py-1.5 bg-gray-50/60">
+                <div key={sub.id} className="flex items-center gap-2 sm:gap-3 pl-6 sm:pl-10 pr-3 sm:pr-4 py-1 sm:py-1.5 bg-gray-50/60">
                   <div className="w-1.5 h-1.5 rounded-full bg-gray-300 flex-shrink-0" />
-                  <p className="text-xs text-gray-600 flex-1 truncate">{sub.name?.en || sub.id}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600 flex-1 truncate">{sub.name?.en || sub.id}</p>
                 </div>
               ))}
             </div>
@@ -330,47 +330,47 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
 
       {/* ── Left sidebar ── */}
       <div className="w-full md:w-64 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col bg-gray-50">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-white">
-          <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Categories</span>
+        <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-white">
+          <span className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Categories</span>
           <button onClick={() => setCatModal('add')}
-            className="w-7 h-7 rounded-lg bg-[#fe8a24] text-white flex items-center justify-center hover:bg-[#ff9d47] transition-all shadow-sm">
-            <FiPlus className="w-4 h-4" />
+            className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#fe8a24] text-white flex items-center justify-center hover:bg-[#ff9d47] transition-all shadow-sm">
+            <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto py-2 max-h-64 md:max-h-none">
           <button
             onClick={() => setSelectedCat(null)}
-            className={`w-full text-left px-4 py-3 text-sm font-semibold flex items-center justify-between transition-colors ${
+            className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between transition-colors ${
               !selectedCat ? 'bg-[#fe8a24]/10 text-[#fe8a24] border-r-2 border-[#fe8a24]' : 'text-gray-700 hover:bg-gray-100'
             }`}>
             <span>📋 All Items</span>
-            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-semibold">{menuItems.length}</span>
+            <span className="text-[10px] sm:text-xs bg-gray-200 text-gray-700 px-1.5 sm:px-2 py-0.5 rounded-full font-semibold">{menuItems.length}</span>
           </button>
           {categories.map(cat => {
             const count = menuItems.filter(i => i.category === cat.id).length;
             const isSel = selectedCat === cat.id;
             return (
               <div key={cat.id}
-                className={`group flex items-center justify-between px-4 py-3 cursor-pointer transition-colors ${
+                className={`group flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 cursor-pointer transition-colors ${
                   isSel ? 'bg-white border-r-2 text-gray-900' : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 style={isSel ? { borderRightColor: cat.color || '#fe8a24' } : {}}
                 onClick={() => setSelectedCat(cat.id)}>
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: cat.color || '#fe8a24' }} />
-                  <span className="text-sm font-semibold truncate">{cat.name?.[viewLang] || cat.name?.en || 'Unnamed'}</span>
-                  {!cat.active && <span className="text-[10px] text-gray-400 bg-gray-200 px-1 rounded">off</span>}
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                  <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: cat.color || '#fe8a24' }} />
+                  <span className="text-xs sm:text-sm font-semibold truncate">{cat.name?.[viewLang] || cat.name?.en || 'Unnamed'}</span>
+                  {!cat.active && <span className="text-[8px] sm:text-[10px] text-gray-400 bg-gray-200 px-1 rounded">off</span>}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">{count}</span>
-                  <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-500 bg-gray-200 px-1.5 sm:px-2 py-0.5 rounded-full">{count}</span>
+                  <div className="opacity-0 group-hover:opacity-100 flex gap-0.5 sm:gap-1">
                     <button onClick={e => { e.stopPropagation(); setCatModal(cat); }}
-                      className="p-1 rounded hover:bg-white text-gray-500 hover:text-[#fe8a24] transition-colors">
-                      <FiEdit2 className="w-3.5 h-3.5" />
+                      className="p-0.5 sm:p-1 rounded hover:bg-white text-gray-500 hover:text-[#fe8a24] transition-colors">
+                      <FiEdit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                     <button onClick={e => { e.stopPropagation(); setDeleteConf({ type: 'category', id: cat.id, name: cat.name?.en || 'this' }); }}
-                      className="p-1 rounded hover:bg-white text-gray-500 hover:text-red-500 transition-colors">
-                      <FiTrash2 className="w-3.5 h-3.5" />
+                      className="p-0.5 sm:p-1 rounded hover:bg-white text-gray-500 hover:text-red-500 transition-colors">
+                      <FiTrash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -383,20 +383,20 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
       {/* ── Right: items ── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Toolbar */}
-        <div className="px-5 py-3 border-b border-gray-200 flex items-center gap-3 flex-wrap flex-shrink-0 bg-white">
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-            <FiSearch className="w-4 h-4 text-gray-400" />
+        <div className="px-3 sm:px-5 py-2 sm:py-3 border-b border-gray-200 flex items-center gap-2 sm:gap-3 flex-wrap flex-shrink-0 bg-white">
+          <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex-1 sm:flex-initial">
+            <FiSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
             <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
               placeholder="Search menu items…"
-              className="bg-transparent text-sm text-gray-700 focus:outline-none w-32 placeholder:text-sm" />
-            {searchQ && <button onClick={() => setSearchQ('')} className="text-gray-400 hover:text-gray-600"><FiX className="w-4 h-4" /></button>}
+              className="bg-transparent text-xs sm:text-sm text-gray-700 focus:outline-none w-20 sm:w-32 placeholder:text-xs sm:placeholder:text-sm" />
+            {searchQ && <button onClick={() => setSearchQ('')} className="text-gray-400 hover:text-gray-600"><FiX className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>}
           </div>
           
-          {/* Lang switcher */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          {/* Lang switcher - scrollable on mobile */}
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-100 rounded-lg p-0.5 sm:p-1 overflow-x-auto">
             {MENU_LANGUAGES.map(l => (
               <button key={l.code} onClick={() => setViewLang(l.code)}
-                className={`text-xs px-2 py-1 rounded-md font-semibold transition-all ${
+                className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md font-semibold transition-all whitespace-nowrap ${
                   viewLang === l.code ? 'bg-[#fe8a24] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                 }`}>
                 {l.flag} {l.label}
@@ -404,10 +404,10 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
             ))}
           </div>
           
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-100 rounded-lg p-0.5 sm:p-1">
             {[['sortOrder','⠿ Order'],['name','A–Z'],['price','Price']].map(([key, label]) => (
               <button key={key} onClick={() => setSortBy(key)}
-                className={`text-xs px-2 py-1 rounded-md font-semibold transition-all ${
+                className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md font-semibold transition-all whitespace-nowrap ${
                   sortBy === key ? 'bg-[#fe8a24] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                 }`}>
                 {label}
@@ -415,27 +415,27 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
             ))}
           </div>
           <button onClick={() => setItemModal('add')}
-            className="ml-auto flex items-center gap-2 bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm">
-            <FiPlus className="w-4 h-4" /> Add Item
+            className="ml-auto flex items-center gap-1 sm:gap-2 bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-sm font-semibold transition-all shadow-sm">
+            <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">Add Item</span>
           </button>
         </div>
 
-        {/* Items list */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Items list - responsive grid */}
+        <div className="flex-1 overflow-y-auto p-2 sm:p-4">
           {filteredItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-16">
-              <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center mb-4 text-4xl shadow-inner">🍽️</div>
-              <p className="text-base font-semibold text-gray-600">No menu items yet</p>
-              <p className="text-sm text-gray-400 mt-1">Click "Add Item" to create your first menu item</p>
+            <div className="flex flex-col items-center justify-center h-full text-center py-8 sm:py-16">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gray-100 flex items-center justify-center mb-3 sm:mb-4 text-3xl sm:text-4xl shadow-inner">🍽️</div>
+              <p className="text-sm sm:text-base font-semibold text-gray-600">No menu items yet</p>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">Click "Add Item" to create your first menu item</p>
               <button onClick={() => setItemModal('add')}
-                className="mt-4 flex items-center gap-2 bg-[#fe8a24] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#ff9d47] transition-all shadow-md">
-                <FiPlus className="w-4 h-4" /> Add First Item
+                className="mt-3 sm:mt-4 flex items-center gap-2 bg-[#fe8a24] text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#ff9d47] transition-all shadow-md">
+                <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Add First Item
               </button>
             </div>
           ) : (
             <div className="space-y-2">
-              {/* Header row */}
-            <div className={`grid px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 rounded-lg ${sortBy === 'sortOrder' ? 'pl-8' : ''}`}
+              {/* Header row - hidden on mobile */}
+              <div className={`hidden md:grid px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 rounded-lg ${sortBy === 'sortOrder' ? 'pl-8' : ''}`}
                 style={{ gridTemplateColumns: '1fr 100px 180px 180px 100px' }}>
                 <span>🍽️ Item Name</span>
                 <span>💰 Price</span>
@@ -454,65 +454,64 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
                     onDragStart={(e) => handleDragStart(e, filteredItems.indexOf(item))}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => handleDrop(e, filteredItems.indexOf(item))}
-                    className={`relative grid items-center px-4 py-3 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer group ${
+                    className={`relative grid grid-cols-1 md:grid-cols-[1fr,100px,180px,180px,100px] items-start md:items-center px-3 sm:px-4 py-3 sm:py-4 rounded-xl border-2 transition-all hover:shadow-md cursor-pointer group gap-2 ${
                       item.active ? 'bg-white border-gray-200 hover:border-[#fe8a24]/40' : 'bg-gray-50 border-gray-200 opacity-60'
-                    } ${sortBy === 'sortOrder' ? 'pl-8' : ''}`}
-                    style={{ gridTemplateColumns: '1fr 100px 180px 180px 100px' }}
+                    } ${sortBy === 'sortOrder' ? 'pl-6 sm:pl-8' : ''}`}
                     onClick={() => setItemModal(item)}>
                     {sortBy === 'sortOrder' && (
-                      <div className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</div>
+                      <div className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing select-none text-lg leading-none">⠿</div>
                     )}
                     
                     {/* Name + desc */}
-                    <div className="min-w-0 pr-3">
-                      <div className="flex items-center gap-2">
-                        {cat && <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: cat.color || '#fe8a24' }} />}
-                        <span className="text-base font-bold text-gray-900 truncate">{name}</span>
-                        {!item.active && <span className="text-[10px] text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded">hidden</span>}
+                    <div className="min-w-0 pr-1 sm:pr-3">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                        {cat && <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: cat.color || '#fe8a24' }} />}
+                        <span className="text-sm sm:text-base font-bold text-gray-900 truncate">{name}</span>
+                        {!item.active && <span className="text-[8px] sm:text-[10px] text-gray-400 bg-gray-200 px-1 sm:px-1.5 py-0.5 rounded">hidden</span>}
                       </div>
-                      {desc && <p className="text-xs text-gray-500 truncate mt-1 ml-3">{desc}</p>}
+                      {desc && <p className="text-[10px] sm:text-xs text-gray-500 truncate mt-0.5 sm:mt-1 ml-1 sm:ml-3">{desc}</p>}
                     </div>
 
                     {/* Price */}
-                    <div className="text-lg font-bold text-gray-900">
-                      {item.price ? `${item.price} NOK` : <span className="text-gray-300 text-sm">—</span>}
+                    <div className="text-base sm:text-lg font-bold text-gray-900">
+                      {item.price ? `${item.price} NOK` : <span className="text-gray-300 text-xs sm:text-sm">—</span>}
                     </div>
 
                     {/* Allergens */}
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1 sm:gap-1.5">
                       {(item.allergens||[]).slice(0, 3).map(id => {
                         const a = MENU_ALLERGENS.find(x=>x.id===id);
-                        return a ? <span key={id} className="text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700">{a.icon} {a.label}</span> : null;
+                        return a ? <span key={id} className="text-[8px] sm:text-xs px-1 sm:px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-700">{a.icon} {a.label}</span> : null;
                       })}
                       {(item.allergens||[]).length > 3 && (
-                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        <span className="text-[8px] sm:text-xs font-semibold text-gray-500 bg-gray-100 px-1 sm:px-2 py-0.5 rounded-full">
                           +{item.allergens.length - 3}
                         </span>
                       )}
                     </div>
 
                     {/* Attributes */}
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1 sm:gap-1.5">
                       {(item.attributes||[]).slice(0, 2).map(id => {
                         const a = MENU_ATTRIBUTES.find(x=>x.id===id);
-                        return a ? <span key={id} className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: a.color+'20', color: a.color }}>{a.icon} {a.label}</span> : null;
+                        return a ? <span key={id} className="text-[8px] sm:text-xs px-1 sm:px-2 py-0.5 rounded-full font-semibold" style={{ background: a.color+'20', color: a.color }}>{a.icon} {a.label}</span> : null;
                       })}
                       {(item.attributes||[]).length > 2 && (
-                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        <span className="text-[8px] sm:text-xs font-semibold text-gray-500 bg-gray-100 px-1 sm:px-2 py-0.5 rounded-full">
                           +{item.attributes.length - 2}
                         </span>
                       )}
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e=>e.stopPropagation()}>
+                    <div className="flex items-center gap-1 sm:gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity justify-end md:justify-start" onClick={e=>e.stopPropagation()}>
                       <button onClick={() => setItemModal(item)} 
-                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#fe8a24] transition-colors">
-                        <FiEdit2 className="w-4 h-4" />
+                        className="p-1 sm:p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#fe8a24] transition-colors">
+                        <FiEdit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                       <button onClick={() => setDeleteConf({ type: 'item', id: item.id, name })} 
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-500 transition-colors">
-                        <FiTrash2 className="w-4 h-4" />
+                        className="p-1 sm:p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-500 transition-colors">
+                        <FiTrash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   </div>
@@ -522,21 +521,21 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span className="font-semibold">📊 Summary:</span>
-            <span><span className="font-bold text-gray-800">{menuItems.length}</span> total items</span>
+        {/* Footer - responsive */}
+        <div className="px-3 sm:px-5 py-2 sm:py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0 overflow-x-auto">
+          <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-sm text-gray-600 flex-nowrap">
+            <span className="font-semibold hidden xs:inline">📊 Summary:</span>
+            <span><span className="font-bold text-gray-800">{menuItems.length}</span> total</span>
             <span className="text-green-700"><span className="font-bold text-green-600">{menuItems.filter(i=>i.active).length}</span> active</span>
-            <span className="text-gray-500"><span className="font-bold">{menuItems.filter(i=>!i.active).length}</span> hidden</span>
-            <span className="text-blue-700"><span className="font-bold">{categories.length}</span> categories</span>
+            <span className="text-gray-500 hidden sm:inline"><span className="font-bold">{menuItems.filter(i=>!i.active).length}</span> hidden</span>
+            <span className="text-blue-700 hidden md:inline"><span className="font-bold">{categories.length}</span> categories</span>
           </div>
         </div>
       </div>
 
       {/* ── Toast ── */}
       {toast && (
-        <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] px-5 py-3 rounded-xl shadow-xl text-sm font-semibold text-white ${
+        <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl shadow-xl text-xs sm:text-sm font-semibold text-white max-w-[90vw] text-center ${
           toast.type === 'error' ? 'bg-red-500' : 'bg-gray-900'
         }`}>
           {toast.msg}
@@ -547,15 +546,15 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
       {deleteConf && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDeleteConf(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-96 mx-4">
-            <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center mx-auto mb-3">
-              <FiTrash2 className="w-6 h-6 text-red-500" />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-4 sm:p-6 w-11/12 sm:w-96 mx-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-100 flex items-center justify-center mx-auto mb-3">
+              <FiTrash2 className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 text-center mb-2">Delete {deleteConf.type}?</h3>
-            <p className="text-sm text-gray-500 text-center mb-5">"{deleteConf.name}" will be permanently removed.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteConf(null)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-              <button onClick={confirmDelete} disabled={saving} className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 text-center mb-2">Delete {deleteConf.type}?</h3>
+            <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-5">"{deleteConf.name}" will be permanently removed.</p>
+            <div className="flex gap-2 sm:gap-3">
+              <button onClick={() => setDeleteConf(null)} className="flex-1 py-2 sm:py-2.5 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={confirmDelete} disabled={saving} className="flex-1 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs sm:text-sm font-semibold disabled:opacity-50 transition-colors">
                 {saving ? 'Deleting…' : 'Delete'}
               </button>
             </div>
@@ -600,41 +599,41 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="text-base font-bold text-gray-900">{category ? 'Edit Category' : 'Add Category'}</h3>
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0">
+          <h3 className="text-sm sm:text-base font-bold text-gray-900">{category ? 'Edit Category' : 'Add Category'}</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500"><FiX className="w-4 h-4" /></button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3 sm:py-4 space-y-3 sm:space-y-4">
           {/* Color */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-2">Color</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">Color</label>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {COLORS.map(col => (
                 <button key={col} onClick={() => setForm(p=>({...p,color:col}))}
-                  className={`w-7 h-7 rounded-lg transition-all ${form.color===col?'ring-2 ring-offset-1 ring-gray-400 scale-110':'hover:scale-105'}`}
+                  className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg transition-all ${form.color===col?'ring-2 ring-offset-1 ring-gray-400 scale-110':'hover:scale-105'}`}
                   style={{ background: col }} />
               ))}
-              <label><input type="color" value={form.color} onChange={e=>setForm(p=>({...p,color:e.target.value}))} className="w-7 h-7 rounded-lg border border-gray-200 cursor-pointer" /></label>
+              <label><input type="color" value={form.color} onChange={e=>setForm(p=>({...p,color:e.target.value}))} className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-gray-200 cursor-pointer" /></label>
             </div>
           </div>
           {/* Lang tabs */}
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 sm:gap-1 flex-wrap">
             {MENU_LANGUAGES.map(l => (
               <button key={l.code} onClick={() => setActiveLang(l.code)}
-                className={`text-xs px-2 py-1 rounded font-bold ${activeLang===l.code?'bg-[#fe8a24] text-white':'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded font-bold ${activeLang===l.code?'bg-[#fe8a24] text-white':'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                 {l.flag} {l.label}
               </button>
             ))}
           </div>
           {/* Name per lang */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Category Name</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Category Name</label>
             {MENU_LANGUAGES.filter(l => l.code === activeLang).map(l => (
               <div key={l.code} className="flex items-center gap-2">
-                <span className="text-sm flex-shrink-0">{l.flag}</span>
+                <span className="text-xs sm:text-sm flex-shrink-0">{l.flag}</span>
                 <input type="text" value={form.name[l.code]||''} onChange={e=>setForm(p=>({...p,name:{...p.name,[l.code]:e.target.value}}))}
                   placeholder={`Name in ${l.name}…`}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#fe8a24]" />
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]" />
               </div>
             ))}
           </div>
@@ -644,15 +643,15 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
               className={`w-10 h-5 rounded-full relative transition-colors ${form.active?'bg-green-500':'bg-gray-300'}`}>
               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.active?'translate-x-5':'translate-x-0.5'}`} />
             </div>
-            <span className="text-sm text-gray-700">{form.active ? 'Active' : 'Hidden'}</span>
+            <span className="text-xs sm:text-sm text-gray-700">{form.active ? 'Active' : 'Hidden'}</span>
           </label>
           {/* Subcategories */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Subcategories</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Subcategories</label>
             <div className="space-y-1 mb-2">
               {(form.subcategories||[]).map(sub => (
-                <div key={sub.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5">
-                  <span className="flex-1 text-xs text-gray-700">{sub.name?.en||sub.id}</span>
+                <div key={sub.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5">
+                  <span className="flex-1 text-[10px] sm:text-xs text-gray-700 truncate">{sub.name?.en||sub.id}</span>
                   <button onClick={() => setForm(p=>({...p,subcategories:(p.subcategories||[]).filter(s=>s.id!==sub.id)}))}
                     className="text-gray-400 hover:text-red-500"><FiX className="w-3 h-3" /></button>
                 </div>
@@ -664,14 +663,14 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
                 placeholder="Add subcategory…"
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#fe8a24]" />
               <button onClick={()=>{if(newSub.trim()){setForm(p=>({...p,subcategories:[...(p.subcategories||[]),{id:Date.now().toString(),name:{...Object.fromEntries(MENU_LANGUAGES.map(l=>[l.code,''])),en:newSub.trim()},active:true}]}));setNewSub('');}}}
-                className="px-3 py-1.5 bg-[#fe8a24] text-white rounded-lg text-xs font-semibold hover:bg-[#ff9d47]">Add</button>
+                className="px-3 py-1.5 bg-[#fe8a24] text-white rounded-lg text-xs font-semibold hover:bg-[#ff9d47] whitespace-nowrap">Add</button>
             </div>
           </div>
         </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+        <div className="px-4 sm:px-5 py-3 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+          <button onClick={onClose} className="px-3 sm:px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs sm:text-sm hover:bg-gray-50">Cancel</button>
           <button onClick={() => onSave(form)} disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-[#ff9d47]">
+            className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-xs sm:text-sm font-semibold disabled:opacity-50 hover:bg-[#ff9d47]">
             {saving ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiCheck className="w-4 h-4" />}
             Save
           </button>
@@ -692,36 +691,36 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
   const subcats = categories.find(c=>c.id===form.category)?.subcategories||[];
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="text-base font-bold text-gray-900">{item ? 'Edit Item' : 'Add Item'}</h3>
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0">
+          <h3 className="text-sm sm:text-base font-bold text-gray-900">{item ? 'Edit Item' : 'Add Item'}</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500"><FiX className="w-4 h-4" /></button>
         </div>
         {/* Lang tabs */}
-        <div className="flex items-center gap-1 px-5 py-2 bg-gray-50 border-b border-gray-100 flex-shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-0.5 sm:gap-1 px-3 sm:px-5 py-1.5 sm:py-2 bg-gray-50 border-b border-gray-100 flex-shrink-0 overflow-x-auto">
           {MENU_LANGUAGES.map(l=>(
             <button key={l.code} onClick={()=>setActiveLang(l.code)}
-              className={`text-xs px-2 py-1 rounded font-bold whitespace-nowrap ${activeLang===l.code?'bg-[#fe8a24] text-white':'bg-white border border-gray-200 text-gray-500 hover:border-[#fe8a24]'}`}>
+              className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded font-bold whitespace-nowrap ${activeLang===l.code?'bg-[#fe8a24] text-white':'bg-white border border-gray-200 text-gray-500 hover:border-[#fe8a24]'}`}>
               {l.flag} {l.label}
             </button>
           ))}
         </div>
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 flex-shrink-0 px-5 overflow-x-auto">
+        <div className="flex border-b border-gray-100 flex-shrink-0 px-3 sm:px-5 overflow-x-auto">
           {[['basic','Content'],['allergens','Allergens'],['attributes','Attributes']].map(([k,l])=>(
             <button key={k} onClick={()=>setTab(k)}
-              className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${tab===k?'border-[#fe8a24] text-[#fe8a24]':'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>
+              className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${tab===k?'border-[#fe8a24] text-[#fe8a24]':'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>
           ))}
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3 sm:py-4 space-y-3 sm:space-y-4">
           {tab === 'basic' && <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
                 <select value={form.category} onChange={e=>set('category',e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#fe8a24]">
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]">
                   <option value="">— Select —</option>
                   {categories.map(c=><option key={c.id} value={c.id}>{c.name?.en||c.id}</option>)}
                 </select>
@@ -729,7 +728,7 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Subcategory</label>
                 <select value={form.subcategory} onChange={e=>set('subcategory',e.target.value)} disabled={subcats.length===0}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#fe8a24] disabled:bg-gray-50">
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24] disabled:bg-gray-50">
                   <option value="">— None —</option>
                   {subcats.map(s=><option key={s.id} value={s.id}>{s.name?.en||s.id}</option>)}
                 </select>
@@ -740,7 +739,7 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Price</label>
                 <input type="number" min="0" step="0.01" value={form.price} onChange={e=>set('price',e.target.value)}
                   placeholder="0.00"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#fe8a24]" />
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]" />
               </div>
               <div className="flex items-end">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -748,31 +747,31 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
                     className={`w-10 h-5 rounded-full relative transition-colors ${form.active?'bg-green-500':'bg-gray-300'}`}>
                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.active?'translate-x-5':'translate-x-0.5'}`} />
                   </div>
-                  <span className="text-sm text-gray-700">{form.active?'Active':'Hidden'}</span>
+                  <span className="text-xs sm:text-sm text-gray-700">{form.active?'Active':'Hidden'}</span>
                 </label>
               </div>
             </div>
             {/* Name */}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Item Name</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Item Name</label>
               {MENU_LANGUAGES.filter(l=>l.code===activeLang).map(l=>(
                 <div key={l.code} className="flex items-center gap-2">
-                  <span className="text-sm">{l.flag}</span>
+                  <span className="text-xs sm:text-sm">{l.flag}</span>
                   <input value={form.name[l.code]||''} onChange={e=>set('name',{...form.name,[l.code]:e.target.value})}
                     placeholder={`Name in ${l.name}…`}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#fe8a24]" />
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]" />
                 </div>
               ))}
             </div>
             {/* Description */}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Description</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
               {MENU_LANGUAGES.filter(l=>l.code===activeLang).map(l=>(
                 <div key={l.code} className="flex items-start gap-2">
-                  <span className="text-sm mt-2">{l.flag}</span>
+                  <span className="text-xs sm:text-sm mt-2">{l.flag}</span>
                   <textarea value={form.description[l.code]||''} onChange={e=>set('description',{...form.description,[l.code]:e.target.value})}
                     rows={3} placeholder={`Description in ${l.name}…`}
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#fe8a24] resize-none" />
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24] resize-none" />
                 </div>
               ))}
             </div>
@@ -780,13 +779,13 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
 
           {tab === 'allergens' && (
             <div>
-              <p className="text-sm text-gray-500 mb-3">Select allergens present in this item.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">Select allergens present in this item.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                 {MENU_ALLERGENS.map(a=>{
                   const active = form.allergens.includes(a.id);
                   return (
                     <button key={a.id} onClick={()=>toggleArr('allergens',a.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${active?'border-amber-400 bg-amber-50 text-amber-800':'border-gray-200 text-gray-600 hover:border-amber-300'}`}>
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs sm:text-sm font-medium transition-all ${active?'border-amber-400 bg-amber-50 text-amber-800':'border-gray-200 text-gray-600 hover:border-amber-300'}`}>
                       <span>{a.icon}</span><span>{a.label}</span>
                       {active && <FiCheck className="w-3 h-3 ml-auto text-amber-600" />}
                     </button>
@@ -798,13 +797,13 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
 
           {tab === 'attributes' && (
             <div>
-              <p className="text-sm text-gray-500 mb-3">Tag dietary and service attributes.</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">Tag dietary and service attributes.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                 {MENU_ATTRIBUTES.map(a=>{
                   const active = form.attributes.includes(a.id);
                   return (
                     <button key={a.id} onClick={()=>toggleArr('attributes',a.id)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all"
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-xs sm:text-sm font-medium transition-all"
                       style={{ borderColor: active?a.color:'#e5e7eb', background: active?a.color+'15':'white', color: active?a.color:'#4b5563' }}>
                       <span>{a.icon}</span><span>{a.label}</span>
                       {active && <FiCheck className="w-3 h-3 ml-auto" style={{color:a.color}} />}
@@ -815,10 +814,10 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
             </div>
           )}
         </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+        <div className="px-4 sm:px-5 py-3 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+          <button onClick={onClose} className="px-3 sm:px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs sm:text-sm hover:bg-gray-50">Cancel</button>
           <button onClick={()=>onSave(form)} disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-[#ff9d47]">
+            className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-xs sm:text-sm font-semibold disabled:opacity-50 hover:bg-[#ff9d47]">
             {saving?<span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<FiCheck className="w-4 h-4"/>}
             Save Item
           </button>
@@ -1032,9 +1031,22 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
     { id: 'display', label: 'Display', icon: FiMonitor },
   ];
 
+  // Responsive tabs - show shorter labels on mobile
+  const getTabs = () => {
+    const isMobile = window.innerWidth < 640;
+    return tabs.map(tab => ({
+      ...tab,
+      label: isMobile && tab.id === 'opening_hours' ? 'Time Slots' : 
+             isMobile && tab.id === 'notifications' ? 'Alerts' :
+             isMobile && tab.id === 'display' ? 'View' :
+             isMobile && tab.id === 'tables' ? 'Seats' :
+             tab.label
+    }));
+  };
+
   const SettingToggle = ({ label, description, settingKey }) => (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 gap-3 sm:gap-0">
-      <div className="flex-1 pr-4">
+      <div className="flex-1 pr-0 sm:pr-4">
         <p className="text-sm font-medium text-gray-800">{label}</p>
         {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
       </div>
@@ -1077,7 +1089,7 @@ const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 gap-3 sm:gap-0">
-      <div className="flex-1 pr-4">
+      <div className="flex-1 pr-0 sm:pr-4">
         <p className="text-sm font-medium text-gray-800">{label}</p>
         {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
       </div>
@@ -1089,7 +1101,7 @@ const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 
             onMouseLeave={stopPress}
             onTouchStart={() => startPress(-1)}
             onTouchEnd={stopPress}
-            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-base transition-colors select-none border-r border-gray-200"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-sm sm:text-base transition-colors select-none border-r border-gray-200"
           >−</button>
           <input
             type="number"
@@ -1098,7 +1110,7 @@ const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 
             step={step}
             value={settings[settingKey]}
             onChange={(e) => setSettings(prev => ({ ...prev, [settingKey]: parseInt(e.target.value) || min }))}
-            className="w-16 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 border-0"
+            className="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 border-0"
           />
           <button
             onMouseDown={() => startPress(1)}
@@ -1106,10 +1118,10 @@ const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 
             onMouseLeave={stopPress}
             onTouchStart={() => startPress(1)}
             onTouchEnd={stopPress}
-            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-base transition-colors select-none border-l border-gray-200"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-sm sm:text-base transition-colors select-none border-l border-gray-200"
           >+</button>
         </div>
-        {unit && <span className="text-xs text-gray-500 min-w-[40px]">{unit}</span>}
+        {unit && <span className="text-xs text-gray-500 min-w-[30px] sm:min-w-[40px]">{unit}</span>}
       </div>
     </div>
   );
@@ -1117,14 +1129,14 @@ const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 
 
   const SettingSelect = ({ label, description, settingKey, options }) => (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 gap-3 sm:gap-0">
-      <div className="flex-1 pr-4">
+      <div className="flex-1 pr-0 sm:pr-4">
         <p className="text-sm font-medium text-gray-800">{label}</p>
         {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
       </div>
       <select
         value={settings[settingKey]}
         onChange={(e) => setSettings(prev => ({ ...prev, [settingKey]: parseInt(e.target.value) }))}
-        className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
+        className="px-2 sm:px-3 py-1.5 border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
       >
         {options.map(opt => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1146,7 +1158,7 @@ const renderGeneralTab = () => (
         settingKey="defaultReservationDuration"
         min={30}
         max={240}
-        unit="minutes"
+        unit="min"
         step={15}
       />
       <SettingNumber
@@ -1155,12 +1167,12 @@ const renderGeneralTab = () => (
         settingKey="tableCleanupTime"
         min={0}
         max={60}
-        unit="minutes"
+        unit="min"
       />
 <div className="bg-orange-50 rounded-lg p-3 mt-2">
         <p className="text-xs text-gray-600">Total slot time</p>
         <p className="text-lg font-bold text-[#fe8a24]">
-          {settings.defaultReservationDuration + settings.tableCleanupTime} minutes
+          {settings.defaultReservationDuration + settings.tableCleanupTime} min
         </p>
         <p className="text-xs text-gray-500 mt-1">
           Dining + Cleanup
@@ -1200,29 +1212,29 @@ const renderGeneralTab = () => (
               const hrs = Math.floor(rule.duration / 60);
               const mins = rule.duration % 60;
               return (
-                <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded-xl p-3 border border-gray-200">
+                <div key={idx} className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-xl p-3 border border-gray-200">
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <FiUsers className="w-3.5 h-3.5 text-gray-400" />
                     <input
                       type="number" min="1" max="99" value={rule.minGuests}
                       onChange={e => updateRule('minGuests', e.target.value)}
-                      className="w-12 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#fe8a24]"
+                      className="w-10 sm:w-12 px-1 sm:px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#fe8a24]"
                     />
                     <span className="text-xs text-gray-400">–</span>
                     <input
                       type="number" min="1" max="99" value={rule.maxGuests}
                       onChange={e => updateRule('maxGuests', e.target.value)}
-                      className="w-12 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#fe8a24]"
+                      className="w-10 sm:w-12 px-1 sm:px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#fe8a24]"
                     />
-                    <span className="text-xs text-gray-400">guests</span>
+                    <span className="text-xs text-gray-400 hidden sm:inline">guests</span>
                   </div>
                   <span className="text-gray-300 mx-1">→</span>
-                  <div className="flex items-center gap-1.5 flex-1">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-[100px]">
                     <FiClock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                     <input
                       type="number" min="15" max="480" step="15" value={rule.duration}
                       onChange={e => updateRule('duration', e.target.value)}
-                      className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#fe8a24]"
+                      className="w-14 sm:w-16 px-1 sm:px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#fe8a24]"
                     />
                     <span className="text-xs text-gray-500">
                       min {hrs > 0 ? `(${hrs}h${mins > 0 ? ` ${mins}m` : ''})` : ''}
@@ -1249,7 +1261,7 @@ const renderGeneralTab = () => (
             >
               <FiPlus className="w-3.5 h-3.5" /> Add Rule
             </button>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-1">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-1 overflow-x-auto">
               <p className="text-xs text-blue-700 mb-2">
                 💡 When enabled, the matching rule overrides the default dining duration above. Cleanup time is still added on top.
               </p>
@@ -1264,7 +1276,7 @@ const renderGeneralTab = () => (
                   const label = hrs > 0 ? `${hrs}h${mins > 0 ? `${mins}m` : ''}` : `${mins}m`;
                   const hasMatch = !!match;
                   return (
-                    <div key={g} className={`flex flex-col items-center px-2 py-1.5 rounded-lg border text-xs ${
+                    <div key={g} className={`flex flex-col items-center px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-lg border text-[10px] sm:text-xs ${
                       hasMatch ? 'bg-white border-blue-300' : 'bg-gray-50 border-gray-200 opacity-50'
                     }`}>
                       <span className="font-bold text-gray-700">{g} pax</span>
@@ -1291,7 +1303,7 @@ const renderGeneralTab = () => (
         settingKey="minAdvanceBookingHours"
         min={0}
         max={48}
-        unit="hours"
+        unit="hrs"
       />
     </div>
 );
@@ -1307,7 +1319,7 @@ const renderGeneralTab = () => (
     {/* Restaurant Contact Info */}
     <div className="mb-4 pb-4 border-b border-gray-100">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        📞 Restaurant Contact Info
+        📞 Contact Info
       </p>
       <p className="text-xs text-gray-400 mb-3">Used in confirmation emails sent to customers</p>
       <div className="space-y-3">
@@ -1336,7 +1348,7 @@ const renderGeneralTab = () => (
 
     <SettingToggle
       label="Require Full Name"
-      description="Make full name mandatory on public booking page"
+      description="Make full name mandatory"
       settingKey="requireName"
     />
 
@@ -1377,20 +1389,20 @@ const renderGeneralTab = () => (
       unit="guests"
     />
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 gap-3 sm:gap-0">
-      <div className="flex-1 pr-4">
+      <div className="flex-1 pr-0 sm:pr-4">
         <p className="text-sm font-medium text-gray-800">Max Party Size</p>
-        <p className="text-xs text-gray-500 mt-0.5">Overall maximum guests — based on largest table or combination</p>
+        <p className="text-xs text-gray-500 mt-0.5">Overall maximum — based on largest table</p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-          <span className="px-3 py-1.5 text-sm font-bold text-gray-700 w-16 text-center">
+          <span className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-bold text-gray-700 w-12 sm:w-16 text-center">
             {(() => {
               const col = selectedRestaurant?._collection || 'restaurants';
               return settings.maxGuestsPerReservation || '—';
             })()}
           </span>
         </div>
-        <span className="text-xs text-gray-500 min-w-[40px]">guests</span>
+        <span className="text-xs text-gray-500 min-w-[30px] sm:min-w-[40px]">guests</span>
       </div>
     </div>
     <SettingToggle
@@ -1406,17 +1418,17 @@ const renderGeneralTab = () => (
 
     <div className="mt-4 pt-4 border-t border-gray-100">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        Birthday Offer
+        🎂 Birthday Offer
       </p>
       <SettingToggle
         label="Show Birthday Field"
-        description="Ask customers for their birthday on the booking page"
+        description="Ask customers for their birthday"
         settingKey="showBirthdayField"
       />
       {settings.showBirthdayField && (
         <div className="py-3 border-b border-gray-100">
           <p className="text-sm font-medium text-gray-800 mb-1">Birthday Offer Message</p>
-          <p className="text-xs text-gray-500 mb-2">Shown to customers above the birthday date picker</p>
+          <p className="text-xs text-gray-500 mb-2">Shown above the birthday date picker</p>
           <input
             type="text"
             value={settings.birthdayOfferMessage || ''}
@@ -1430,7 +1442,7 @@ const renderGeneralTab = () => (
 
     <div className="mt-4 pt-4 border-t border-gray-100">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        🍽️ Menu on Public Booking Page
+        🍽️ Menu on Booking Page
       </p>
       <SettingToggle
         label="Show Menu on Public Page"
@@ -1449,13 +1461,13 @@ const renderGeneralTab = () => (
           />
           <SettingToggle
             label="Require Group Menu Selection"
-            description="Force customers to select a menu item before confirming their booking"
+            description="Force customers to select a menu item before confirming"
             settingKey="requireGroupMenuSelection"
           />
           {settings.requireGroupMenuSelection && (
             <div className="py-3 border-b border-gray-100">
               <p className="text-sm font-medium text-gray-800 mb-1">Requirement Message</p>
-              <p className="text-xs text-gray-500 mb-2">Shown to customers when group menu selection is required</p>
+              <p className="text-xs text-gray-500 mb-2">Shown when group menu selection is required</p>
               <input
                 type="text"
                 value={settings.groupMenuRequiredMessage || ''}
@@ -1467,7 +1479,7 @@ const renderGeneralTab = () => (
           )}
           <div className="py-3 border-b border-gray-100">
             <p className="text-sm font-medium text-gray-800 mb-1">Menu Section Title</p>
-            <p className="text-xs text-gray-500 mb-2">Heading shown above the menu on the booking page</p>
+            <p className="text-xs text-gray-500 mb-2">Heading shown above the menu</p>
             <input
               type="text"
               value={settings.menuDisplayTitle || ''}
@@ -1491,7 +1503,6 @@ const renderGeneralTab = () => (
       )}
     </div>
 
-    {/* ✅ ADD THIS NEW SECTION - Thank You Message and Restaurant Page URL Settings */}
     <div className="mt-6 pt-4 border-t border-gray-200">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
         🎉 Reservation Success Page
@@ -1577,16 +1588,16 @@ const renderGeneralTab = () => (
             const daySettings = settings?.dayIntervals?.[dayName] || { interval: settings?.timeSlotInterval || 30, startOffset: 0, endOffset: 0 };
             
             return (
-              <div key={dayName} className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-shadow">
+              <div key={dayName} className="bg-white rounded-lg p-3 sm:p-4 border border-gray-200 hover:shadow-sm transition-shadow">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
                   <div>
-                    <h4 className="font-semibold text-gray-800">{dayName}</h4>
+                    <h4 className="font-semibold text-gray-800 text-sm sm:text-base">{dayName}</h4>
                     <p className="text-xs text-gray-500">
                       {isClosed ? 'Closed' : `${hours.openTime} - ${hours.closeTime}`}
                     </p>
                   </div>
                   {!isClosed && (
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-start sm:items-end gap-1">
                     <select
                       value={daySettings?.interval || settings?.timeSlotInterval || 30}
                       onChange={(e) => {
@@ -1600,8 +1611,8 @@ const renderGeneralTab = () => (
                       <option value={30}>30 min</option>
                       <option value={60}>60 min</option>
                     </select>
-                    <p className="text-[10px] text-gray-400 text-right max-w-[180px] leading-tight">
-                      Reservation Slot Interval: Defines how often reservation time slots are displayed to guests (e.g. every 15, 30, or 60 minutes).
+                    <p className="text-[10px] text-gray-400 text-left sm:text-right max-w-[200px] leading-tight">
+                      Slot Interval: how often time slots are displayed
                     </p>
                   </div>
                   )}
@@ -1714,7 +1725,7 @@ const renderGeneralTab = () => (
 
     return (
       <div className="space-y-4">
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-4 mb-4">
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-3 sm:p-4 mb-4">
           <h3 className="text-sm font-bold text-orange-900 mb-1">🕐 Individual Time Slot Control</h3>
           <p className="text-xs text-orange-700">
             Toggle specific time slots on/off for each day. Green = available, Red = blocked.
@@ -1765,15 +1776,15 @@ const renderGeneralTab = () => (
                   key={dayName} 
                   className={`bg-white rounded-lg border-2 transition-all ${
                     isClosed 
-                      ? 'border-gray-200 bg-gray-50/50 p-4' 
+                      ? 'border-gray-200 bg-gray-50/50 p-3 sm:p-4' 
                       : 'border-gray-200 hover:shadow-md'
                   }`}
                 >
                   {/* Header */}
-                  <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+                  <div className="p-3 sm:p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex-1">
-                        <h4 className={`font-bold text-base ${isClosed ? 'text-gray-400' : 'text-gray-800'}`}>
+                        <h4 className={`font-bold text-sm sm:text-base ${isClosed ? 'text-gray-400' : 'text-gray-800'}`}>
                           {dayName}
                         </h4>
                         <p className={`text-xs mt-1 ${isClosed ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -1785,7 +1796,7 @@ const renderGeneralTab = () => (
                       {!isClosed && (
                         <div className="text-left sm:text-right">
                           <p className="text-xs font-semibold text-gray-700">
-                            {interval} minute slots
+                            {interval} min slots
                           </p>
                           <p className="text-[10px] text-gray-500">
                             {timeSlots.length} total slots
@@ -1797,12 +1808,12 @@ const renderGeneralTab = () => (
                   
                   {/* ✅ TIME SLOT GRID WITH ON/OFF TOGGLES */}
                   {!isClosed && timeSlots.length > 0 && (
-                    <div className="p-4">
+                    <div className="p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
                         <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                           📅 Available Time Slots
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-green-700 font-medium">
                             ✓ {timeSlots.length - blockedSlots.length} Available
                           </span>
@@ -1812,7 +1823,7 @@ const renderGeneralTab = () => (
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1.5 max-h-80 overflow-y-auto p-1">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-1 sm:gap-1.5 max-h-80 overflow-y-auto p-1">
                         {timeSlots.map(timeStr => {
                           const isBlocked = blockedSlots.includes(timeStr);
                           const [h, m] = timeStr.split(':').map(Number);
@@ -1822,7 +1833,7 @@ const renderGeneralTab = () => (
                             <button
                               key={timeStr}
                               onClick={() => toggleTimeSlot(dayName, timeStr)}
-                              className={`relative px-2 py-2.5 text-xs font-bold rounded-lg border-2 transition-all shadow-sm hover:shadow-md ${
+                              className={`relative px-1.5 sm:px-2 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold rounded-lg border-2 transition-all shadow-sm hover:shadow-md ${
                                 isBlocked
                                   ? 'bg-red-50 border-red-300 text-red-500 line-through hover:bg-red-100'
                                   : 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
@@ -1831,8 +1842,8 @@ const renderGeneralTab = () => (
                             >
                               {display}
                               {isBlocked && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center shadow">
-                                  <span className="text-white text-[9px] font-bold">✕</span>
+                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-red-500 rounded-full flex items-center justify-center shadow">
+                                  <span className="text-white text-[7px] sm:text-[9px] font-bold">✕</span>
                                 </span>
                               )}
                             </button>
@@ -1844,23 +1855,21 @@ const renderGeneralTab = () => (
                       <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t border-gray-100">
                         <button
                           onClick={() => {
-                            // Enable all slots
                             const newBlocked = { ...settings.blockedTimeSlots };
                             newBlocked[dayName] = [];
                             setSettings(prev => ({ ...prev, blockedTimeSlots: newBlocked }));
                           }}
-                          className="flex-1 px-4 py-2 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border-2 border-green-300 rounded-lg transition-all shadow-sm hover:shadow"
+                          className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border-2 border-green-300 rounded-lg transition-all shadow-sm hover:shadow"
                         >
                           ✓ Enable All Slots
                         </button>
                         <button
                           onClick={() => {
-                            // Disable all slots
                             const newBlocked = { ...settings.blockedTimeSlots };
                             newBlocked[dayName] = [...timeSlots];
                             setSettings(prev => ({ ...prev, blockedTimeSlots: newBlocked }));
                           }}
-                          className="flex-1 px-4 py-2 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border-2 border-red-300 rounded-lg transition-all shadow-sm hover:shadow"
+                          className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border-2 border-red-300 rounded-lg transition-all shadow-sm hover:shadow"
                         >
                           ✕ Disable All Slots
                         </button>
@@ -1890,7 +1899,7 @@ const renderGeneralTab = () => (
         )}
         
         {/* Info box */}
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 sm:p-4">
           <p className="text-xs font-bold text-blue-900 mb-2">💡 How this works</p>
           <ul className="text-xs text-blue-800 space-y-1.5 list-disc list-inside">
             <li><span className="font-bold text-green-700">Green slots</span> are available for customer bookings</li>
@@ -1923,7 +1932,7 @@ const renderGeneralTab = () => (
         settingKey="reminderHoursBefore"
         min={1}
         max={168}
-        unit="hours"
+        unit="hrs"
       />
     </div>
   );
@@ -1950,40 +1959,44 @@ const renderDisplayTab = () => (
     />
   );
 
+  // Check if mobile for responsive tabs
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-gradient-to-r from-orange-50 to-white">
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Reservation Settings</h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 truncate max-w-[200px] sm:max-w-none">{selectedRestaurant?.name}</p>
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-gradient-to-r from-orange-50 to-white">
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 truncate">Reservation Settings</h2>
+            <p className="text-[10px] sm:text-sm text-gray-500 mt-0.5 truncate max-w-[150px] sm:max-w-none">{selectedRestaurant?.name}</p>
           </div>
           <button 
             onClick={onClose} 
-            className="p-1.5 sm:p-2 hover:bg-white rounded-full transition-colors"
+            className="p-1.5 sm:p-2 hover:bg-white rounded-full transition-colors flex-shrink-0"
           >
             <FiX className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
           </button>
         </div>
 
         {/* Tabs - Responsive scrolling */}
-        <div className="border-b border-gray-200 px-4 sm:px-6 flex-shrink-0 overflow-x-auto">
+        <div className="border-b border-gray-200 px-2 sm:px-6 flex-shrink-0 overflow-x-auto">
           <div className="flex gap-0.5 sm:gap-1 min-w-max">
-            {tabs.map(tab => {
+            {getTabs().map(tab => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium transition-all relative whitespace-nowrap ${
+                  className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-sm font-medium transition-all relative whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'text-[#fe8a24]'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  {tab.label}
+                  <span className="hidden xs:inline">{tab.label}</span>
+                  <span className="xs:hidden">{tab.id === 'opening_hours' ? '⏰' : tab.id === 'notifications' ? '🔔' : tab.id === 'display' ? '🖥️' : tab.id === 'tables' ? '🪑' : tab.id === 'booking' ? '📅' : tab.id === 'menu' ? '📋' : tab.id === 'hours' ? '🕐' : '⚙️'}</span>
                   {activeTab === tab.id && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fe8a24] rounded-full" />
                   )}
@@ -1994,7 +2007,7 @@ const renderDisplayTab = () => (
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           {activeTab === 'general' && renderGeneralTab()}
           {activeTab === 'booking' && renderBookingTab()}
           {activeTab === 'tables' && renderTablesTab()}
@@ -2006,17 +2019,17 @@ const renderDisplayTab = () => (
         </div>
 
         {/* Footer - Responsive buttons */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-end gap-2 sm:gap-3 flex-shrink-0 bg-gray-50">
+        <div className="px-3 sm:px-6 py-2.5 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-end gap-2 sm:gap-3 flex-shrink-0 bg-gray-50">
           <button
             onClick={onClose}
-            className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors text-sm"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-5 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all ${
+            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all text-sm ${
               saved
                 ? 'bg-green-500 text-white'
                 : 'bg-[#fe8a24] hover:bg-[#ff9d47] text-white shadow-sm hover:shadow'

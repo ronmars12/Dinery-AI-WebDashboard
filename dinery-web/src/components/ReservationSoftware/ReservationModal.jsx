@@ -46,7 +46,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">🍽️ Party Menu Selection</p>
         {totalItems > 0 && (
           <span className="text-xs font-bold bg-[#fe8a24]/10 text-[#fe8a24] px-2.5 py-1 rounded-full">
@@ -57,7 +57,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
 
       {/* Search */}
       <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
-        <FiSearch className="w-4 h-4 text-gray-400" />
+        <FiSearch className="w-4 h-4 text-gray-400 flex-shrink-0" />
         <input
           type="text"
           value={searchQuery}
@@ -66,7 +66,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
           className="bg-transparent text-sm text-gray-700 focus:outline-none w-full"
         />
         {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
             <FiX className="w-4 h-4" />
           </button>
         )}
@@ -90,8 +90,8 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                   onClick={() => setExpandedCategory(isExpanded ? null : catId)}
                   className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
                 >
-                  <span className="text-xs font-semibold text-gray-700">{catName}</span>
-                  <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-gray-700 truncate">{catName}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-xs text-gray-400">{items.length} items</span>
                     {isExpanded ? <FiChevronDown className="w-4 h-4 text-gray-400" /> : <FiChevronRight className="w-4 h-4 text-gray-400" />}
                   </div>
@@ -107,7 +107,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                       return (
                         <div
                           key={item.id}
-                          className={`flex items-center justify-between p-2 rounded-lg transition-all ${
+                          className={`flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded-lg transition-all gap-2 ${
                             selected ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50 border border-gray-100 hover:border-gray-300'
                           }`}
                         >
@@ -131,7 +131,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                           </div>
 
                           {selected ? (
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
                               <button
                                 type="button"
                                 onClick={() => onUpdateQuantity(item.id, qty - 1)}
@@ -159,7 +159,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                             <button
                               type="button"
                               onClick={() => onAddItem(item)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-xs font-semibold transition-colors"
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-xs font-semibold transition-colors flex-shrink-0"
                             >
                               <FiPlus className="w-3 h-3" /> Add
                             </button>
@@ -182,7 +182,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
           <div className="flex flex-wrap gap-1.5">
             {selectedItems.map((si) => (
               <span key={si.id} className="inline-flex items-center gap-1 bg-white border border-green-200 rounded-full px-2.5 py-1 text-xs font-medium text-gray-700">
-                {si.name}
+                <span className="truncate max-w-[80px] sm:max-w-none">{si.name}</span>
                 <span className="bg-[#fe8a24] text-white rounded-full px-1.5 text-[10px] font-bold">×{si.quantity}</span>
               </span>
             ))}
@@ -202,9 +202,8 @@ const ReservationModal = ({ reservation, onClose }) => {
       reservation_date: reservation.reservation_date?.toDate?.() || new Date(),
       ServiceType_Reservation: reservation.ServiceType_Reservation || 'dine-in',
       status: reservation.status || 'pending',
-      special_requests: reservation.special_requests || '',      // Public notes (visible to customer)
-      internal_notes: reservation.internal_notes || '',          // Internal notes (staff only)
-      // Support all offer field variants from mobile + web
+      special_requests: reservation.special_requests || '',
+      internal_notes: reservation.internal_notes || '',
       claimed_offer: reservation.claimed_offer || reservation.offer_name || reservation.offerName || '',
       claimed_offer_id: reservation.claimed_offer_id || reservation.offer_id || reservation.offerId || '',
       discount_percent:
@@ -547,14 +546,14 @@ const ReservationModal = ({ reservation, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl text-white font-semibold text-sm transition-all animate-bounce-in ${
+        <div className={`fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-2xl text-white font-semibold text-xs sm:text-sm transition-all animate-bounce-in max-w-[90vw] ${
           toast.type === 'delete' ? 'bg-red-500' : 'bg-green-500'
         }`}>
-          <span className="text-xl">{toast.type === 'delete' ? '🗑️' : '✅'}</span>
-          {toast.message}
+          <span className="text-lg sm:text-xl">{toast.type === 'delete' ? '🗑️' : '✅'}</span>
+          <span className="truncate">{toast.message}</span>
         </div>
       )}
       <div 
@@ -562,47 +561,47 @@ const ReservationModal = ({ reservation, onClose }) => {
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-2xl font-bold">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp max-h-[95vh] overflow-y-auto">
+        {/* Header - Responsive */}
+        <div className="sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-2xl font-bold truncate">
                 Edit Booking #{reservation.id.slice(0, 8)}
               </h3>
-              <p className="text-green-100 text-sm mt-1">
+              <p className="text-green-100 text-xs sm:text-sm mt-0.5 sm:mt-1 truncate">
                 {new Date(reservation.created_at?.toDate?.() || reservation.created_at).toLocaleString()}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+              className="text-white hover:bg-white/20 rounded-full p-1.5 sm:p-2 transition-colors flex-shrink-0"
             >
-              <FiX className="w-6 h-6" />
+              <FiX className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - Responsive padding */}
+        <div className="p-3 sm:p-6">
 
           {/* ── Pending Request Banner ── */}
           {(liveReservation.change_request || liveReservation.cancel_reason || liveReservation.modification_summary) && (
-          <div className={`mb-6 rounded-2xl border-2 overflow-hidden ${
+          <div className={`mb-4 sm:mb-6 rounded-2xl border-2 overflow-hidden ${
             approvalStatus === 'approved' ? 'border-green-300 bg-green-50' :
             approvalStatus === 'rejected' ? 'border-gray-300 bg-gray-50' :
             liveReservation.cancel_reason ? 'border-purple-300 bg-purple-50' :
             liveReservation.modification_summary ? 'border-blue-300 bg-blue-50' :
             'border-blue-300 bg-blue-50'
           }`}>
-            <div className={`px-4 py-2 flex items-center gap-2 ${
+            <div className={`px-3 sm:px-4 py-1.5 sm:py-2 flex flex-wrap items-center gap-2 ${
               approvalStatus === 'approved' ? 'bg-green-500' :
               approvalStatus === 'rejected' ? 'bg-gray-500' :
               liveReservation.cancel_reason ? 'bg-purple-600' :
               liveReservation.modification_summary ? 'bg-blue-500' :
               'bg-blue-500'
             }`}>
-              <span className="text-white text-xs font-bold uppercase tracking-wider">
+              <span className="text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
                 {approvalStatus === 'approved' ? '✅ Approved Successfully' :
                 approvalStatus === 'rejected' ? '✗ Request Rejected' :
                 liveReservation.cancel_reason ? '✕ Cancellation Request' :
@@ -610,32 +609,32 @@ const ReservationModal = ({ reservation, onClose }) => {
                 '! Change Request'}
               </span>
               {!approvalStatus && !liveReservation.modification_summary && (
-                <span className="ml-auto text-white/70 text-xs">Awaiting your approval</span>
+                <span className="ml-auto text-white/70 text-[10px] sm:text-xs">Awaiting your approval</span>
               )}
               {liveReservation.modification_summary && !liveReservation.cancel_reason && (
-                <span className="ml-auto text-white/70 text-xs">
+                <span className="ml-auto text-white/70 text-[10px] sm:text-xs">
                   {liveReservation.modified_at?.toDate
                     ? liveReservation.modified_at.toDate().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                     : ''}
                 </span>
               )}
             </div>
-            <div className="px-4 py-3 flex items-start justify-between gap-4">
-              <div className="flex-1">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+              <div className="flex-1 min-w-0">
                 {approvalStatus === 'approved' ? (
-                  <p className="text-sm font-semibold text-green-700">
+                  <p className="text-xs sm:text-sm font-semibold text-green-700">
                     ✅ The request has been approved and the customer has been notified by email.
                   </p>
                 ) : approvalStatus === 'rejected' ? (
-                  <p className="text-sm font-semibold text-gray-600">
+                  <p className="text-xs sm:text-sm font-semibold text-gray-600">
                     ✗ The request has been rejected. Reservation remains unchanged.
                   </p>
                 ) : liveReservation.modification_summary && !liveReservation.cancel_reason ? (
                   <div>
-                    <p className="text-sm font-semibold text-gray-800 mb-1">Customer updated their booking:</p>
-                    <div className="flex flex-wrap gap-2 mt-1">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-1">Customer updated their booking:</p>
+                    <div className="flex flex-wrap gap-1 sm:gap-2 mt-1">
                       {liveReservation.modification_summary.split(' · ').map((change, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-full">
+                        <span key={i} className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
                           {change.startsWith('Date') ? '📅' : change.startsWith('Time') ? '🕐' : change.startsWith('Guests') ? '👥' : '✏️'} {change}
                         </span>
                       ))}
@@ -653,18 +652,18 @@ const ReservationModal = ({ reservation, onClose }) => {
                         console.error('Dismiss error:', e);
                       }
                     }}
-                    className="mt-2 text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+                    className="mt-1.5 sm:mt-2 text-[9px] sm:text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
                     Dismiss
                   </button>
                   </div>
                 ) : (
                   <>
-                    <p className="text-sm font-semibold text-gray-800 mb-1">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-1">
                       {liveReservation.cancel_reason ? 'Customer wants to cancel:' : 'Customer requested:'}
                     </p>
-                    <p className="text-sm text-gray-600">{liveReservation.change_request || liveReservation.cancel_reason}</p>
+                    <p className="text-xs sm:text-sm text-gray-600 break-words">{liveReservation.change_request || liveReservation.cancel_reason}</p>
                     {liveReservation.requested_date && (
-                      <p className="text-xs text-blue-600 font-semibold mt-1">
+                      <p className="text-[10px] sm:text-xs text-blue-600 font-semibold mt-1">
                         📅 Requested new date/time: {(() => {
                           const d = liveReservation.requested_date?.toDate?.() || new Date(liveReservation.requested_date);
                           const hours = String(d.getHours()).padStart(2, '0');
@@ -734,7 +733,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                         setApprovalStatus(null);
                       }
                     }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all disabled:opacity-50">
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all disabled:opacity-50">
                     {approvalStatus === 'loading' ? '...' : '✓ Approve'}
                   </button>
                   <button
@@ -757,7 +756,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                         setApprovalStatus(null);
                       }
                     }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-all disabled:opacity-50">
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-all disabled:opacity-50">
                     {approvalStatus === 'loading' ? '...' : '✗ Reject'}
                   </button>
                 </div>
@@ -766,16 +765,16 @@ const ReservationModal = ({ reservation, onClose }) => {
           </div>
         )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Customer Information */}
-            <div className="space-y-4 flex flex-col">
-              <h4 className="text-lg font-semibold text-gray-900 border-b pb-2">
+            <div className="space-y-3 sm:space-y-4 flex flex-col">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2">
                 Customer Information
               </h4>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FiUser className="w-4 h-4 text-orange-500" />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <FiUser className="w-4 h-4 text-orange-500 flex-shrink-0" />
                   Customer Name *
                 </label>
                 <input
@@ -784,14 +783,14 @@ const ReservationModal = ({ reservation, onClose }) => {
                   value={formData.customer_name}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FiMail className="w-4 h-4 text-orange-500" />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <FiMail className="w-4 h-4 text-orange-500 flex-shrink-0" />
                   Email
                 </label>
                 <input
@@ -799,14 +798,14 @@ const ReservationModal = ({ reservation, onClose }) => {
                   name="customer_email"
                   value={formData.customer_email}
                   onChange={handleChange}
-                  className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                   placeholder="john@example.com"
                 />
               </div>
 
                <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FiPhone className="w-4 h-4 text-orange-500" />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <FiPhone className="w-4 h-4 text-orange-500 flex-shrink-0" />
                   Phone Number
                 </label>
                 <input
@@ -814,7 +813,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                   name="customer_phone"
                   value={formData.customer_phone}
                   onChange={handleChange}
-                  className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                   placeholder="+1 234 567 8900"
                 />
               </div>
@@ -829,12 +828,12 @@ const ReservationModal = ({ reservation, onClose }) => {
                   : reservation.customer_birthday;
                 return (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                       🎂 Birthday
                     </label>
-                    <div className="w-full rounded-lg border-2 border-amber-200 bg-amber-50 px-4 py-3 flex items-center gap-2">
-                      <span className="text-sm font-semibold text-amber-800">{display}</span>
-                      <span className="ml-auto text-xs text-amber-500 font-medium">Customer provided</span>
+                    <div className="w-full rounded-lg border-2 border-amber-200 bg-amber-50 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-semibold text-amber-800 truncate">{display}</span>
+                      <span className="ml-auto text-[10px] sm:text-xs text-amber-500 font-medium">Customer provided</span>
                     </div>
                   </div>
                 );
@@ -842,17 +841,17 @@ const ReservationModal = ({ reservation, onClose }) => {
 
               {tables.length > 0 && (
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                     Table Assignment
                     {selectedTableIds.length > 1 && (
-                      <span className="ml-2 text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
-                        ⛓ {selectedTableIds.length} tables selected
+                      <span className="ml-2 text-[10px] sm:text-xs font-bold text-purple-600 bg-purple-100 px-1.5 sm:px-2 py-0.5 rounded-full">
+                        ⛓ {selectedTableIds.length} tables
                       </span>
                     )}
                   </label>
-                  <div className="border-2 border-gray-200 rounded-xl p-2.5 overflow-y-auto" style={{ maxHeight: 220 }}>
-                    <p className="text-xs text-gray-400 mb-2">Click to toggle · select multiple tables</p>
-                    <div className="grid grid-cols-4 gap-1.5">
+                  <div className="border-2 border-gray-200 rounded-xl p-2 overflow-y-auto" style={{ maxHeight: 220 }}>
+                    <p className="text-[10px] sm:text-xs text-gray-400 mb-2">Click to toggle · select multiple tables</p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
                       {tables.map(t => {
                         const isSelected = selectedTableIds.includes(t.id);
                         const cap = t.maxCapacity || t.capacity || 0;
@@ -869,7 +868,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                               );
                             }}
                             title={`${t.name} · Cap. ${cap}`}
-                            className={`relative rounded-lg px-1 py-2.5 text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 ${
+                            className={`relative rounded-lg px-0.5 sm:px-1 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 ${
                               isSelected
                                 ? 'bg-[#fe8a24] border-[#fe8a24] text-white shadow-md scale-105'
                                 : guestFit
@@ -878,27 +877,27 @@ const ReservationModal = ({ reservation, onClose }) => {
                             }`}
                           >
                             <span className="leading-tight">{t.name}</span>
-                            <span className={`text-[10px] font-normal leading-tight ${isSelected ? 'text-white/80' : 'opacity-60'}`}>
+                            <span className={`text-[8px] sm:text-[10px] font-normal leading-tight ${isSelected ? 'text-white/80' : 'opacity-60'}`}>
                               ({cap})
                             </span>
                             {!guestFit && !isSelected && (
-                              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-400 rounded-full" />
+                              <span className="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-orange-400 rounded-full" />
                             )}
                           </button>
                         );
                       })}
                     </div>
-                    <div className="flex items-center gap-3 mt-2 pt-2 border-t border-gray-100">
-                      <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                        <span className="w-2 h-2 rounded-full bg-green-400 inline-block" /> fits guests
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 pt-2 border-t border-gray-100">
+                      <span className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-400">
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400 inline-block" /> fits guests
                       </span>
-                      <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                        <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" /> too small
+                      <span className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-400">
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-orange-400 inline-block" /> too small
                       </span>
                       <button
                         type="button"
                         onClick={() => setSelectedTableIds([])}
-                        className="ml-auto text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                        className="ml-auto text-[9px] sm:text-[10px] text-gray-400 hover:text-red-500 transition-colors"
                       >
                         Clear all
                       </button>
@@ -909,13 +908,13 @@ const ReservationModal = ({ reservation, onClose }) => {
             </div>
 
             {/* Reservation Details */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-900 border-b pb-2">
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2">
                 Reservation Details
               </h4>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Date *
                 </label>
                 <input
@@ -924,19 +923,19 @@ const ReservationModal = ({ reservation, onClose }) => {
                   value={formatDateForInput(formData.reservation_date)}
                   onChange={handleDateTimeChange}
                   required
-                  className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FiClock className="w-4 h-4 text-orange-500" />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <FiClock className="w-4 h-4 text-orange-500 flex-shrink-0" />
                   Time (24-hour format) *
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-center gap-2">
                   {/* From */}
-                <div className="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 focus-within:border-orange-500 transition-colors">
-                  <p className="text-xs text-gray-400 mb-1">From</p>
+                <div className="w-full sm:flex-1 border-2 border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus-within:border-orange-500 transition-colors">
+                  <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">From</p>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -964,12 +963,12 @@ const ReservationModal = ({ reservation, onClose }) => {
                           setFormData(prev => ({ ...prev, from_time: val }));
                         }
                       }}
-                    className="text-sm font-semibold text-gray-800 focus:outline-none w-full bg-transparent"
+                    className="text-xs sm:text-sm font-semibold text-gray-800 focus:outline-none w-full bg-transparent"
                   />
                 </div>
                 {/* To */}
-                <div className="flex-1 border-2 border-gray-200 rounded-lg px-3 py-2 focus-within:border-orange-500 transition-colors">
-                  <p className="text-xs text-gray-400 mb-1">To</p>
+                <div className="w-full sm:flex-1 border-2 border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus-within:border-orange-500 transition-colors">
+                  <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">To</p>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -995,16 +994,16 @@ const ReservationModal = ({ reservation, onClose }) => {
                         setFormData(prev => ({ ...prev, to_time: val }));
                       }
                     }}
-                    className="text-sm font-semibold text-gray-800 focus:outline-none w-full bg-transparent"
+                    className="text-xs sm:text-sm font-semibold text-gray-800 focus:outline-none w-full bg-transparent"
                   />
                 </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Use 24-hour format (e.g., 14:30 for 2:30 PM)</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Use 24-hour format (e.g., 14:30 for 2:30 PM)</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                  <FiUsers className="w-4 h-4 text-orange-500" />
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                  <FiUsers className="w-4 h-4 text-orange-500 flex-shrink-0" />
                   Number of Guests *
                 </label>
                <input
@@ -1033,19 +1032,19 @@ const ReservationModal = ({ reservation, onClose }) => {
                     min={1}
                     max={999}
                     required
-                    className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
+                    className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                   />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Service Type
                 </label>
                 <select
                   name="ServiceType_Reservation"
                   value={formData.ServiceType_Reservation}
                   onChange={handleChange}
-                  className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                 >
                   <option value="dine-in">Dine-In</option>
                   <option value="takeaway">Takeaway</option>
@@ -1054,14 +1053,14 @@ const ReservationModal = ({ reservation, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                   Status
                 </label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors"
+                  className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                 >
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
@@ -1073,39 +1072,39 @@ const ReservationModal = ({ reservation, onClose }) => {
       
             {/* Notes Section - Full Width */}
             <div className="md:col-span-2">
-              <h4 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2 mb-3 sm:mb-4">
                 Notes
               </h4>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {/* Public Notes (Special Requests) */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <FiGlobe className="w-4 h-4 text-blue-500" />
-                    Public Notes <span className="text-xs text-gray-400 font-normal">(visible to customer)</span>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                    <FiGlobe className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                    Public Notes <span className="text-[10px] sm:text-xs text-gray-400 font-normal">(visible to customer)</span>
                   </label>
                   <textarea
                     name="special_requests"
                     value={formData.special_requests}
                     onChange={handleChange}
                     rows="4"
-                    className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                    className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors resize-none"
                     placeholder="Special requests, dietary requirements, allergies, celebrations…"
                   />
                 </div>
 
                 {/* Internal Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <FiLock className="w-4 h-4 text-purple-500" />
-                    Internal Notes <span className="text-xs text-gray-400 font-normal">(staff only)</span>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
+                    <FiLock className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                    Internal Notes <span className="text-[10px] sm:text-xs text-gray-400 font-normal">(staff only)</span>
                   </label>
                   <textarea
                     name="internal_notes"
                     value={formData.internal_notes}
                     onChange={handleChange}
                     rows="4"
-                    className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 focus:outline-none focus:border-orange-500 transition-colors resize-none"
+                    className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors resize-none"
                     placeholder="Staff notes, VIP info, special arrangements, pre-order details…"
                   />
                 </div>
@@ -1114,7 +1113,7 @@ const ReservationModal = ({ reservation, onClose }) => {
 
             {/* ── Party Menu Section ── */}
             <div className="md:col-span-2">
-              <h4 className="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2 mb-3 sm:mb-4">
                 🍽️ Party Menu
               </h4>
               
@@ -1123,21 +1122,21 @@ const ReservationModal = ({ reservation, onClose }) => {
                   <button
                     type="button"
                     onClick={() => setShowMenuSelector(!showMenuSelector)}
-                    className="flex items-center gap-2 text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                    className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
                   >
                     {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
                     {showMenuSelector ? 'Hide Party Menu' : 'Edit Party Menu'}
                     {selectedMenuItems.length > 0 && (
-                      <span className="text-xs bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
                         {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
                       </span>
                     )}
                   </button>
                   {showMenuSelector && (
-                    <div className="mt-3">
+                    <div className="mt-2 sm:mt-3">
                       {loadingMenu ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="w-6 h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                        <div className="flex items-center justify-center py-6 sm:py-8">
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
                         </div>
                       ) : (
                         <MenuItemSelector 
@@ -1158,19 +1157,19 @@ const ReservationModal = ({ reservation, onClose }) => {
               {/* Selected Menu Items Display (read-only summary) */}
               {reservation.selected_menu_items?.length > 0 && (
                 <div className="mt-3 bg-orange-50 border-2 border-orange-200 rounded-xl overflow-hidden">
-                  <div className="divide-y divide-orange-100">
+                  <div className="divide-y divide-orange-100 max-h-48 overflow-y-auto">
                     {reservation.selected_menu_items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                        <div className="flex items-center gap-3">
+                      <div key={i} className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 gap-1">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                           {item.quantity > 1 && (
-                            <span className="text-xs font-bold bg-[#fe8a24] text-white px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] sm:text-xs font-bold bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full flex-shrink-0">
                               ×{item.quantity}
                             </span>
                           )}
-                          <span className="text-sm font-semibold text-gray-800">{item.name}</span>
+                          <span className="text-xs sm:text-sm font-semibold text-gray-800 truncate">{item.name}</span>
                         </div>
                         {item.price && (
-                          <span className="text-sm font-bold text-[#fe8a24]">
+                          <span className="text-xs sm:text-sm font-bold text-[#fe8a24] flex-shrink-0">
                             {item.quantity > 1
                               ? `${(parseFloat(item.price) * item.quantity).toFixed(0)},-`
                               : `${item.price},-`}
@@ -1179,12 +1178,12 @@ const ReservationModal = ({ reservation, onClose }) => {
                       </div>
                     ))}
                   </div>
-                  <div className="px-4 py-2 bg-orange-100 border-t border-orange-200 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-orange-700">
+                  <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-orange-100 border-t border-orange-200 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[10px] sm:text-xs font-semibold text-orange-700">
                       {reservation.selected_menu_items.reduce((s, i) => s + (i.quantity || 1), 0)} items selected
                     </span>
                     {reservation.selected_menu_items.some(i => i.price) && (
-                      <span className="text-sm font-bold text-[#fe8a24]">
+                      <span className="text-xs sm:text-sm font-bold text-[#fe8a24]">
                         Total: {reservation.selected_menu_items.reduce((s, i) =>
                           s + (parseFloat(i.price) || 0) * (i.quantity || 1), 0
                         ).toFixed(0)},-
@@ -1201,9 +1200,9 @@ const ReservationModal = ({ reservation, onClose }) => {
 
                   {/* Source badge */}
                   {formData.source && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Booking Source:</span>
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">Booking Source:</span>
+                      <span className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold ${
                         formData.source === 'mobile_app'
                           ? 'bg-purple-100 text-purple-700 border border-purple-200'
                           : formData.source === 'reservation_link'
@@ -1219,43 +1218,43 @@ const ReservationModal = ({ reservation, onClose }) => {
 
                  {/* Offer block */}
                 {formData.claimed_offer && (
-                  <div className="relative bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-5 overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-                    <div className="absolute bottom-0 left-0 w-20 h-20 bg-orange-100 rounded-full translate-y-1/2 -translate-x-1/2 opacity-50" />
+                  <div className="relative bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-3 sm:p-5 overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-amber-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
+                    <div className="absolute bottom-0 left-0 w-16 h-16 sm:w-20 sm:h-20 bg-orange-100 rounded-full translate-y-1/2 -translate-x-1/2 opacity-50" />
 
-                    <div className="relative flex items-start gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 bg-amber-400 rounded-xl flex items-center justify-center shadow-md">
-                        <span className="text-2xl">🏷️</span>
+                    <div className="relative flex flex-wrap items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-amber-400 rounded-xl flex items-center justify-center shadow-md">
+                        <span className="text-xl sm:text-2xl">🏷️</span>
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-bold text-amber-900 text-sm uppercase tracking-wide">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h4 className="font-bold text-amber-900 text-xs sm:text-sm uppercase tracking-wide">
                             Offer Applied
                           </h4>
                           {reservation.coupon_confirmed && (
-                            <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full font-medium">
+                            <span className="text-[9px] sm:text-xs bg-green-500 text-white px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
                               ✓ Confirmed
                             </span>
                           )}
                           {formData.source === 'mobile_app' && (
-                            <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full font-medium">
+                            <span className="text-[9px] sm:text-xs bg-purple-500 text-white px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
                               Mobile
                             </span>
                           )}
                         </div>
 
-                        <p className="text-amber-800 font-semibold text-base mb-3">
+                        <p className="text-amber-800 font-semibold text-sm sm:text-base mb-2 sm:mb-3 break-words">
                           {formData.claimed_offer}
                         </p>
 
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2 sm:gap-3">
                           {formData.discount_percent > 0 && (
-                            <div className="flex items-center gap-1.5 bg-white border border-amber-200 rounded-xl px-3 py-1.5 shadow-sm">
-                              <span className="text-amber-500 font-bold text-lg">%</span>
+                            <div className="flex items-center gap-1.5 bg-white border border-amber-200 rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 shadow-sm">
+                              <span className="text-amber-500 font-bold text-base sm:text-lg">%</span>
                               <div>
-                                <p className="text-xs text-gray-500 leading-none">Discount</p>
-                                <p className="text-sm font-bold text-gray-900">{formData.discount_percent}% off</p>
+                                <p className="text-[9px] sm:text-xs text-gray-500 leading-none">Discount</p>
+                                <p className="text-xs sm:text-sm font-bold text-gray-900">{formData.discount_percent}% off</p>
                               </div>
                             </div>
                           )}
@@ -1269,30 +1268,30 @@ const ReservationModal = ({ reservation, onClose }) => {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        {/* Footer - Responsive */}
+        <div className="sticky bottom-0 bg-gray-50 px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm"
           >
-            <FiTrash2 className="w-5 h-5" />
+            <FiTrash2 className="w-4 h-4 sm:w-5 sm:h-5" />
             {deleting ? 'Deleting...' : 'Delete'}
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={onClose}
-              className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm"
             >
-              <FiSave className="w-5 h-5" />
+              <FiSave className="w-4 h-4 sm:w-5 sm:h-5" />
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
