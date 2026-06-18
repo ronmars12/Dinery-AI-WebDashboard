@@ -431,8 +431,15 @@ const CreateReservationModal = ({
 }) => {
   const isWalkIn    = modalMode === 'walkin';
   const isQuickBook = modalMode === 'quickbook';
-  const staffRestaurantId = sessionStorage.getItem("staffRestaurantId");
-  const isStaff           = !!staffRestaurantId;
+  
+  // Safely get staffRestaurantId - handle case where sessionStorage might not be available
+  let staffRestaurantId = null;
+  try {
+    staffRestaurantId = sessionStorage.getItem("staffRestaurantId");
+  } catch (e) {
+    // sessionStorage not available
+  }
+  const isStaff = !!staffRestaurantId;
 
   const [guests, setGuests]                     = useState(2);
   const [customGuests, setCustomGuests]         = useState('');
@@ -454,13 +461,21 @@ const CreateReservationModal = ({
   const [showTimeSlots, setShowTimeSlots] = useState(true);
   const [isTimeManuallyChanged, setIsTimeManuallyChanged] = useState(false);
   const [fromTime, setFromTime] = useState(() => {
-    const now = new Date();
-    return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    try {
+      const now = new Date();
+      return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    } catch (e) {
+      return '12:00';
+    }
   });
   const [toTime, setToTime] = useState(() => {
-    const now = new Date();
-    const end = new Date(now.getTime() + 60 * 60000);
-    return `${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
+    try {
+      const now = new Date();
+      const end = new Date(now.getTime() + 60 * 60000);
+      return `${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
+    } catch (e) {
+      return '13:00';
+    }
   });
   const [untilClose, setUntilClose]       = useState(false);
   const sittingTime                       = 60;
@@ -578,15 +593,20 @@ const CreateReservationModal = ({
 
   useEffect(() => {
     if (!fromTime || !toTime) {
-      const now = new Date();
-      const mins = now.getMinutes();
-      const roundedMins = Math.ceil(mins / 30) * 30;
-      now.setMinutes(roundedMins, 0, 0);
-      const from = now.toTimeString().slice(0, 5);
-      setFromTime(from);
-      
-      const end = new Date(now.getTime() + 60 * 60000);
-      setToTime(end.toTimeString().slice(0, 5));
+      try {
+        const now = new Date();
+        const mins = now.getMinutes();
+        const roundedMins = Math.ceil(mins / 30) * 30;
+        now.setMinutes(roundedMins, 0, 0);
+        const from = now.toTimeString().slice(0, 5);
+        setFromTime(from);
+        
+        const end = new Date(now.getTime() + 60 * 60000);
+        setToTime(end.toTimeString().slice(0, 5));
+      } catch (e) {
+        setFromTime('12:00');
+        setToTime('13:00');
+      }
     }
   }, []);
 
@@ -639,63 +659,64 @@ const CreateReservationModal = ({
     const dayCloseTime = matchingHours?.closeTime || ch?.closeTime || closeTime || '22:00';
 
     if (!dayOpenTime || !dayCloseTime) return [];
-  const getEffectiveDurationForSlot = (guestCount) => {
-    const def = settings?.defaultReservationDuration || 120;
-    if (!settings?.useGuestBasedDuration || !settings?.guestDurationRules?.length) return def;
-    const match = settings.guestDurationRules.find(
-      r => guestCount >= (r.minGuests || 1) && guestCount <= (r.maxGuests || 99)
-    );
-    return match ? match.duration : def;
-  };
-  const duration = getEffectiveDurationForSlot(guests);
+    
+    const getEffectiveDurationForSlot = (guestCount) => {
+      const def = settings?.defaultReservationDuration || 120;
+      if (!settings?.useGuestBasedDuration || !settings?.guestDurationRules?.length) return def;
+      const match = settings.guestDurationRules.find(
+        r => guestCount >= (r.minGuests || 1) && guestCount <= (r.maxGuests || 99)
+      );
+      return match ? match.duration : def;
+    };
+    const duration = getEffectiveDurationForSlot(guests);
 
-  const [oH, oM] = dayOpenTime.split(':').map(Number);
-  const [cH, cM] = dayCloseTime.split(':').map(Number);
-  const oMin = oH * 60 + oM;
-  let cMin = cH * 60 + cM;
+    const [oH, oM] = dayOpenTime.split(':').map(Number);
+    const [cH, cM] = dayCloseTime.split(':').map(Number);
+    const oMin = oH * 60 + oM;
+    let cMin = cH * 60 + cM;
 
-  if (cMin <= oMin) cMin += 24 * 60;
+    if (cMin <= oMin) cMin += 24 * 60;
 
-  const maxMin = oMin + 18 * 60;
-  const effOpen  = oMin + startOffset;
-  const effClose = Math.min(cMin - endOffset, maxMin);
+    const maxMin = oMin + 18 * 60;
+    const effOpen  = oMin + startOffset;
+    const effClose = Math.min(cMin - endOffset, maxMin);
 
-  const slots = [];
-  for (let m = effOpen; m < effClose; m += interval) {
-    const actualMin = m % (24 * 60);
-    const h = Math.floor(actualMin / 60);
-    const min = actualMin % 60;
-    const startTime = `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+    const slots = [];
+    for (let m = effOpen; m < effClose; m += interval) {
+      const actualMin = m % (24 * 60);
+      const h = Math.floor(actualMin / 60);
+      const min = actualMin % 60;
+      const startTime = `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
 
-    const endActual = (m + duration) % (24 * 60);
-    const eH = Math.floor(endActual / 60);
-    const eM = endActual % 60;
-    const endTime = `${String(eH).padStart(2,'0')}:${String(eM).padStart(2,'0')}`;
+      const endActual = (m + duration) % (24 * 60);
+      const eH = Math.floor(endActual / 60);
+      const eM = endActual % 60;
+      const endTime = `${String(eH).padStart(2,'0')}:${String(eM).padStart(2,'0')}`;
 
-    slots.push({
-      label: `${startTime} – ${endTime}`,
-      startH: h,
-      startMin: min,
-      startTime,
-    });
-  }
-
-  const blocked = settings?.blockedTimeSlots?.[dayName] || [];
-  
-  const now = new Date();
-  const resDate = formData.reservation_date || new Date();
-  const isToday = resDate.toDateString() === now.toDateString();
-
-  return slots.filter(s => {
-    if (blocked.includes(s.startTime)) return false;
-    if (isToday) {
-      const slotDateTime = new Date(resDate);
-      slotDateTime.setHours(s.startH, s.startMin, 0, 0);
-      if (slotDateTime <= now) return false;
+      slots.push({
+        label: `${startTime} – ${endTime}`,
+        startH: h,
+        startMin: min,
+        startTime,
+      });
     }
-    return true;
-  });
-}, [openTime, closeTime, formData.reservation_date, settings, guests]);
+
+    const blocked = settings?.blockedTimeSlots?.[dayName] || [];
+    
+    const now = new Date();
+    const resDate = formData.reservation_date || new Date();
+    const isToday = resDate.toDateString() === now.toDateString();
+
+    return slots.filter(s => {
+      if (blocked.includes(s.startTime)) return false;
+      if (isToday) {
+        const slotDateTime = new Date(resDate);
+        slotDateTime.setHours(s.startH, s.startMin, 0, 0);
+        if (slotDateTime <= now) return false;
+      }
+      return true;
+    });
+  }, [openTime, closeTime, formData.reservation_date, settings, guests, selectedRestaurant]);
 
   const combinedCapacity = tables.filter(t => selectedTableIds.includes(t.id)).reduce((s,t) => s+(t.maxCapacity||0), 0);
   const capacityOk = selectedTableIds.length > 0 && combinedCapacity >= guests;
@@ -774,18 +795,40 @@ const CreateReservationModal = ({
           : tables.filter(t=>selectedTableIds.includes(t.id)).reduce((s,t)=>s+(t.maxCapacity||0),0);
         if (cap < guests) { setTableError(`Table capacity (${cap}) cannot fit ${guests} guests`); setSaving(false); return; }
       }
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error('Not authenticated');
-        let ownerUid = currentUser.uid;
-        if (isStaff) {
-          if (selectedRestaurant?.Owner_ID) {
-            ownerUid = selectedRestaurant.Owner_ID;
-          } else {
-            setError('Restaurant owner info missing. Please contact your administrator.');
-            setSaving(false);
-            return;
-          }
+      
+      // Safely get current user
+      let currentUser = null;
+      try {
+        currentUser = auth.currentUser;
+      } catch (e) {
+        // Auth not initialized
+      }
+      
+      if (!currentUser) {
+        // For calendar clicks, we might not have auth initialized yet
+        // Try to get user from session or use a fallback
+        try {
+          const { getAuth } = await import('firebase/auth');
+          const authInstance = getAuth();
+          currentUser = authInstance.currentUser;
+        } catch (e) {
+          // Still no auth
         }
+      }
+      
+      if (!currentUser) throw new Error('Not authenticated. Please refresh and try again.');
+      
+      let ownerUid = currentUser.uid;
+      if (isStaff) {
+        if (selectedRestaurant?.Owner_ID) {
+          ownerUid = selectedRestaurant.Owner_ID;
+        } else {
+          setError('Restaurant owner info missing. Please contact your administrator.');
+          setSaving(false);
+          return;
+        }
+      }
+      
       const reservationDate = getReservationDate();
       const primaryTableId  = selectedTableIds[0];
       const primaryTable    = tables.find(t=>t.id===primaryTableId);
@@ -797,26 +840,28 @@ const CreateReservationModal = ({
         );
         return match ? match.duration : def;
       };
-        const duration = (() => {
-          if (isQuickBook) return getEffectiveDuration(guests);
-          if (isWalkIn) {
-            const [fh, fm] = fromTime.split(':').map(Number);
-            const [th, tm] = toTime.split(':').map(Number);
-            const diff = (th * 60 + tm) - (fh * 60 + fm);
-            return diff > 0 ? diff : sittingTime;
-          }
-          if (untilClose) {
-            const [fh, fm] = fromTime.split(':').map(Number);
-            const [th, tm] = closeTime.split(':').map(Number);
-            return Math.max(15, (th * 60 + tm) - (fh * 60 + fm));
-          }
-          if (modalMode === 'full' && showTimeSlots && selectedSlot) {
-            return getEffectiveDuration(guests);
-          }
+      
+      const duration = (() => {
+        if (isQuickBook) return getEffectiveDuration(guests);
+        if (isWalkIn) {
           const [fh, fm] = fromTime.split(':').map(Number);
           const [th, tm] = toTime.split(':').map(Number);
+          const diff = (th * 60 + tm) - (fh * 60 + fm);
+          return diff > 0 ? diff : sittingTime;
+        }
+        if (untilClose) {
+          const [fh, fm] = fromTime.split(':').map(Number);
+          const [th, tm] = closeTime.split(':').map(Number);
           return Math.max(15, (th * 60 + tm) - (fh * 60 + fm));
-        })();
+        }
+        if (modalMode === 'full' && showTimeSlots && selectedSlot) {
+          return getEffectiveDuration(guests);
+        }
+        const [fh, fm] = fromTime.split(':').map(Number);
+        const [th, tm] = toTime.split(':').map(Number);
+        return Math.max(15, (th * 60 + tm) - (fh * 60 + fm));
+      })();
+      
       const reservationData = {
         customer_name: name || 'Walk-in Guest',
         customer_email:    formData.customer_email.trim(),
@@ -835,7 +880,7 @@ const CreateReservationModal = ({
         })),
         restaurant_owner_id: ownerUid,
         created_by_uid: currentUser.uid,
-        created_by_role: isStaff ? (sessionStorage.getItem("staffRole") || "staff") : "owner",
+        created_by_role: isStaff ? (() => { try { return sessionStorage.getItem("staffRole") || "staff"; } catch(e) { return "staff"; } })() : "owner",
         restaurant_id:     selectedRestaurant?.id||null,
         restaurant_name:   selectedRestaurant?.name||'',
         created_at:        serverTimestamp(),
@@ -903,7 +948,7 @@ const CreateReservationModal = ({
             </div>
           ` : '';
 
-          const emailResult = await sendEmailFn({
+          await sendEmailFn({
             to: formData.customer_email.trim(),
             subject: `Reservation Confirmed – ${selectedRestaurant?.name || 'Restaurant'}`,
             html: `
@@ -931,8 +976,7 @@ const CreateReservationModal = ({
                 </p>
               </div>
             `,
-          });
-          console.log('📧 Confirmation email sent! Resend ID:', emailResult?.data?.id);
+          }).catch(e => console.warn('Email failed:', e));
         } catch (emailErr) {
           console.error('❌ Confirmation email failed:', emailErr?.message || emailErr);
         }
