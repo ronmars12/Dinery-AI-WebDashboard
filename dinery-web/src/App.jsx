@@ -1,15 +1,18 @@
+// App.jsx
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, firestore } from "./firebase";
 import { AnimatePresence } from "framer-motion";
+import { ThemeProvider } from "./ThemeContext"; 
 import Login from "./authentication/Login";
 import MainDashboard from "./components/MainDashboard";
 import SuperAdminDashboard from "./components/SuperAdmin/SuperAdminDashboard";
 import PublicReservationPage from "./components/ReservationLinks/Publicreservationpage";
 import dineryLogo from "./assets/dinery-logo.png";
 import ManageReservationPage from "./components/ReservationLinks/ManageReservationPage";
+
 console.log('=== ENVIRONMENT VARIABLES TEST ===');
 console.log('Growth Price ID:', import.meta.env.VITE_STRIPE_GROWTH_PRICE_ID);
 console.log('Professional Price ID:', import.meta.env.VITE_STRIPE_PROFESSIONAL_PRICE_ID);
@@ -22,7 +25,6 @@ function AnimatedRoutes({ user, role }) {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-
         <Route path="/reserve/:restaurantId" element={<PublicReservationPage />} />
         <Route path="/manage-reservation/:reservationId" element={<ManageReservationPage />} />
 
@@ -113,7 +115,9 @@ export default function App() {
 
   return (
     <Router>
-      <AnimatedRoutes user={user} role={role} />
+      <ThemeProvider> {/* Move ThemeProvider INSIDE Router */}
+        <AnimatedRoutes user={user} role={role} />
+      </ThemeProvider>
     </Router>
   );
 }

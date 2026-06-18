@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -21,4 +22,176 @@
 
 .animate-slideUp {
   animation: slideUp 0.3s ease-out;
+}
+
+/* src/index.css */
+
+:root {
+  /* Dark mode (default) */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #111827;
+  --bg-hover: #1e3a5f;
+  --bg-card: #1e293b;
+  --bg-card-hover: #334155;
+  --bg-input: #1e293b;
+  --bg-filter: #162032;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #f1f5f9;
+  --text-tertiary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+  
+  --border-primary: #334155;
+  --border-secondary: #1e293b;
+  
+  --shadow-primary: rgba(0, 0, 0, 0.5);
+  --shadow-secondary: rgba(0, 0, 0, 0.3);
+  
+  --scrollbar-track: #1e293b;
+  --scrollbar-thumb: #334155;
+  --scrollbar-thumb-hover: #475569;
+  
+  --accent-primary: #fe8a24;
+  --accent-primary-hover: #ff9d47;
+  --accent-secondary: #f59e0b;
+  
+  --status-confirmed: #16a34a;
+  --status-pending: #d97706;
+  --status-cancelled: #dc2626;
+  --status-completed: #2563eb;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #e2e8f0;
+  --bg-tertiary: #f8fafc;
+  --bg-hover: #dbeafe;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-input: #ffffff;
+  --bg-filter: #e8edf2;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #1e293b;
+  --text-tertiary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+  
+  --border-primary: #cbd5e1;
+  --border-secondary: #e2e8f0;
+  
+  --shadow-primary: rgba(0, 0, 0, 0.15);
+  --shadow-secondary: rgba(0, 0, 0, 0.08);
+  
+  --scrollbar-track: #e2e8f0;
+  --scrollbar-thumb: #94a3b8;
+  --scrollbar-thumb-hover: #64748b;
+  
+  --accent-primary: #e07a1e;
+  --accent-primary-hover: #c96b18;
+  --accent-secondary: #c8960a;
+  
+  --status-confirmed: #15803d;
+  --status-pending: #b45309;
+  --status-cancelled: #b91c1c;
+  --status-completed: #1d4ed8;
+}
+
+/* ─── Date Picker Styles ────────────────────────────────────────────────────── */
+/* Hide default date picker icon and make it look like text */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  background: transparent;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="date"]::-webkit-datetime-edit-text {
+  padding: 0 2px;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  padding: 0 1px;
+}
+
+/* Firefox */
+input[type="date"]::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* For all browsers */
+input[type="date"] {
+  padding-right: 24px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+/* ─── Scrollbar Styles ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* ─── Theme Transitions ────────────────────────────────────────────────────── */
+/* Add smooth transitions for theme changes */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ─── Utility Classes ──────────────────────────────────────────────────────── */
+/* Prevent transition on theme toggle to avoid flash */
+.no-transition * {
+  transition: none !important;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Scrollbar for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }

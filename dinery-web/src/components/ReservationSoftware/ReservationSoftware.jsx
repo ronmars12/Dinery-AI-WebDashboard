@@ -7,7 +7,7 @@ import ListView from './ListView';
 import ReservationModal from './ReservationModal';
 import CreateReservationModal from './CreateReservationModal';
 import ReservationTableView from './ReservationTableView';
-import { FiPlus, FiCalendar, FiList, FiSettings, FiChevronDown } from 'react-icons/fi';
+import { FiPlus, FiCalendar, FiList, FiSettings, FiChevronDown, FiChevronLeft, FiChevronRight, FiClock } from 'react-icons/fi';
 import ReservationSettings from './ReservationSettings';
 
 const ReservationSoftware = () => {
@@ -39,9 +39,20 @@ const ReservationSoftware = () => {
   const db = firestore;
   const [preSelectedTable, setPreSelectedTable] = useState(null);
   
+  // Current time state
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
   // Responsive: detect screen size
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -129,6 +140,40 @@ const ReservationSoftware = () => {
   const handleCreateReservationFromSlot = (dateTime) => { setSelectedReservationDate(dateTime); setModalMode('full'); setShowCreateModal(true); };
   const handleCloseEditModal   = () => { setShowEditModal(false);   setSelectedReservation(null); };
   const handleCloseCreateModal = () => { setShowCreateModal(false); setSelectedReservationDate(null); setModalMode('full'); };
+
+  // ─── Helper Functions ──────────────────────────────────────────────────────────
+  const formatDateForInput = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatTime = (date) => {
+    const d = new Date(date);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  // ─── Date Navigation Functions ──────────────────────────────────────────────
+  const navigateDate = (direction) => {
+    const newDate = new Date(selectedDate);
+    if (viewMode === 'calendar') {
+      // For calendar view, we navigate days
+      newDate.setDate(newDate.getDate() + direction);
+    } else {
+      // For other views, navigate days as well
+      newDate.setDate(newDate.getDate() + direction);
+    }
+    setSelectedDate(newDate);
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
 
   const VIEW_TABS = [
     { key: 'calendar',          label: 'Calendar',        icon: <FiCalendar className="w-4 h-4" /> },
@@ -234,8 +279,96 @@ const ReservationSoftware = () => {
           </div>
         </div>
 
-        {/* Bottom Row: View Tabs + Stats */}
-        <div className="flex items-center justify-between px-4 md:px-6 pb-2.5 pt-1 border-t border-gray-100">
+        {/* Middle Row: Date Navigation */}
+        <div className="flex items-center justify-center px-4 md:px-6 py-2 border-t border-gray-100">
+          {/* Center: Date Navigation + Stats + Time */}
+          <div className="flex items-center gap-3 md:gap-4">
+            <button 
+              onClick={() => navigateDate(-1)}
+              className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <FiChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+            </button>
+            
+            <button 
+              onClick={goToToday}
+              className="px-3 md:px-4 py-1 md:py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white text-xs md:text-sm font-medium rounded-lg transition-colors shadow-sm"
+            >
+              Today
+            </button>
+            
+            <button 
+              onClick={() => navigateDate(1)}
+              className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <FiChevronRight className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+            </button>
+
+            {/* Date Display with Picker */}
+            <div className="relative flex items-center gap-2 md:gap-3 ml-1 md:ml-2">
+              <FiCalendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#fe8a24]" />
+              <input 
+                type="date" 
+                value={formatDateForInput(selectedDate)}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const parts = e.target.value.split('-');
+                    const newDate = new Date(
+                      parseInt(parts[0]),
+                      parseInt(parts[1]) - 1,
+                      parseInt(parts[2])
+                    );
+                    if (!isNaN(newDate.getTime())) {
+                      setSelectedDate(newDate);
+                    }
+                  }
+                }}
+                className="text-sm md:text-base font-semibold text-gray-800 bg-transparent border-0 focus:ring-0 focus:outline-none cursor-pointer hover:text-[#fe8a24] transition-colors"
+                style={{ 
+                  width: isMobile ? '140px' : '200px',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  appearance: 'none',
+                  paddingRight: '20px'
+                }}
+              />
+              {/* Custom arrow indicator */}
+              <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Stats + Time Display */}
+            <div className="flex items-center gap-2 md:gap-3 ml-2 md:ml-4 pl-2 md:pl-4 border-l border-gray-300">
+              <span className="text-xs md:text-sm font-medium text-gray-600">
+                {(() => {
+                  const dayRes = reservations.filter(r => {
+                    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+                    const d = new Date(selectedDate);
+                    d.setHours(0, 0, 0, 0);
+                    const rdDate = new Date(rd);
+                    rdDate.setHours(0, 0, 0, 0);
+                    return rdDate.getTime() === d.getTime() && r.status !== 'cancelled';
+                  });
+                  const totalGuests = dayRes.reduce((sum, r) => sum + (r.number_of_guests || 0), 0);
+                  return `${dayRes.length} res · ${totalGuests} guests`;
+                })()}
+              </span>
+              <div className="w-px h-4 bg-gray-300" />
+              <div className="flex items-center gap-1.5">
+                <FiClock className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-500" />
+                <span className="text-xs md:text-sm font-mono font-semibold text-gray-700 tabular-nums min-w-[65px] md:min-w-[75px]">
+                  {formatTime(currentTime)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Row: View Tabs */}
+        <div className="flex items-center px-4 md:px-6 pb-2.5 pt-1 border-t border-gray-100">
           {/* View Tabs */}
           <div className="flex items-center gap-1">
             {getViewTabs().map(({ key, label, icon }) => (
@@ -256,54 +389,6 @@ const ReservationSoftware = () => {
               </button>
             ))}
           </div>
-
-          {/* Stats */}
-          {!isMobile && (
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span className="font-medium">
-                <span className="text-gray-900 font-bold">
-                  {reservations.filter(r => {
-                    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-                    const today = new Date();
-                    return rd.toDateString() === today.toDateString() && r.status !== 'cancelled';
-                  }).length}
-                </span> today
-              </span>
-              <span className="font-medium">
-                <span className="text-gray-900 font-bold">
-                  {reservations.filter(r => r.status === 'pending').length}
-                </span> pending
-              </span>
-              <span className="font-medium text-green-600">
-                <span className="text-green-700 font-bold">
-                  {reservations.filter(r => r.status === 'confirmed').length}
-                </span> confirmed
-              </span>
-            </div>
-          )}
-
-          {/* Mobile Stats - simplified */}
-          {isMobile && (
-            <div className="flex items-center gap-3 text-[10px] text-gray-500">
-              <span className="font-medium">
-                <span className="text-gray-900 font-bold">
-                  {reservations.filter(r => {
-                    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-                    const today = new Date();
-                    return rd.toDateString() === today.toDateString() && r.status !== 'cancelled';
-                  }).length}
-                </span>
-              </span>
-              <span className="text-gray-300">|</span>
-              <span className="font-medium text-amber-600">
-                {reservations.filter(r => r.status === 'pending').length}
-              </span>
-              <span className="text-gray-300">|</span>
-              <span className="font-medium text-green-600">
-                {reservations.filter(r => r.status === 'confirmed').length}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -318,16 +403,13 @@ const ReservationSoftware = () => {
           </div>
         ) : viewMode === 'calendar' ? (
           <CalendarView
+            key={selectedDate.toISOString()}
             reservations={reservations}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             onReservationClick={handleReservationClick}
             onCreateReservation={handleCreateReservationFromSlot}
             selectedRestaurant={selectedRestaurant}
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
           />
         ) : viewMode === 'reservation-table' ? (
           <ReservationTableView

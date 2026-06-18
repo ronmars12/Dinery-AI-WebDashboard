@@ -1,3 +1,4 @@
+// ReservationSettings.jsx - Updated with text-only tabs
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, getDocs, collection, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
@@ -1020,26 +1021,28 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
     }
   };
 
+  // Updated tabs - using text labels only, no icons
   const tabs = [
-    { id: 'general', label: 'General', icon: FiSettings },
-    { id: 'booking', label: 'Booking', icon: FiCalendar },
-    { id: 'menu',    label: 'Menu',    icon: FiMenu },
-    { id: 'tables', label: 'Tables', icon: FiUsers },
-    { id: 'hours', label: 'Hours', icon: FiClock },
-    { id: 'opening_hours', label: 'Opening Hours', icon: FiSliders }, 
-    { id: 'notifications', label: 'Notifications', icon: FiBell },
-    { id: 'display', label: 'Display', icon: FiMonitor },
+    { id: 'general', label: 'General' },
+    { id: 'booking', label: 'Booking' },
+    { id: 'menu',    label: 'Menu' },
+    { id: 'tables',  label: 'Tables' },
+    { id: 'hours',   label: 'Hours' },
+    { id: 'opening_hours', label: 'Time Slots' },
+    { id: 'notifications', label: 'Notifications' },
+    { id: 'display', label: 'Display' },
   ];
 
-  // Responsive tabs - show shorter labels on mobile
+  // Responsive tabs - shorter labels on mobile
   const getTabs = () => {
     const isMobile = window.innerWidth < 640;
     return tabs.map(tab => ({
       ...tab,
-      label: isMobile && tab.id === 'opening_hours' ? 'Time Slots' : 
+      label: isMobile && tab.id === 'opening_hours' ? 'Slots' : 
              isMobile && tab.id === 'notifications' ? 'Alerts' :
              isMobile && tab.id === 'display' ? 'View' :
              isMobile && tab.id === 'tables' ? 'Seats' :
+             isMobile && tab.id === 'booking' ? 'Book' :
              tab.label
     }));
   };
@@ -1214,7 +1217,7 @@ const renderGeneralTab = () => (
               return (
                 <div key={idx} className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-xl p-3 border border-gray-200">
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <FiUsers className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-gray-400 text-sm">👤</span>
                     <input
                       type="number" min="1" max="99" value={rule.minGuests}
                       onChange={e => updateRule('minGuests', e.target.value)}
@@ -1230,7 +1233,7 @@ const renderGeneralTab = () => (
                   </div>
                   <span className="text-gray-300 mx-1">→</span>
                   <div className="flex items-center gap-1.5 flex-1 min-w-[100px]">
-                    <FiClock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-400 text-sm">🕐</span>
                     <input
                       type="number" min="15" max="480" step="15" value={rule.duration}
                       onChange={e => updateRule('duration', e.target.value)}
@@ -1979,30 +1982,25 @@ const renderDisplayTab = () => (
           </button>
         </div>
 
-        {/* Tabs - Responsive scrolling */}
+        {/* Tabs - Responsive scrolling - TEXT ONLY */}
         <div className="border-b border-gray-200 px-2 sm:px-6 flex-shrink-0 overflow-x-auto">
           <div className="flex gap-0.5 sm:gap-1 min-w-max">
-            {getTabs().map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-sm font-medium transition-all relative whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'text-[#fe8a24]'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden xs:inline">{tab.label}</span>
-                  <span className="xs:hidden">{tab.id === 'opening_hours' ? '⏰' : tab.id === 'notifications' ? '🔔' : tab.id === 'display' ? '🖥️' : tab.id === 'tables' ? '🪑' : tab.id === 'booking' ? '📅' : tab.id === 'menu' ? '📋' : tab.id === 'hours' ? '🕐' : '⚙️'}</span>
-                  {activeTab === tab.id && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fe8a24] rounded-full" />
-                  )}
-                </button>
-              );
-            })}
+            {getTabs().map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-2.5 sm:px-4 py-2 sm:py-3 text-[10px] sm:text-sm font-medium transition-all relative whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'text-[#fe8a24]'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#fe8a24] rounded-full" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
 

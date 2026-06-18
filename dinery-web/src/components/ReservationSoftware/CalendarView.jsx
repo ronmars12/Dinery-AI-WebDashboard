@@ -1,11 +1,12 @@
 // src/components/reservation-software/CalendarView.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { doc, updateDoc, collection, onSnapshot, getDoc, serverTimestamp } from 'firebase/firestore';
-import { FiX, FiChevronLeft, FiChevronRight, FiCalendar, FiPlus, FiUsers, FiTrash2, FiClock, FiMapPin, FiMoreVertical, FiFileText, FiLock } from 'react-icons/fi';
+import { FiX, FiChevronLeft, FiChevronRight, FiCalendar, FiPlus, FiUsers, FiTrash2, FiClock, FiMapPin, FiMoreVertical, FiFileText, FiLock, FiSun, FiMoon } from 'react-icons/fi';
 import { firestore, auth } from '../../firebase';
+import { useTheme } from '../../ThemeContext';
 
 // ─── Note Indicator Component ──────────────────────────────────────────────────
-const NoteIndicator = ({ publicNote, internalNote }) => {
+const NoteIndicator = ({ publicNote, internalNote, isDark }) => {
   const hasPublic = publicNote && publicNote.trim().length > 0;
   const hasInternal = internalNote && internalNote.trim().length > 0;
   
@@ -15,20 +16,20 @@ const NoteIndicator = ({ publicNote, internalNote }) => {
     <div className="flex items-center gap-0.5 ml-1 flex-shrink-0">
       {hasPublic && (
         <div className="relative group">
-          <div className="w-4 h-4 rounded bg-blue-500/20 border border-blue-400/50 flex items-center justify-center hover:bg-blue-500/30 transition-colors cursor-help">
-            <FiFileText className="w-2.5 h-2.5 text-blue-300" />
+          <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors cursor-help ${isDark ? 'bg-blue-500/20 border border-blue-400/50 hover:bg-blue-500/30' : 'bg-blue-100 border border-blue-300/50 hover:bg-blue-200'}`}>
+            <FiFileText className={`w-2.5 h-2.5 ${isDark ? 'text-blue-300' : 'text-blue-600'}`} />
           </div>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-gray-700 shadow-lg max-w-[250px] truncate font-medium">
+          <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border shadow-lg max-w-[250px] truncate font-medium ${isDark ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'}`}>
             📝 {publicNote.length > 50 ? publicNote.slice(0, 50) + '...' : publicNote}
           </div>
         </div>
       )}
       {hasInternal && (
         <div className="relative group">
-          <div className="w-4 h-4 rounded bg-amber-500/20 border border-amber-400/50 flex items-center justify-center hover:bg-amber-500/30 transition-colors cursor-help">
-            <FiLock className="w-2.5 h-2.5 text-amber-300" />
+          <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors cursor-help ${isDark ? 'bg-amber-500/20 border border-amber-400/50 hover:bg-amber-500/30' : 'bg-amber-100 border border-amber-300/50 hover:bg-amber-200'}`}>
+            <FiLock className={`w-2.5 h-2.5 ${isDark ? 'text-amber-300' : 'text-amber-600'}`} />
           </div>
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-gray-900 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border border-gray-700 shadow-lg max-w-[250px] truncate font-medium">
+          <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 border shadow-lg max-w-[250px] truncate font-medium ${isDark ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'}`}>
             🔒 {internalNote.length > 50 ? internalNote.slice(0, 50) + '...' : internalNote}
           </div>
         </div>
@@ -71,12 +72,13 @@ const COLORS = {
 
 const CalendarView = ({
   reservations, selectedDate, onDateChange, onReservationClick,
-  onCreateReservation, selectedRestaurant, startDate, endDate,
-  onStartDateChange, onEndDateChange,
+  onCreateReservation, selectedRestaurant,
 }) => {
+  const { isDarkMode, toggleTheme } = useTheme();
   const [currentDate, setCurrentDate] = useState(selectedDate);
   const [viewRange, setViewRange] = useState('day');
   const [localReservations, setLocalReservations] = useState(reservations);
+  const [isLoading, setIsLoading] = useState(false);
   const [dragging, setDragging] = useState(null);
   const [dragState, setDragState] = useState(null);
   const [tables, setTables] = useState([]);
@@ -103,7 +105,31 @@ const CalendarView = ({
   }, []);
 
   useEffect(() => { setLocalReservations(reservations); }, [reservations]);
-  useEffect(() => { onDateChange(currentDate); }, [viewRange]);
+
+  // Show loading when date changes from parent
+  useEffect(() => {
+    if (selectedDate) {
+      const newDate = new Date(selectedDate);
+      if (currentDate.toDateString() !== newDate.toDateString()) {
+        setIsLoading(true);
+        const timer = setTimeout(() => {
+          setCurrentDate(newDate);
+          setIsLoading(false);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [selectedDate]);
+
+  // Show loading when reservations change
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setLocalReservations(reservations);
+      setIsLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [reservations]);
 
   // Fetch tables from restaurant subcollection
   useEffect(() => {
@@ -201,31 +227,51 @@ const CalendarView = ({
   const getReservationStyles = (status, source) => {
     if (source === 'mobile_app') {
       return { 
-        bg: 'linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%)',
+        bg: isDarkMode ? 'linear-gradient(135deg, #2d1b4e 0%, #1a1030 100%)' : 'linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%)',
         border: '#9333ea',
-        text: '#581c87',
+        text: isDarkMode ? '#d8b4fe' : '#581c87',
         shadow: '0 2px 4px rgba(147, 51, 234, 0.1)'
       };
     }
     
     const map = {
-      confirmed: { bg: 'linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)', border: '#10b981', text: '#065f46', shadow: '0 2px 4px rgba(16, 185, 129, 0.1)' },
-      pending:   { bg: 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)', border: '#f59e0b', text: '#78350f', shadow: '0 2px 4px rgba(245, 158, 11, 0.1)' },
-      cancelled: { bg: 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)', border: '#ef4444', text: '#991b1b', shadow: '0 2px 4px rgba(239, 68, 68, 0.1)' },
-      completed: { bg: 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)', border: '#3b82f6', text: '#1e40af', shadow: '0 2px 4px rgba(59, 130, 246, 0.1)' },
+      confirmed: { 
+        bg: isDarkMode ? 'linear-gradient(135deg, #065f46 0%, #0a3d2e 100%)' : 'linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)', 
+        border: '#10b981', 
+        text: isDarkMode ? '#6ee7b7' : '#065f46', 
+        shadow: '0 2px 4px rgba(16, 185, 129, 0.1)' 
+      },
+      pending: { 
+        bg: isDarkMode ? 'linear-gradient(135deg, #78350f 0%, #4d2408 100%)' : 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)', 
+        border: '#f59e0b', 
+        text: isDarkMode ? '#fcd34d' : '#78350f', 
+        shadow: '0 2px 4px rgba(245, 158, 11, 0.1)' 
+      },
+      cancelled: { 
+        bg: isDarkMode ? 'linear-gradient(135deg, #7f1d1d 0%, #4c1313 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)', 
+        border: '#ef4444', 
+        text: isDarkMode ? '#fca5a5' : '#991b1b', 
+        shadow: '0 2px 4px rgba(239, 68, 68, 0.1)' 
+      },
+      completed: { 
+        bg: isDarkMode ? 'linear-gradient(135deg, #1e3a5f 0%, #11233a 100%)' : 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)', 
+        border: '#3b82f6', 
+        text: isDarkMode ? '#93c5fd' : '#1e40af', 
+        shadow: '0 2px 4px rgba(59, 130, 246, 0.1)' 
+      },
     };
     return map[status?.toLowerCase()] || map.pending;
   };
 
   const getMealStatusConfig = (mealStatus) => {
     const map = {
-      'arrived':        { color: '#ef4444', label: 'Arrived', icon: '🔴', bg: '#fee2e2' },
-      'food_delivered': { color: '#3b82f6', label: 'Food', icon: '🔵', bg: '#dbeafe' },
-      'dessert':        { color: '#8b5cf6', label: 'Dessert', icon: '🟣', bg: '#f3e8ff' },
-      'bill_delivered': { color: '#eab308', label: 'Bill', icon: '🟡', bg: '#fefce8' },
-      'table_cleared':  { color: '#84cc16', label: 'Cleared', icon: '🟢', bg: '#ecfccb' },
-      'no_show':        { color: '#000000', label: 'No Show', icon: '⚫', bg: '#f5f5f5' },
-      'clear_out':      { color: '#6b7280', label: 'Clear Out', icon: '⚪', bg: '#f3f4f6' },
+      'arrived':        { color: '#ef4444', label: 'Arrived', icon: '🔴', bg: isDarkMode ? '#7f1d1d' : '#fee2e2' },
+      'food_delivered': { color: '#3b82f6', label: 'Food', icon: '🔵', bg: isDarkMode ? '#1e3a5f' : '#dbeafe' },
+      'dessert':        { color: '#8b5cf6', label: 'Dessert', icon: '🟣', bg: isDarkMode ? '#2d1b4e' : '#f3e8ff' },
+      'bill_delivered': { color: '#eab308', label: 'Bill', icon: '🟡', bg: isDarkMode ? '#4d2408' : '#fefce8' },
+      'table_cleared':  { color: '#84cc16', label: 'Cleared', icon: '🟢', bg: isDarkMode ? '#0a3d2e' : '#ecfccb' },
+      'no_show':        { color: '#000000', label: 'No Show', icon: '⚫', bg: isDarkMode ? '#1f2937' : '#f5f5f5' },
+      'clear_out':      { color: '#6b7280', label: 'Clear Out', icon: '⚪', bg: isDarkMode ? '#374151' : '#f3f4f6' },
     };
     return map[mealStatus?.toLowerCase()] || null;
   };
@@ -262,7 +308,9 @@ const CalendarView = ({
           onMouseDown={(e) => e.stopPropagation()}
         />
         <div
-          className="fixed z-50 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 min-w-[180px] md:min-w-[220px] meal-status-menu animate-in fade-in zoom-in-95 duration-100"
+          className={`fixed z-50 rounded-xl shadow-2xl border py-2 min-w-[180px] md:min-w-[220px] meal-status-menu animate-in fade-in zoom-in-95 duration-100 ${
+            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+          }`}
           style={{
             left: `${Math.min(position.x, window.innerWidth - (isMobile ? 180 : 240))}px`,
             top: position.y + 320 > window.innerHeight
@@ -274,9 +322,9 @@ const CalendarView = ({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="px-3 md:px-4 py-2 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Meal Status</p>
-            <p className="text-xs md:text-sm font-semibold text-gray-900 truncate mt-0.5">{reservation.customer_name}</p>
+          <div className={`px-3 md:px-4 py-2 border-b ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gradient-to-r from-gray-50 to-white'}`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>Meal Status</p>
+            <p className={`text-xs md:text-sm font-semibold truncate mt-0.5 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{reservation.customer_name}</p>
           </div>
           
           {menuItems.map(({ status, color, icon, label }) => {
@@ -286,11 +334,11 @@ const CalendarView = ({
                 key={status || 'clear'}
                 onClick={() => handleSelect(status)}
                 className={`w-full px-3 md:px-4 py-2 md:py-2.5 flex items-center gap-2 md:gap-3 transition-all duration-150 ${
-                  isActive ? 'bg-gray-50' : 'hover:bg-gray-50'
+                  isActive ? (isDarkMode ? 'bg-gray-700' : 'bg-gray-50') : (isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50')
                 }`}
               >
                 <span className="text-sm md:text-base w-5 md:w-6">{icon}</span>
-                <span className={`text-xs md:text-sm font-medium ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>
+                <span className={`text-xs md:text-sm font-medium ${isActive ? (isDarkMode ? 'text-gray-100' : 'text-gray-900') : (isDarkMode ? 'text-gray-300' : 'text-gray-700')}`}>
                   {isMobile && label.length > 10 ? label.substring(0, 10) + '...' : label}
                 </span>
                 {isActive && (
@@ -338,11 +386,19 @@ const CalendarView = ({
   const isCurrentMonth = (d) => d.getMonth() === currentDate.getMonth();
 
   const navigateDate = (dir) => {
+    setIsLoading(true);
     const d = new Date(currentDate);
     if (viewRange === 'day') d.setDate(d.getDate() + dir);
     else if (viewRange === 'week') d.setDate(d.getDate() + dir * 7);
     else d.setMonth(d.getMonth() + dir);
-    setCurrentDate(d); onDateChange(d);
+    
+    setTimeout(() => {
+      setCurrentDate(d);
+      if (onDateChange) {
+        onDateChange(d);
+      }
+      setIsLoading(false);
+    }, 300);
   };
 
   const formatDateForInput = (d) => {
@@ -367,23 +423,52 @@ const CalendarView = ({
   const totalTableSlots = (closeHour - openHour) * 4;
 
   const handleMouseDownMove = (e, reservation) => {
-    e.preventDefault(); e.stopPropagation();
+    // Handle both mouse and touch events
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    
+    e.preventDefault(); 
+    e.stopPropagation();
     if (e.detail === 2) return;
     
     const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
     const origStart = minutesFromOpen(resDate);
     const duration = reservation.duration_minutes || 75;
-    const info = { id: reservation.id, type: 'move', startY: e.clientY, origStart, origDuration: duration, reservation, hasMoved: false };
+    const info = { 
+      id: reservation.id, 
+      type: 'move', 
+      startY: clientY,
+      startX: clientX,
+      origStart, 
+      origDuration: duration, 
+      reservation, 
+      hasMoved: false,
+      isTouch: e.type === 'touchstart'
+    };
     dragRef.current = info;
     setDragging(info);
   };
 
   const handleMouseDownResize = (e, reservation) => {
-    e.preventDefault(); e.stopPropagation();
+    // Handle both mouse and touch events
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    
+    e.preventDefault(); 
+    e.stopPropagation();
     const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
     const origStart = minutesFromOpen(resDate);
     const duration = reservation.duration_minutes || 75;
-    const info = { id: reservation.id, type: 'resize', startY: e.clientY, origStart, origDuration: duration, reservation, hasMoved: false };
+    const info = { 
+      id: reservation.id, 
+      type: 'resize', 
+      startY: e.type === 'touchstart' ? e.touches[0].clientY : e.clientY,
+      startX: clientX,
+      origStart, 
+      origDuration: duration, 
+      reservation, 
+      hasMoved: false,
+      isTouch: e.type === 'touchstart'
+    };
     dragRef.current = info;
     setDragging(info);
   };
@@ -392,8 +477,12 @@ const CalendarView = ({
     const d = dragRef.current;
     if (!d) return;
 
+    // Get client coordinates based on event type
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
     if (d.type === 'table-move' || d.type === 'table-resize') {
-      const dx = e.clientX - d.startX;
+      const dx = clientX - d.startX;
       
       if (!d.hasMoved && Math.abs(dx) < DRAG_THRESHOLD) return;
       if (!d.hasMoved) {
@@ -416,7 +505,7 @@ const CalendarView = ({
       let hoveredTableId = d.tableId;
       rows.forEach(row => {
         const rect = row.getBoundingClientRect();
-        if (e.clientY >= rect.top && e.clientY <= rect.bottom)
+        if (clientY >= rect.top && clientY <= rect.bottom)
           hoveredTableId = row.getAttribute('data-table-row');
       });
       dragRef._tableId = hoveredTableId;
@@ -431,7 +520,7 @@ const CalendarView = ({
       return;
     }
 
-    const dy = e.clientY - d.startY;
+    const dy = clientY - d.startY;
     if (!d.hasMoved && Math.abs(dy) < DRAG_THRESHOLD) return;
     if (!d.hasMoved) {
       dragRef.current = { ...d, hasMoved: true };
@@ -447,7 +536,7 @@ const CalendarView = ({
       let hoveredDay = null;
       cols.forEach(col => {
         const rect = col.getBoundingClientRect();
-        if (e.clientX >= rect.left && e.clientX <= rect.right)
+        if (clientX >= rect.left && clientX <= rect.right)
           hoveredDay = col.getAttribute('data-day-col');
       });
       if (hoveredDay) setDragTargetDay(hoveredDay);
@@ -463,7 +552,7 @@ const CalendarView = ({
     }
   }, [totalHours, totalTableSlots]);
 
-  const handleMouseUp = useCallback(async () => {
+  const handleMouseUp = useCallback(async (e) => {
     const d = dragRef.current;
     if (!d) return;
     dragRef.current = null;
@@ -595,9 +684,21 @@ const CalendarView = ({
 
   useEffect(() => {
     if (dragging) {
+      // Mouse events
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
-      return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
+      // Touch events for mobile/tablet
+      window.addEventListener('touchmove', handleMouseMove, { passive: false });
+      window.addEventListener('touchend', handleMouseUp, { passive: false });
+      window.addEventListener('touchcancel', handleMouseUp, { passive: false });
+      
+      return () => { 
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('touchmove', handleMouseMove);
+        window.removeEventListener('touchend', handleMouseUp);
+        window.removeEventListener('touchcancel', handleMouseUp);
+      };
     }
   }, [dragging, handleMouseMove, handleMouseUp]);
 
@@ -618,6 +719,7 @@ const CalendarView = ({
     return ((d.getHours() - openHour) * 60 + d.getMinutes()) / 15;
   };
 
+  // ─── DAY TABLE VIEW ──────────────────────────────────────────────────────────
   const renderDayTableView = () => {
     const dayStart = new Date(currentDate);
     dayStart.setHours(0, 0, 0, 0);
@@ -683,35 +785,63 @@ const CalendarView = ({
       const hasInternalNote = r.internal_notes && r.internal_notes.trim().length > 0;
 
       return (
-        <div
-          key={r.id}
-          onMouseDown={(e) => {
-            if (e.button !== 0) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-            const origSlot = minutesToSlot(resDate, r.from_time);
-            const origDuration = r.duration_minutes || 75;
-            const dragTableId = isMultiTable ? null : tableId;
-            const info = {
-              id: r.id, type: 'table-move',
-              startX: e.clientX,
-              origSlot, origStart: origSlot * 15, origDuration,
-              tableId: dragTableId, reservation: r, hasMoved: false,
-              isMultiTable, originalTableIds: r.table_ids,
-              startClientX: e.clientX,
-            };
-            dragRef.current = info;
-            setDragging(info);
-          }}
-          onMouseUp={(e) => {
-            if (dragRef.current && !dragRef.current.hasMoved) {
-              dragRef.current = null;
-              setDragging(null);
-              setDragState(null);
-              onReservationClick(r);
-            }
-          }}
+          <div
+            key={r.id}
+            onMouseDown={(e) => {
+              if (e.button !== 0) return;
+              e.preventDefault();
+              e.stopPropagation();
+              const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+              const origSlot = minutesToSlot(resDate, r.from_time);
+              const origDuration = r.duration_minutes || 75;
+              const dragTableId = isMultiTable ? null : tableId;
+              const info = {
+                id: r.id, type: 'table-move',
+                startX: e.clientX,
+                origSlot, origStart: origSlot * 15, origDuration,
+                tableId: dragTableId, reservation: r, hasMoved: false,
+                isMultiTable, originalTableIds: r.table_ids,
+                startClientX: e.clientX,
+              };
+              dragRef.current = info;
+              setDragging(info);
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const touch = e.touches[0];
+              const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+              const origSlot = minutesToSlot(resDate, r.from_time);
+              const origDuration = r.duration_minutes || 75;
+              const dragTableId = isMultiTable ? null : tableId;
+              const info = {
+                id: r.id, type: 'table-move',
+                startX: touch.clientX,
+                origSlot, origStart: origSlot * 15, origDuration,
+                tableId: dragTableId, reservation: r, hasMoved: false,
+                isMultiTable, originalTableIds: r.table_ids,
+                startClientX: touch.clientX,
+                isTouch: true,
+              };
+              dragRef.current = info;
+              setDragging(info);
+            }}
+            onMouseUp={(e) => {
+              if (dragRef.current && !dragRef.current.hasMoved) {
+                dragRef.current = null;
+                setDragging(null);
+                setDragState(null);
+                onReservationClick(r);
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (dragRef.current && !dragRef.current.hasMoved) {
+                dragRef.current = null;
+                setDragging(null);
+                setDragState(null);
+                onReservationClick(r);
+              }
+            }}
           onMouseEnter={() => setHoveredReservation(r.id)}
           onMouseLeave={() => setHoveredReservation(null)}
           onContextMenu={(e) => {
@@ -725,7 +855,7 @@ const CalendarView = ({
             setDragState(null);
             setContextMenu({ position: { x: e.clientX, y: e.clientY }, reservation: r });
           }}
-          className="absolute top-1 rounded-lg overflow-hidden select-none group/res"
+          className={`absolute top-1 rounded-lg overflow-hidden select-none group/res ${isActive ? 'ring-2 ring-primary/50 z-30' : 'z-10'}`}
           style={{
             left: left + 1, width: Math.max(width, 32),
             height: TABLE_ROW_HEIGHT - 8,
@@ -733,7 +863,6 @@ const CalendarView = ({
             border: `1px solid ${styles.border}`,
             borderLeft: `3px solid ${styles.border}`,
             cursor: dragging?.id === r.id ? (dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'grab',
-            zIndex: isActive ? 30 : (hoveredReservation === r.id ? 25 : 10),
             boxShadow: isActive ? `0 4px 16px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 2px 8px rgba(0,0,0,0.1)` : '0 1px 2px rgba(0,0,0,0.05)'),
           }}
         >
@@ -758,7 +887,7 @@ const CalendarView = ({
             {r.source === 'mobile_app' && (
               <span className="text-[8px] md:text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
             )}
-            <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
+            <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} isDark={isDarkMode} />
             {(r.change_request || r.cancel_reason) && (
               <span
                 className="flex-shrink-0 flex items-center justify-center rounded-full animate-pulse"
@@ -805,27 +934,40 @@ const CalendarView = ({
               </span>
             )}
           </div>
-          <div
-            className="absolute top-0 right-0 bottom-0 w-3 md:w-4 flex items-center justify-center cursor-ew-resize opacity-0 group-hover/res:opacity-100 transition-opacity"
-            onMouseDown={(e) => {
-              e.preventDefault(); e.stopPropagation();
-              const origSlot = minutesToSlot(resDate);
-              const origDuration = r.duration_minutes || 75;
-              const info = {
-                id: r.id, type: 'table-resize',
-                startX: e.clientX,
-                origSlot, origStart: origSlot * 15, origDuration,
-                tableId, reservation: r, hasMoved: false,
-              };
-              dragRef.current = info;
-              setDragging(info);
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="w-0.5 md:w-1 h-3 md:h-4 rounded-full bg-gray-400" />
-              <div className="w-0.5 md:w-1 h-3 md:h-4 rounded-full bg-gray-400" />
-            </div>
+            <div
+              className={`absolute top-0 right-0 bottom-0 w-3 md:w-4 flex items-center justify-center cursor-ew-resize opacity-0 group-hover/res:opacity-100 transition-opacity ${isDarkMode ? 'hover:bg-gray-700/20' : 'hover:bg-black/5'}`}
+              onMouseDown={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                const origSlot = minutesToSlot(resDate);
+                const origDuration = r.duration_minutes || 75;
+                const info = {
+                  id: r.id, type: 'table-resize',
+                  startX: e.clientX,
+                  origSlot, origStart: origSlot * 15, origDuration,
+                  tableId, reservation: r, hasMoved: false,
+                };
+                dragRef.current = info;
+                setDragging(info);
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault(); e.stopPropagation();
+                const touch = e.touches[0];
+                const origSlot = minutesToSlot(resDate);
+                const origDuration = r.duration_minutes || 75;
+                const info = {
+                  id: r.id, type: 'table-resize',
+                  startX: touch.clientX,
+                  origSlot, origStart: origSlot * 15, origDuration,
+                  tableId, reservation: r, hasMoved: false,
+                  isTouch: true,
+                };
+                dragRef.current = info;
+                setDragging(info);
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+            <div className={`flex flex-col items-center gap-0.5 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} rounded-full w-0.5 md:w-1 h-3 md:h-4`} />
+            <div className={`flex flex-col items-center gap-0.5 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} rounded-full w-0.5 md:w-1 h-3 md:h-4`} />
           </div>
         </div>
       );
@@ -847,28 +989,28 @@ const CalendarView = ({
 
       return (
         <div key={tableId} data-table-row={tableId}
-          className="flex border-b border-gray-200 group hover:bg-gray-50/30 transition-colors"
+          className={`flex border-b transition-colors ${isDarkMode ? 'border-gray-700 hover:bg-gray-800/30' : 'border-gray-200 hover:bg-gray-50/30'}`}
           style={{ height: TABLE_ROW_HEIGHT }}>
           <div
             className={`flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all duration-150 ${
-              isUnassigned ? 'bg-gradient-to-r from-orange-50 to-orange-50/30 border-orange-200' : 'bg-gray-50/50 group-hover:bg-gray-100/80 border-gray-200'
+              isUnassigned ? (isDarkMode ? 'bg-orange-900/30 border-orange-800' : 'bg-gradient-to-r from-orange-50 to-orange-50/30 border-orange-200') : (isDarkMode ? 'bg-gray-800/50 group-hover:bg-gray-700/80 border-gray-700' : 'bg-gray-50/50 group-hover:bg-gray-100/80 border-gray-200')
             }`}
             style={{ width: responsiveTableColWidth }}
           >
             {isUnassigned ? (
               <div className="flex items-center gap-1 md:gap-2">
-                <FiMapPin className="w-2.5 h-2.5 md:w-3 md:h-3 text-orange-400" />
-                <span className="text-[10px] md:text-xs font-medium text-orange-600 italic">Unassigned</span>
+                <FiMapPin className={`w-2.5 h-2.5 md:w-3 md:h-3 ${isDarkMode ? 'text-orange-400' : 'text-orange-400'}`} />
+                <span className={`text-[10px] md:text-xs font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-600'} italic`}>Unassigned</span>
               </div>
             ) : (
               <div className="flex items-center gap-1 md:gap-2 min-w-0">
-                <div className="w-5 h-5 md:w-6 md:h-6 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[10px] md:text-xs font-bold text-gray-600">{table.name.charAt(0)}</span>
+                <div className={`w-5 h-5 md:w-6 md:h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${isDarkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-gray-100 to-gray-200'}`}>
+                  <span className={`text-[10px] md:text-xs font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{table.name.charAt(0)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-xs md:text-sm font-bold text-gray-800 truncate block">{table.name}</span>
+                  <span className={`text-xs md:text-sm font-bold truncate block ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{table.name}</span>
                 </div>
-                <span className="flex items-center gap-0.5 md:gap-1 bg-blue-100 text-blue-700 rounded-full px-1 md:px-1.5 py-0.5 text-[8px] md:text-[10px] font-semibold flex-shrink-0">
+                <span className={`flex items-center gap-0.5 md:gap-1 rounded-full px-1 md:px-1.5 py-0.5 text-[8px] md:text-[10px] font-semibold flex-shrink-0 ${isDarkMode ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
                   <FiUsers className="w-2 h-2 md:w-2.5 md:h-2.5" />{table.maxCapacity}
                 </span>
               </div>
@@ -876,23 +1018,23 @@ const CalendarView = ({
           </div>
 
           <div 
-            className={`relative overflow-hidden transition-all duration-150 ${isDragTarget ? 'bg-blue-50/20' : ''}`}
+            className={`relative overflow-hidden transition-all duration-150 ${isDragTarget ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50/20') : ''}`}
             style={{ width: (closeHour - openHour) * responsiveHourWidth }}
           >
             {/* Vertical hour grid lines */}
             {Array.from({ length: closeHour - openHour }, (_, i) => (
-              <div key={i} className="absolute top-0 bottom-0 border-l border-gray-300" style={{ left: i * responsiveHourWidth }} />
+              <div key={i} className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} style={{ left: i * responsiveHourWidth }} />
             ))}
             {/* Vertical quarter-hour grid lines */}
             {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => (
-              <div key={`slot-${i}`} className="absolute top-0 bottom-0 border-l border-gray-200" style={{ left: i * responsiveCellWidth }} />
+              <div key={`slot-${i}`} className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`} style={{ left: i * responsiveCellWidth }} />
             ))}
             {/* Vertical half-hour markers */}
             {Array.from({ length: (closeHour - openHour) * 2 }, (_, i) => (
-              <div key={`half-${i}`} className="absolute top-0 bottom-0 border-l border-dashed border-gray-300" style={{ left: (i * 2) * (responsiveCellWidth / 2) + responsiveCellWidth }} />
+              <div key={`half-${i}`} className={`absolute top-0 bottom-0 border-l border-dashed ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} style={{ left: (i * 2) * (responsiveCellWidth / 2) + responsiveCellWidth }} />
             ))}
             
-            <div className="absolute inset-0 cursor-crosshair z-0 hover:bg-gradient-to-r hover:from-transparent hover:to-primary/5 transition-colors"
+            <div className={`absolute inset-0 cursor-crosshair z-0 hover:bg-gradient-to-r hover:from-transparent ${isDarkMode ? 'hover:to-primary/10' : 'hover:to-primary/5'} transition-colors`}
               onClick={(e) => {
                 if (dragging) return;
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -909,12 +1051,12 @@ const CalendarView = ({
     };
 
     return (
-      <div className="flex-1 overflow-hidden flex flex-col bg-white">
+      <div className={`flex-1 overflow-hidden flex flex-col ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         <div className="flex-1 overflow-auto" ref={scrollRef}>
           <div style={{ width: '100%' }}>
             {/* Sticky header with enhanced design - Responsive */}
-            <div className="flex sticky top-0 z-20 bg-white border-b-2 border-gray-200 shadow-sm" style={{ height: isMobile ? 40 : 48 }}>
-              <div className="flex-shrink-0 bg-gradient-to-r from-gray-800 to-gray-900 flex items-center justify-center border-r-2 border-gray-700"
+            <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : 48 }}>
+              <div className={`flex-shrink-0 ${isDarkMode ? 'bg-gradient-to-r from-gray-900 to-gray-800 border-r-2 border-gray-700' : 'bg-gradient-to-r from-gray-800 to-gray-900 border-r-2 border-gray-700'} flex items-center justify-center`}
                 style={{ width: responsiveTableColWidth }}>
                 <div className="text-center">
                   <div className="text-[8px] md:text-xs font-bold text-gray-200 uppercase tracking-wider">Table</div>
@@ -925,24 +1067,24 @@ const CalendarView = ({
                   )}
                 </div>
               </div>
-              <div className="flex relative overflow-x-auto" style={{ minWidth: (closeHour - openHour) * responsiveHourWidth }}>
+              <div className={`flex relative overflow-x-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`} style={{ minWidth: (closeHour - openHour) * responsiveHourWidth }}>
                 {Array.from({ length: closeHour - openHour }, (_, hourIndex) => {
                   const hour = openHour + hourIndex;
                   return (
-                    <div key={hourIndex} className="relative border-r border-gray-200 flex-shrink-0"
+                    <div key={hourIndex} className={`relative border-r flex-shrink-0 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
                       style={{ width: responsiveHourWidth }}>
-                      <div className={`absolute inset-0 flex ${settings?.timeBarShowsStartOfHour ? 'items-start' : 'items-end'} justify-start ${settings?.timeBarShowsStartOfHour ? 'pt-1 md:pt-2' : 'pb-1 md:pb-2'} pl-1 md:pl-2 bg-gradient-to-r from-gray-50 to-transparent`}>
+                      <div className={`absolute inset-0 flex ${settings?.timeBarShowsStartOfHour ? 'items-start' : 'items-end'} justify-start ${settings?.timeBarShowsStartOfHour ? 'pt-1 md:pt-2' : 'pb-1 md:pb-2'} pl-1 md:pl-2 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-transparent' : 'bg-gradient-to-r from-gray-50 to-transparent'}`}>
                         <div className="flex items-baseline gap-0.5 md:gap-1">
-                          <span className="text-[10px] md:text-sm font-bold text-gray-700">
+                          <span className={`text-[10px] md:text-sm font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {String(hour).padStart(2,'0')}
                           </span>
-                          <span className="text-[8px] md:text-[10px] text-gray-400 font-medium">:00</span>
+                          <span className={`text-[8px] md:text-[10px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>:00</span>
                         </div>
                       </div>
-                      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] md:text-[9px] text-gray-400 font-medium">:30</div>
-                      <div className="absolute top-0 bottom-0 left-1/4 border-l border-gray-200" />
-                      <div className="absolute top-0 bottom-0 left-2/4 border-l border-gray-300" />
-                      <div className="absolute top-0 bottom-0 left-3/4 border-l border-gray-200" />
+                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] md:text-[9px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>:30</div>
+                      <div className={`absolute top-0 bottom-0 left-1/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+                      <div className={`absolute top-0 bottom-0 left-2/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} />
+                      <div className={`absolute top-0 bottom-0 left-3/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
                     </div>
                   );
                 })}
@@ -957,13 +1099,13 @@ const CalendarView = ({
               </div>
             </div>
 
-            <div className="relative">
+            <div className={`relative ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
               {tables.length === 0 ? (
                 <div className="flex items-center justify-center py-12 md:py-20 text-center">
                   <div className="animate-fade-in">
                     <div className="text-3xl md:text-5xl mb-3 md:mb-4">🪑</div>
-                    <p className="text-gray-600 font-semibold text-base md:text-lg">No tables yet</p>
-                    <p className="text-gray-400 text-xs md:text-sm mt-1">Add tables in Table Management first</p>
+                    <p className={`font-semibold text-base md:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>No tables yet</p>
+                    <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Add tables in Table Management first</p>
                   </div>
                 </div>
               ) : (
@@ -973,9 +1115,9 @@ const CalendarView = ({
               {/* Combinations section */}
               {combinations.length > 0 && (
                 <>
-                  <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-purple-50 to-purple-100/30 border-y border-purple-200">
-                    <span className="text-[9px] md:text-xs font-bold text-purple-600 uppercase tracking-wider">⛓ Table Combinations</span>
-                    <div className="flex-1 h-px bg-gradient-to-r from-purple-200 to-transparent" />
+                  <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 ${isDarkMode ? 'bg-purple-900/30 border-purple-800' : 'bg-gradient-to-r from-purple-50 to-purple-100/30 border-y border-purple-200'} border-y`}>
+                    <span className={`text-[9px] md:text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>⛓ Table Combinations</span>
+                    <div className={`flex-1 h-px ${isDarkMode ? 'bg-purple-800' : 'bg-gradient-to-r from-purple-200 to-transparent'}`} />
                   </div>
                   {combinations.map(combo => {
                     const comboKey = `combo__${combo.id}`;
@@ -991,27 +1133,27 @@ const CalendarView = ({
                     const isDragTarget = dragging?.hasMoved && dragState?.tableId === comboKey;
                     return (
                       <div key={comboKey} data-table-row={comboKey}
-                        className="flex border-b border-purple-100 group hover:bg-purple-50/30 transition-colors"
+                        className={`flex border-b transition-colors ${isDarkMode ? 'border-purple-900/50 group hover:bg-purple-900/20' : 'border-purple-100 group hover:bg-purple-50/30'}`}
                         style={{ height: TABLE_ROW_HEIGHT }}>
-                        <div className="flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/30 group-hover:from-purple-100 group-hover:to-purple-200/30 transition-all"
+                        <div className={`flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all ${isDarkMode ? 'border-purple-800 bg-purple-900/30 group-hover:bg-purple-800/40' : 'border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/30 group-hover:from-purple-100 group-hover:to-purple-200/30'}`}
                           style={{ width: responsiveTableColWidth }}>
                           <div className="flex items-center gap-1 md:gap-2 min-w-0">
-                            <div className="w-5 h-5 md:w-6 md:h-6 rounded-lg bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center flex-shrink-0">
+                            <div className={`w-5 h-5 md:w-6 md:h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${isDarkMode ? 'bg-purple-800/50' : 'bg-gradient-to-br from-purple-100 to-purple-200'}`}>
                               <span className="text-xs md:text-sm">⛓</span>
                             </div>
                             <div className="min-w-0 flex-1">
-                              <span className="text-xs md:text-sm font-bold text-purple-800 truncate block">{combo.name}</span>
+                              <span className={`text-xs md:text-sm font-bold truncate block ${isDarkMode ? 'text-purple-300' : 'text-purple-800'}`}>{combo.name}</span>
                             </div>
                             {combo.capacity && (
-                              <span className="flex items-center gap-0.5 md:gap-1 bg-purple-200 text-purple-700 rounded-full px-1 md:px-1.5 py-0.5 text-[8px] md:text-[10px] font-semibold flex-shrink-0">
+                              <span className={`flex items-center gap-0.5 md:gap-1 rounded-full px-1 md:px-1.5 py-0.5 text-[8px] md:text-[10px] font-semibold flex-shrink-0 ${isDarkMode ? 'bg-purple-800/50 text-purple-300' : 'bg-purple-200 text-purple-700'}`}>
                                 <FiUsers className="w-2 h-2 md:w-2.5 md:h-2.5" />{combo.capacity}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className={`relative overflow-hidden ${isDragTarget ? 'bg-purple-50/30' : ''}`}
+                        <div className={`relative overflow-hidden ${isDragTarget ? (isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50/30') : ''}`}
                           style={{ width: (closeHour - openHour) * responsiveHourWidth }}>
-                          <div className="absolute inset-0 cursor-crosshair z-0 hover:bg-purple-50/10 transition-colors"
+                          <div className={`absolute inset-0 cursor-crosshair z-0 ${isDarkMode ? 'hover:bg-purple-900/10' : 'hover:bg-purple-50/10'} transition-colors`}
                             onClick={(e) => {
                               if (dragging) return;
                               const rect = e.currentTarget.getBoundingClientRect();
@@ -1047,6 +1189,7 @@ const CalendarView = ({
     );
   };
 
+  // ─── WEEK GRID VIEW ──────────────────────────────────────────────────────────
   const renderGrid = () => {
     const days = getDaysToDisplay();
     const isWeek = viewRange === 'week';
@@ -1055,27 +1198,27 @@ const CalendarView = ({
     const responsiveTimeColWidth = isMobile ? 50 : TIME_COL_WIDTH;
 
     return (
-      <div className="flex-1 overflow-hidden flex flex-col bg-white">
+      <div className={`flex-1 overflow-hidden flex flex-col ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         {isWeek && (
-          <div className="flex flex-shrink-0 bg-white border-b-2 border-gray-200 shadow-sm overflow-x-auto" style={{ paddingLeft: responsiveTimeColWidth }}>
+          <div className={`flex flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm overflow-x-auto`} style={{ paddingLeft: responsiveTimeColWidth }}>
             {days.map((day, i) => {
               const dayRes = getReservationsForDay(day);
               return (
-                <div key={i} className={`flex-1 py-2 md:py-4 text-center border-l border-gray-100 transition-all duration-200 min-w-[60px] ${
-                  isToday(day) ? 'bg-gradient-to-b from-amber-50 to-amber-100/30' : 'hover:bg-gray-50'
-                }`}>
+                <div key={i} className={`flex-1 py-2 md:py-4 text-center border-l transition-all duration-200 min-w-[60px] ${
+                  isToday(day) ? (isDarkMode ? 'bg-amber-900/30' : 'bg-gradient-to-b from-amber-50 to-amber-100/30') : (isDarkMode ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50')
+                } ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
                   <div className={`text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-0.5 md:mb-1 ${
-                    isToday(day) ? 'text-amber-600' : 'text-gray-500'
+                    isToday(day) ? (isDarkMode ? 'text-amber-400' : 'text-amber-600') : (isDarkMode ? 'text-gray-400' : 'text-gray-500')
                   }`}>
                     {isMobile ? day.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 1) : day.toLocaleDateString('en-US', { weekday: 'short' })}
                   </div>
                   <div className={`text-base md:text-2xl font-bold mt-0.5 ${
-                    isToday(day) ? 'text-amber-700' : 'text-gray-800'
+                    isToday(day) ? (isDarkMode ? 'text-amber-400' : 'text-amber-700') : (isDarkMode ? 'text-gray-300' : 'text-gray-800')
                   }`}>
                     {day.getDate()}
                   </div>
                   {!isMobile && (
-                    <div className="text-[8px] md:text-xs text-gray-400 mt-0.5 md:mt-1 font-medium">
+                    <div className={`text-[8px] md:text-xs mt-0.5 md:mt-1 font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                       {dayRes.length} res
                     </div>
                   )}
@@ -1087,14 +1230,14 @@ const CalendarView = ({
 
         <div className="flex-1 overflow-y-auto" ref={scrollRef}>
           <div className="flex" style={{ height: totalHeight }}>
-            <div className="flex-shrink-0 bg-gray-50 border-r-2 border-gray-200 sticky left-0 z-20 shadow-sm" style={{ width: responsiveTimeColWidth }}>
+            <div className={`flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-r-2 border-gray-700' : 'bg-gray-50 border-r-2 border-gray-200'} sticky left-0 z-20 shadow-sm`} style={{ width: responsiveTimeColWidth }}>
               {hours.map((hour) => (
-                <div key={hour} style={{ height: SLOT_HEIGHT }} className="border-b border-gray-200 flex items-start justify-end pr-1 md:pr-3 pt-1 md:pt-2">
+                <div key={hour} style={{ height: SLOT_HEIGHT }} className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} flex items-start justify-end pr-1 md:pr-3 pt-1 md:pt-2`}>
                   <div className="flex flex-col items-end">
-                    <span className="text-[8px] md:text-xs font-bold text-gray-600">
+                    <span className={`text-[8px] md:text-xs font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       {isMobile ? (hour === 12 ? '12' : hour > 12 ? `${hour-12}` : `${hour}`) : (hour === 12 ? '12 PM' : hour > 12 ? `${hour-12} PM` : `${hour} AM`)}
                     </span>
-                    {!isMobile && <span className="text-[9px] text-gray-400 mt-0.5">:00</span>}
+                    {!isMobile && <span className={`text-[9px] mt-0.5 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>:00</span>}
                   </div>
                 </div>
               ))}
@@ -1107,25 +1250,25 @@ const CalendarView = ({
 
               return (
                 <div key={dayIdx} data-day-col={day.toDateString()}
-                  className={`flex-1 relative border-l border-gray-200 min-w-[80px] transition-all duration-200 ${
-                    isToday(day) && !isWeek ? 'bg-gradient-to-b from-amber-50/50 to-transparent' : 'bg-white'
-                  } ${isDropTarget ? 'bg-blue-50/40 shadow-inner' : ''}`}>
+                  className={`flex-1 relative border-l transition-all duration-200 min-w-[80px] ${
+                    isToday(day) && !isWeek ? (isDarkMode ? 'bg-amber-900/20' : 'bg-gradient-to-b from-amber-50/50 to-transparent') : (isDarkMode ? 'bg-gray-900' : 'bg-white')
+                  } ${isDropTarget ? (isDarkMode ? 'bg-blue-900/40 shadow-inner' : 'bg-blue-50/40 shadow-inner') : ''} ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   {hours.map((hour, hourIdx) => {
                     const isEvenHour = hour % 2 === 0;
                     return (
                       <div key={hour} style={{ height: SLOT_HEIGHT }} className={`relative group border-b ${
-                        isEvenHour ? 'border-gray-200' : 'border-gray-100'
+                        isEvenHour ? (isDarkMode ? 'border-gray-700' : 'border-gray-200') : (isDarkMode ? 'border-gray-800' : 'border-gray-100')
                       }`}>
-                        <div className="absolute top-0 bottom-0 left-0 w-px bg-gray-300" />
-                        <div className="absolute top-0 bottom-0 left-1/4 w-px bg-gray-200" />
-                        <div className="absolute top-0 bottom-0 left-2/4 w-px bg-gray-300" />
-                        <div className="absolute top-0 bottom-0 left-3/4 w-px bg-gray-200" />
-                        <div className="absolute w-full border-b border-dashed border-gray-200" style={{ top: SLOT_HEIGHT / 2 }} />
-                        <div className="absolute left-0 right-0 top-1/4 bottom-0 border-t border-dashed border-gray-100" />
-                        <div className="absolute left-0 right-0 top-3/4 bottom-0 border-t border-dashed border-gray-100" />
+                        <div className={`absolute top-0 bottom-0 left-0 w-px ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`} />
+                        <div className={`absolute top-0 bottom-0 left-1/4 w-px ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                        <div className={`absolute top-0 bottom-0 left-2/4 w-px ${isDarkMode ? 'bg-gray-700' : 'bg-gray-300'}`} />
+                        <div className={`absolute top-0 bottom-0 left-3/4 w-px ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                        <div className={`absolute w-full border-b border-dashed ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} style={{ top: SLOT_HEIGHT / 2 }} />
+                        <div className={`absolute left-0 right-0 top-1/4 bottom-0 border-t border-dashed ${isDarkMode ? 'border-gray-800' : 'border-gray-100'}`} />
+                        <div className={`absolute left-0 right-0 top-3/4 bottom-0 border-t border-dashed ${isDarkMode ? 'border-gray-800' : 'border-gray-100'}`} />
                         
                         <div
-                          className="absolute inset-0 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent cursor-pointer transition-all duration-150 flex items-center justify-center opacity-0 hover:opacity-100 z-10"
+                          className={`absolute inset-0 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent cursor-pointer transition-all duration-150 flex items-center justify-center opacity-0 hover:opacity-100 z-10 ${isDarkMode ? 'hover:from-primary/10' : ''}`}
                           onClick={() => { const d = new Date(day); d.setHours(hour, 0, 0, 0); onCreateReservation && onCreateReservation(d); }}>
                           <div className="flex items-center gap-1 md:gap-1.5 bg-primary text-white text-[8px] md:text-xs px-1.5 md:px-3 py-1 md:py-1.5 rounded-full shadow-lg font-medium transform hover:scale-105 transition-transform">
                             <FiPlus className="w-2 h-2 md:w-3 md:h-3" />
@@ -1186,9 +1329,22 @@ const CalendarView = ({
                             e.stopPropagation();
                             handleMouseDownMove(e, r);
                           }}
+                          onTouchStart={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleMouseDownMove(e, r);
+                          }}
                           onMouseEnter={() => setHoveredReservation(r.id)}
                           onMouseLeave={() => setHoveredReservation(null)}
                           onMouseUp={(e) => {
+                            if (dragRef.current && !dragRef.current.hasMoved) {
+                              dragRef.current = null;
+                              setDragging(null);
+                              setDragState(null);
+                              onReservationClick(r);
+                            }
+                          }}
+                          onTouchEnd={(e) => {
                             if (dragRef.current && !dragRef.current.hasMoved) {
                               dragRef.current = null;
                               setDragging(null);
@@ -1222,7 +1378,7 @@ const CalendarView = ({
                                     <span className="text-[6px] md:text-xs flex-shrink-0" title="Mobile App Reservation">📱</span>
                                   )}
                                   {!showCompact && (
-                                    <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />
+                                    <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} isDark={isDarkMode} />
                                   )}
                                   {(r.change_request || r.cancel_reason) && (
                                     <span
@@ -1240,12 +1396,12 @@ const CalendarView = ({
                                     </span>
                                   )}
                                   {!showCompact && (
-                                    <span className="text-[10px] md:text-xs font-bold truncate" style={{ color: styles.text }}>
+                                    <span className={`text-[10px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
                                       {isMobile ? r.customer_name?.split(' ')[0] || 'Guest' : r.customer_name || 'Guest'}
                                     </span>
                                   )}
                                   {showCompact && (
-                                    <span className="text-[8px] md:text-xs font-bold truncate" style={{ color: styles.text }}>
+                                    <span className={`text-[8px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
                                       {r.customer_name?.split(' ')[0] || 'Guest'}
                                     </span>
                                   )}
@@ -1255,7 +1411,7 @@ const CalendarView = ({
                                 </span>
                               </div>
                               {!showCompact && height > 50 && (
-                                <div className="text-[8px] md:text-xs opacity-60 mt-0.5 md:mt-1 font-medium" style={{ color: styles.text }}>
+                                <div className={`text-[8px] md:text-xs opacity-60 mt-0.5 md:mt-1 font-medium ${isDarkMode ? 'text-gray-300' : ''}`} style={{ color: styles.text }}>
                                   → {`${String(endTime.getHours()).padStart(2,'0')}:${String(endTime.getMinutes()).padStart(2,'0')}`}
                                 </div>
                               )}
@@ -1265,17 +1421,17 @@ const CalendarView = ({
                                 <div className="flex items-center gap-0.5 md:gap-1.5">
                                   <div className="flex items-center gap-0.5 md:gap-1" style={{ color: styles.border }}>
                                     <FiUsers className="w-2 h-2 md:w-3 md:h-3" />
-                                    <span className="text-[8px] md:text-xs font-semibold">{r.number_of_guests}</span>
+                                    <span className={`text-[8px] md:text-xs font-semibold ${isDarkMode ? 'text-gray-300' : ''}`}>{r.number_of_guests}</span>
                                   </div>
                                 </div>
                                 {r.ServiceType_Reservation && (
-                                  <span className="text-[7px] md:text-[10px] px-1 md:px-2 py-0.5 rounded-full font-medium"
+                                  <span className={`text-[7px] md:text-[10px] px-1 md:px-2 py-0.5 rounded-full font-medium ${isDarkMode ? 'text-gray-300' : ''}`}
                                     style={{ backgroundColor: styles.border + '18', color: styles.text }}>
                                     {isMobile ? r.ServiceType_Reservation.slice(0, 3) : r.ServiceType_Reservation}
                                   </span>
                                 )}
                                 {r.table_name && height > 90 && !isMobile && (
-                                  <span className="text-[8px] md:text-[10px] truncate font-medium" style={{ color: styles.text, opacity: 0.7 }}>
+                                  <span className={`text-[8px] md:text-[10px] truncate font-medium ${isDarkMode ? 'text-gray-400' : ''}`} style={{ color: styles.text, opacity: 0.7 }}>
                                     🪑 {r.table_name}
                                   </span>
                                 )}
@@ -1318,10 +1474,12 @@ const CalendarView = ({
                             )}
                           </div>
                           {!showCompact && (
-                            <div
-                              className="absolute bottom-0 left-0 right-0 h-2 md:h-3 flex items-center justify-center cursor-ns-resize hover:bg-black/5 rounded-b-xl transition-colors"
-                              onMouseDown={(e) => handleMouseDownResize(e, r)}
-                              onClick={(e) => e.stopPropagation()}>
+                              <div
+                                className={`absolute bottom-0 left-0 right-0 h-2 md:h-3 flex items-center justify-center cursor-ns-resize ${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-black/5'} rounded-b-xl transition-colors`}
+                                onMouseDown={(e) => handleMouseDownResize(e, r)}
+                                onTouchStart={(e) => handleMouseDownResize(e, r)}
+                                onClick={(e) => e.stopPropagation()}
+                              >
                               <div className="w-4 md:w-8 h-0.5 rounded-full" style={{ backgroundColor: styles.border, opacity: 0.4 }} />
                             </div>
                           )}
@@ -1338,41 +1496,53 @@ const CalendarView = ({
     );
   };
 
+  // ─── MONTH VIEW ──────────────────────────────────────────────────────────────
   const renderMonthView = () => {
     const days = getDaysToDisplay();
     const weeks = [];
     for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
     
     return (
-      <div className="flex-1 overflow-auto p-2 md:p-6 bg-gray-50">
-        <div className="bg-white rounded-xl md:rounded-2xl border border-gray-200 overflow-hidden shadow-lg md:shadow-xl">
-          <div className="grid grid-cols-7 bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+      <div className={`flex-1 overflow-auto p-2 md:p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`rounded-xl md:rounded-2xl border overflow-hidden shadow-lg md:shadow-xl ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className={`grid grid-cols-7 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200'}`}>
             {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
-              <div key={d} className="py-2 md:py-4 text-center text-[8px] md:text-xs font-bold text-gray-600 uppercase tracking-wider">
+              <div key={d} className={`py-2 md:py-4 text-center text-[8px] md:text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 {isMobile ? d.slice(0, 1) : d.slice(0, 3)}
               </div>
             ))}
           </div>
           {weeks.map((week, wi) => (
-            <div key={wi} className="grid grid-cols-7 divide-x divide-gray-100 border-b border-gray-100 last:border-b-0">
+            <div key={wi} className={`grid grid-cols-7 divide-x ${isDarkMode ? 'divide-gray-700 border-gray-700' : 'divide-gray-100 border-gray-100'} border-b last:border-b-0`}>
               {week.map((day, di) => {
                 const dayRes = getReservationsForDay(day);
                 const inMonth = isCurrentMonth(day);
                 return (
                   <div key={di}
                     className={`min-h-[80px] md:min-h-[140px] p-1 md:p-3 cursor-pointer group transition-all duration-200 ${
-                      inMonth ? 'bg-white hover:bg-gradient-to-b hover:from-orange-50 hover:to-transparent' : 'bg-gray-50/50'
+                      inMonth ? (isDarkMode ? 'bg-gray-800 hover:bg-gray-700/50' : 'bg-white hover:bg-gradient-to-b hover:from-orange-50 hover:to-transparent') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')
                     } ${isToday(day) ? 'ring-2 ring-primary ring-inset' : ''}`}
-                    onClick={() => { setCurrentDate(day); setViewRange('day'); onDateChange(day); }}>
+                    onClick={() => { 
+                      setIsLoading(true);
+                      setTimeout(() => {
+                        setCurrentDate(day); 
+                        setViewRange('day'); 
+                        if (onDateChange) {
+                          onDateChange(day);
+                        }
+                        setIsLoading(false);
+                      }, 300);
+                    }}
+                  >
                     <div className="flex items-center justify-between mb-1 md:mb-2">
                       <span className={`text-xs md:text-sm font-semibold ${
                         isToday(day) ? 'bg-primary text-white w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-md' : 
-                        inMonth ? 'text-gray-900' : 'text-gray-400'
+                        inMonth ? (isDarkMode ? 'text-gray-200' : 'text-gray-900') : (isDarkMode ? 'text-gray-500' : 'text-gray-400')
                       }`}>
                         {day.getDate()}
                       </span>
                       {dayRes.length > 0 && (
-                        <span className="text-[8px] md:text-xs bg-orange-100 text-orange-700 px-1 md:px-2 py-0.5 rounded-full font-semibold">
+                        <span className={`text-[8px] md:text-xs px-1 md:px-2 py-0.5 rounded-full font-semibold ${isDarkMode ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-700'}`}>
                           {dayRes.length}
                         </span>
                       )}
@@ -1383,7 +1553,7 @@ const CalendarView = ({
                         const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
                         return (
                           <div key={r.id} 
-                            className="px-1 md:px-2 py-0.5 md:py-1.5 rounded-lg text-[7px] md:text-xs truncate border-l-2 md:border-l-3 cursor-pointer hover:opacity-80 transition-all duration-150 flex items-center justify-between"
+                            className={`px-1 md:px-2 py-0.5 md:py-1.5 rounded-lg text-[7px] md:text-xs truncate border-l-2 md:border-l-3 cursor-pointer hover:opacity-80 transition-all duration-150 flex items-center justify-between ${isDarkMode ? 'text-gray-200' : ''}`}
                             style={{ backgroundColor: s.bg, borderLeftColor: s.border, color: s.text }}
                             onClick={e => { e.stopPropagation(); onReservationClick(r); }}>
                             <div className="flex items-center gap-0.5 md:gap-1 min-w-0">
@@ -1391,16 +1561,16 @@ const CalendarView = ({
                                 {`${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
                               </span>
                               {!isMobile && (
-                                <span className="ml-0.5 md:ml-1 truncate">· {r.customer_name?.split(' ')[0] || 'Guest'}</span>
+                                <span className={`ml-0.5 md:ml-1 truncate ${isDarkMode ? 'text-gray-300' : ''}`}>· {r.customer_name?.split(' ')[0] || 'Guest'}</span>
                               )}
-                              <span className="text-[6px] md:text-[10px] opacity-60 flex-shrink-0">({r.number_of_guests})</span>
+                              <span className={`text-[6px] md:text-[10px] opacity-60 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : ''}`}>({r.number_of_guests})</span>
                             </div>
-                            {!isMobile && <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} />}
+                            {!isMobile && <NoteIndicator publicNote={r.special_requests} internalNote={r.internal_notes} isDark={isDarkMode} />}
                           </div>
                         );
                       })}
                       {dayRes.length > (isMobile ? 2 : 3) && (
-                        <div className="text-[7px] md:text-xs text-gray-400 px-1 md:px-2 pt-0.5 md:pt-1 font-medium">
+                        <div className={`text-[7px] md:text-xs px-1 md:px-2 pt-0.5 md:pt-1 font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                           +{dayRes.length - (isMobile ? 2 : 3)} more
                         </div>
                       )}
@@ -1416,43 +1586,37 @@ const CalendarView = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 select-none"
+    <div className={`h-full flex flex-col select-none relative ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}
       style={{ cursor: dragging ? (dragging.type === 'resize' ? 'ns-resize' : dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'default' }}>
 
-      {/* Header - Responsive */}
-      <div className="bg-white border-b border-gray-200 shadow-lg flex-shrink-0">
+      {/* ─── Loading Overlay ────────────────────────────────────────────────── */}
+      {isLoading && (
+        <div className={`absolute inset-0 z-50 flex items-center justify-center ${isDarkMode ? 'bg-gray-900/80' : 'bg-white/80'} backdrop-blur-sm transition-opacity duration-300`}>
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+            <p className={`text-xs sm:text-sm font-medium animate-pulse ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading reservations...</p>
+          </div>
+        </div>
+      )}
+
+      {/* ─── HEADER ────────────────────────────────────────────────────────────── */}
+      <div className={`border-b shadow-lg flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-3 md:px-6 py-2 md:py-4 gap-2 md:gap-0">
-          {/* Left: Navigation */}
+          {/* Left: View Range Display */}
           <div className="flex items-center gap-1 md:gap-2 w-full md:w-auto justify-between md:justify-start">
-            <div className="flex items-center gap-1 md:gap-2">
-              <button onClick={() => navigateDate(-1)} className="p-1.5 md:p-2 hover:bg-orange-50 text-primary rounded-xl transition-all duration-200 hover:scale-110">
-                <FiChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
-              <button onClick={() => navigateDate(1)} className="p-1.5 md:p-2 hover:bg-orange-50 text-primary rounded-xl transition-all duration-200 hover:scale-110">
-                <FiChevronRight className="w-4 h-4 md:w-5 md:h-5" />
-              </button>
-              <div className="h-4 md:h-6 w-px bg-gray-200 mx-0.5 md:mx-1" />
-              <button onClick={() => { const t = new Date(); setCurrentDate(t); onDateChange(t); }}
-                className="px-2 md:px-4 py-1 md:py-2 rounded-xl text-[10px] md:text-sm font-semibold shadow-md transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5 whitespace-nowrap"
-                style={{ background: 'linear-gradient(to right, #fe8a24, #e57a1a)', color: '#ffffff' }}>
-                Today
-              </button>
-            </div>
-            
-            {/* Date Range - Hidden on very small screens */}
-            <div className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-2 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-xl md:rounded-2xl">
-              <FiCalendar className="w-3 h-3 md:w-4 md:h-4 text-primary flex-shrink-0" />
-              <h2 className="text-[10px] md:text-base font-bold text-gray-800 truncate max-w-[120px] md:max-w-none">
-                {isMobile ? getDateRangeText().slice(0, 15) + (getDateRangeText().length > 15 ? '...' : '') : getDateRangeText()}
+            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-2 rounded-xl md:rounded-2xl ${isDarkMode ? 'bg-gray-700/50' : 'bg-gradient-to-r from-orange-50 to-orange-100/50'}`}>
+              <FiCalendar className={`w-3 h-3 md:w-4 md:h-4 text-primary flex-shrink-0`} />
+              <h2 className={`text-[10px] md:text-base font-bold truncate max-w-[120px] md:max-w-none ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                {getDateRangeText()}
               </h2>
             </div>
           </div>
 
-          {/* Middle: Stats - Hidden on mobile */}
+          {/* Middle: Stats */}
           {!isMobile && (
-            <div className="flex items-center gap-2 md:gap-4 px-3 md:px-4 py-1 md:py-2 bg-primary/10 rounded-xl md:rounded-2xl">
+            <div className={`flex items-center gap-2 md:gap-4 px-3 md:px-4 py-1 md:py-2 rounded-xl md:rounded-2xl ${isDarkMode ? 'bg-primary/10' : 'bg-primary/10'}`}>
               <FiUsers className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />
-              <span className="text-[10px] md:text-sm font-bold text-primary whitespace-nowrap">
+              <span className={`text-[10px] md:text-sm font-bold text-primary whitespace-nowrap`}>
                 {(() => {
                   const dayRes = getReservationsForDay(currentDate);
                   const totalGuests = dayRes.reduce((sum, r) => sum + (r.number_of_guests || 0), 0);
@@ -1462,53 +1626,42 @@ const CalendarView = ({
             </div>
           )}
 
-          {/* Right: Controls */}
+          {/* Right: View Controls + Theme Toggle */}
           <div className="flex items-center gap-1 md:gap-3 w-full md:w-auto justify-end">
-            <div className="relative">
-              <input type="date" value={formatDateForInput(currentDate)}
-                onChange={e => { const d = new Date(e.target.value); setCurrentDate(d); onDateChange(d); }}
-                className="pl-6 md:pl-10 pr-2 md:pr-4 py-1 md:py-2 border-2 border-gray-200 rounded-xl text-[10px] md:text-sm focus:outline-none bg-gray-50 transition-all w-[90px] md:w-auto"
-                style={{ color: '#1f2937' }} />
-              <FiCalendar className="absolute left-1.5 md:left-3 top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-primary pointer-events-none" />
-            </div>
-            <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm">
+            <div className={`flex rounded-xl overflow-hidden border-2 shadow-sm ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
               {['day','week','month'].map(r => (
                 <button key={r} onClick={() => setViewRange(r)}
-                  className={`px-2 md:px-4 py-1 md:py-2 text-[8px] md:text-sm font-semibold capitalize transition-all duration-200 whitespace-nowrap`}
+                  className={`px-2 md:px-4 py-1 md:py-2 text-[8px] md:text-sm font-semibold capitalize transition-all duration-200 whitespace-nowrap ${
+                    viewRange === r ? 'text-white' : (isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800')
+                  }`}
                   style={{
-                    background: viewRange === r ? 'linear-gradient(to right, #fe8a24, #e57a1a)' : '#ffffff',
-                    color: viewRange === r ? '#ffffff' : '#1f2937',
+                    background: viewRange === r ? 'linear-gradient(to right, #fe8a24, #e57a1a)' : (isDarkMode ? 'transparent' : '#ffffff'),
                   }}>
                   {isMobile ? (r === 'day' ? 'D' : r === 'week' ? 'W' : 'M') : r}
                 </button>
               ))}
             </div>
+            
+            {/* Theme Toggle Button */}
+            <button 
+              onClick={toggleTheme}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'}`}
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? <FiSun className="w-4 h-4 text-amber-400" /> : <FiMoon className="w-4 h-4" />}
+            </button>
           </div>
         </div>
-
-        {/* Date range picker for month view - Responsive */}
-        {viewRange === 'month' && (
-          <div className="px-3 md:px-6 pb-2 md:pb-4 flex flex-wrap items-center gap-2 md:gap-4 border-t border-gray-100 pt-2 md:pt-4 bg-gray-50/30">
-            <label className="text-[8px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">FROM</label>
-            <input type="date" value={startDate ? formatDateForInput(startDate) : ''}
-              onChange={e => { const d = new Date(e.target.value); onStartDateChange(d); onDateChange(d); }}
-              className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-gray-200 rounded-xl text-[10px] md:text-sm focus:outline-none focus:border-primary bg-white w-[90px] md:w-auto" />
-            <label className="text-[8px] md:text-xs font-bold text-gray-500 uppercase tracking-wider">TO</label>
-            <input type="date" value={endDate ? formatDateForInput(endDate) : ''}
-              min={startDate ? formatDateForInput(startDate) : ''}
-              onChange={e => onEndDateChange(new Date(e.target.value))}
-              className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-gray-200 rounded-xl text-[10px] md:text-sm focus:outline-none focus:border-primary bg-white w-[90px] md:w-auto" />
-          </div>
-        )}
       </div>
 
+      {/* ─── BODY ────────────────────────────────────────────────────────────────── */}
       {viewRange === 'month' ? renderMonthView() : viewRange === 'day' ? renderDayTableView() : renderGrid()}
 
-      {/* Footer with legend - Responsive */}
-      <div className="flex-shrink-0 border-t-2 border-gray-200 px-2 md:px-6 py-2 md:py-3 bg-white shadow-inner overflow-x-auto">
+      {/* ─── FOOTER ────────────────────────────────────────────────────────────── */}
+      <div className={`flex-shrink-0 border-t-2 px-2 md:px-6 py-2 md:py-3 shadow-inner overflow-x-auto ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex items-center justify-between flex-wrap gap-1 md:gap-2 min-w-[600px] md:min-w-0">
           <div className="flex items-center gap-2 md:gap-6 flex-wrap">
-            <span className="text-[8px] md:text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden sm:inline">Status</span>
+            <span className={`text-[8px] md:text-[10px] font-bold uppercase tracking-wider hidden sm:inline ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Status</span>
             {[
               { color: '#f59e0b', label: 'Pending' },
               { color: '#10b981', label: 'Confirmed' },
@@ -1518,7 +1671,7 @@ const CalendarView = ({
             ].map(({color, label}) => (
               <div key={label} className="flex items-center gap-0.5 md:gap-1.5">
                 <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full shadow-sm" style={{ backgroundColor: color }} />
-                <span className="text-[7px] md:text-xs text-gray-600 font-medium">
+                <span className={`text-[7px] md:text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   {isMobile && label === 'Pending' ? 'P' : isMobile && label === 'Confirmed' ? 'C' : isMobile && label === 'Completed' ? 'D' : isMobile && label === 'Cancelled' ? 'X' : isMobile ? '📱' : label}
                 </span>
               </div>
@@ -1526,26 +1679,26 @@ const CalendarView = ({
           </div>
           
           {!isMobile && (
-            <div className="flex items-center gap-2 md:gap-5 text-[8px] md:text-xs text-gray-400 flex-wrap">
+            <div className={`flex items-center gap-2 md:gap-5 text-[8px] md:text-xs flex-wrap ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
               <div className="flex items-center gap-0.5 md:gap-1.5">
                 <span className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[6px] md:text-[9px]" style={{ backgroundColor: COLORS.info }}>!</span>
-                <span>Change</span>
+                <span className={isDarkMode ? 'text-gray-400' : ''}>Change</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1.5">
                 <span className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[6px] md:text-[9px]" style={{ backgroundColor: COLORS.purple }}>✕</span>
-                <span>Cancel</span>
+                <span className={isDarkMode ? 'text-gray-400' : ''}>Cancel</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1">
                 <span className="text-primary text-[10px] md:text-sm">🖱</span>
-                <span className="hidden sm:inline">Drag to move</span>
+                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>Drag to move</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1">
                 <span className="text-primary text-[10px] md:text-sm">↕</span>
-                <span className="hidden sm:inline">Resize</span>
+                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>Resize</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1">
                 <span className="text-primary text-[10px] md:text-sm">✚</span>
-                <span className="hidden sm:inline">Click slot</span>
+                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>Click slot</span>
               </div>
             </div>
           )}
