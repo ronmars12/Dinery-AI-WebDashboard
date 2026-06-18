@@ -1,7 +1,7 @@
 // src/components/reservation-software/CalendarView.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { doc, updateDoc, collection, onSnapshot, getDoc, serverTimestamp } from 'firebase/firestore';
-import { FiX, FiChevronLeft, FiChevronRight, FiCalendar, FiPlus, FiUsers, FiTrash2, FiClock, FiMapPin, FiMoreVertical, FiFileText, FiLock, FiSun, FiMoon } from 'react-icons/fi';
+import { FiX, FiChevronLeft, FiChevronRight, FiCalendar, FiPlus, FiUsers, FiTrash2, FiClock, FiMapPin, FiMoreVertical, FiFileText, FiLock, FiSun, FiMoon, FiRefreshCw } from 'react-icons/fi';
 import { firestore, auth } from '../../firebase';
 import { useTheme } from '../../ThemeContext';
 
@@ -89,20 +89,68 @@ const CalendarView = ({
   const [combinations, setCombinations] = useState([]);
   const [hoveredReservation, setHoveredReservation] = useState(null);
   
-  // Responsive: detect screen size
+  // Responsive: detect screen size with improved tablet detection
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
+  
+  // Force re-render for tablets
+  const [forceRender, setForceRender] = useState(0);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   useEffect(() => {
     const checkScreenSize = () => {
       const width = window.innerWidth;
-      setIsMobile(width < 768);
-      setIsTablet(width >= 768 && width < 1024);
+      const height = window.innerHeight;
+      // iPad specific detection - check both width and height
+      const isIPad = /iPad|Macintosh/.test(navigator.userAgent) && 
+                     (width >= 768 && width <= 1024) && 
+                     ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+      const isTabletDevice = (width >= 768 && width <= 1024) || isIPad;
+      
+      setIsMobile(width < 640);
+      setIsTablet(width >= 640 && width < 1024 || isTabletDevice);
+      setIsDesktop(width >= 1024 && !isTabletDevice);
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+
+  // Detect touch device and force re-render for tablets
+  useEffect(() => {
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    setIsTouchDevice(isTouch);
+    
+    // Force re-render when tablet detection changes or on resize
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const isTabletDevice = (width >= 768 && width <= 1024) || 
+        (/iPad|Macintosh/.test(navigator.userAgent) && width >= 768 && width <= 1024 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+      
+      // Force re-render if tablet state changes
+      if ((isTabletDevice && !isTablet) || (!isTabletDevice && isTablet)) {
+        setForceRender(prev => prev + 1);
+        // Also force a layout recalculation
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.style.opacity = '0.99';
+            requestAnimationFrame(() => {
+              scrollRef.current.style.opacity = '1';
+            });
+          }
+        }, 50);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    // Initial force render for tablets
+    if (isTablet || isTouch) {
+      setTimeout(() => setForceRender(prev => prev + 1), 100);
+    }
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isTablet]);
 
   useEffect(() => { setLocalReservations(reservations); }, [reservations]);
 
@@ -199,15 +247,61 @@ const CalendarView = ({
     }
   }, [contextMenu]);
 
+  // Cleanup function for drag state
+  useEffect(() => {
+    const handleCleanup = () => {
+      if (dragRef.current) {
+        dragRef.current = null;
+        setDragging(null);
+        setDragState(null);
+        setDragTargetDay(null);
+      }
+    };
+    
+    return () => {
+      handleCleanup();
+    };
+  }, []);
+
+  // Add touch feedback styles
+  useEffect(() => {
+    if (isTouchDevice) {
+      const style = document.createElement('style');
+      style.textContent = `
+        [data-table-row]:active {
+          background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'};
+        }
+        .reservation-bar {
+          transition: box-shadow 0.2s ease, transform 0.1s ease;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .reservation-bar:active {
+          transform: scale(1.02);
+        }
+        @media (hover: none) {
+          .reservation-bar:hover {
+            transform: none;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      return () => style.remove();
+    }
+  }, [isTouchDevice, isDarkMode]);
+
   const getRestaurantHours = () => {
-    if (!selectedRestaurant?.customHours?.length) return { openHour: 8, closeHour: 23 };
-    const ch = selectedRestaurant.customHours.find(h => h.openTime && h.closeTime)
-      || selectedRestaurant.customHours[0];
-    if (!ch?.openTime || !ch?.closeTime) return { openHour: 8, closeHour: 23 };
-    const [openHour] = ch.openTime.split(':').map(Number);
-    const [closeHour] = ch.closeTime.split(':').map(Number);
-    const finalClose = closeHour <= openHour ? 24 : Math.min(closeHour, 24);
-    return { openHour, closeHour: Math.min(finalClose, 24) };
+    try {
+      if (!selectedRestaurant?.customHours?.length) return { openHour: 8, closeHour: 23 };
+      const ch = selectedRestaurant.customHours.find(h => h.openTime && h.closeTime)
+        || selectedRestaurant.customHours[0];
+      if (!ch?.openTime || !ch?.closeTime) return { openHour: 8, closeHour: 23 };
+      const [openHour] = ch.openTime.split(':').map(Number);
+      const [closeHour] = ch.closeTime.split(':').map(Number);
+      const finalClose = closeHour <= openHour ? 24 : Math.min(closeHour, 24);
+      return { openHour: openHour || 8, closeHour: Math.min(finalClose, 24) || 23 };
+    } catch (e) {
+      return { openHour: 8, closeHour: 23 };
+    }
   };
 
   const { openHour, closeHour } = getRestaurantHours();
@@ -423,12 +517,26 @@ const CalendarView = ({
   const totalTableSlots = (closeHour - openHour) * 4;
 
   const handleMouseDownMove = (e, reservation) => {
-    // Handle both mouse and touch events
-    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    // For touch events, prevent default but don't stop propagation
+    if (e.type === 'touchstart' || e.type === 'touchmove') {
+      e.preventDefault();
+      // Don't stop propagation for touch events to allow scrolling
+    } else {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    e.preventDefault(); 
-    e.stopPropagation();
+    let clientY, clientX;
+    if (e.type === 'touchstart' || e.type === 'touchmove') {
+      const touch = e.touches ? e.touches[0] : e.changedTouches?.[0];
+      if (!touch) return;
+      clientY = touch.clientY;
+      clientX = touch.clientX;
+    } else {
+      clientY = e.clientY;
+      clientX = e.clientX;
+    }
+    
     if (e.detail === 2) return;
     
     const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
@@ -443,25 +551,41 @@ const CalendarView = ({
       origDuration: duration, 
       reservation, 
       hasMoved: false,
-      isTouch: e.type === 'touchstart'
+      isTouch: e.type === 'touchstart' || e.type === 'touchmove',
+      initialClientY: clientY,
+      initialClientX: clientX,
     };
     dragRef.current = info;
     setDragging(info);
   };
 
   const handleMouseDownResize = (e, reservation) => {
-    // Handle both mouse and touch events
-    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-    
     e.preventDefault(); 
     e.stopPropagation();
+    
+    let clientX, clientY;
+    if (e.type === 'touchstart') {
+      const touch = e.touches[0];
+      if (!touch) return;
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+      
+      // Add haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
     const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
     const origStart = minutesFromOpen(resDate);
     const duration = reservation.duration_minutes || 75;
     const info = { 
       id: reservation.id, 
       type: 'resize', 
-      startY: e.type === 'touchstart' ? e.touches[0].clientY : e.clientY,
+      startY: clientY,
       startX: clientX,
       origStart, 
       origDuration: duration, 
@@ -477,14 +601,29 @@ const CalendarView = ({
     const d = dragRef.current;
     if (!d) return;
 
-    // Get client coordinates based on event type
-    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+    // Prevent default for touch events to avoid scrolling while dragging
+    if (e.type === 'touchmove') {
+      e.preventDefault();
+    }
+
+    let clientX, clientY;
+    if (e.type === 'touchmove') {
+      const touch = e.touches[0];
+      if (!touch) return;
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    // For touch devices, use a larger threshold to prevent accidental drags
+    const threshold = d.isTouch ? 8 : DRAG_THRESHOLD;
 
     if (d.type === 'table-move' || d.type === 'table-resize') {
       const dx = clientX - d.startX;
       
-      if (!d.hasMoved && Math.abs(dx) < DRAG_THRESHOLD) return;
+      if (!d.hasMoved && Math.abs(dx) < threshold) return;
       if (!d.hasMoved) {
         dragRef.current = { ...d, hasMoved: true };
         setDragging(prev => prev ? { ...prev, hasMoved: true } : prev);
@@ -501,13 +640,28 @@ const CalendarView = ({
         return;
       }
 
+      // For touch devices, use a more robust method to find the target row
       const rows = document.querySelectorAll('[data-table-row]');
       let hoveredTableId = d.tableId;
+      let closestRow = null;
+      let closestDistance = Infinity;
+
       rows.forEach(row => {
         const rect = row.getBoundingClientRect();
-        if (clientY >= rect.top && clientY <= rect.bottom)
-          hoveredTableId = row.getAttribute('data-table-row');
+        const midY = (rect.top + rect.bottom) / 2;
+        const distance = Math.abs(clientY - midY);
+        
+        // Increase tolerance for touch devices
+        const tolerance = d.isTouch ? 30 : 10;
+        if (distance < closestDistance && clientY >= rect.top - tolerance && clientY <= rect.bottom + tolerance) {
+          closestDistance = distance;
+          closestRow = row;
+        }
       });
+
+      if (closestRow) {
+        hoveredTableId = closestRow.getAttribute('data-table-row');
+      }
       dragRef._tableId = hoveredTableId;
 
       const deltaSlots = Math.round(dx / TABLE_CELL_WIDTH);
@@ -521,14 +675,17 @@ const CalendarView = ({
     }
 
     const dy = clientY - d.startY;
-    if (!d.hasMoved && Math.abs(dy) < DRAG_THRESHOLD) return;
+    if (!d.hasMoved && Math.abs(dy) < threshold) return;
     if (!d.hasMoved) {
       dragRef.current = { ...d, hasMoved: true };
       setDragging(prev => prev ? { ...prev, hasMoved: true } : prev);
       setDragState({ id: d.id, startMinutes: d.origStart, duration: d.origDuration });
     }
+    
+    // Use smoother calculation for touch
     const rawMinutes = (dy / SLOT_HEIGHT) * 60;
-    const deltaMinutes = Math.round(rawMinutes / 5) * 5;
+    const snapIncrement = d.isTouch ? 5 : 5;
+    const deltaMinutes = Math.round(rawMinutes / snapIncrement) * snapIncrement;
     const totalMinutes = totalHours * 60;
 
     if (d.type === 'move') {
@@ -536,7 +693,9 @@ const CalendarView = ({
       let hoveredDay = null;
       cols.forEach(col => {
         const rect = col.getBoundingClientRect();
-        if (clientX >= rect.left && clientX <= rect.right)
+        // Increase tolerance for touch devices
+        const tolerance = d.isTouch ? 20 : 0;
+        if (clientX >= rect.left - tolerance && clientX <= rect.right + tolerance)
           hoveredDay = col.getAttribute('data-day-col');
       });
       if (hoveredDay) setDragTargetDay(hoveredDay);
@@ -555,16 +714,36 @@ const CalendarView = ({
   const handleMouseUp = useCallback(async (e) => {
     const d = dragRef.current;
     if (!d) return;
+    
+    if (e && e.type && (e.type === 'touchend' || e.type === 'touchcancel')) {
+      e.preventDefault();
+    }
+    
     dragRef.current = null;
+    
     if (!d.hasMoved) {
-      onReservationClick(d.reservation);
-      setDragging(null); setDragState(null); setDragTargetDay(null);
+      if (d.reservation) {
+        onReservationClick(d.reservation);
+      }
+      setDragging(null); 
+      setDragState(null); 
+      setDragTargetDay(null);
       return;
     }
+    
     if (d.type === 'table-move' || d.type === 'table-resize') {
       setDragState(prev => {
-        if (!prev) { setDragging(null); return null; }
+        if (!prev) { 
+          setDragging(null); 
+          return null; 
+        }
+        
         const reservation = d.reservation;
+        if (!reservation || !reservation.id) {
+          setDragging(null);
+          return null;
+        }
+        
         const origDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
         const newDate = new Date(origDate);
         const snapDuration = Math.round(prev.duration / 5) * 5;
@@ -650,8 +829,19 @@ const CalendarView = ({
     }
 
     setDragState(prev => {
-      if (!prev) { setDragging(null); setDragTargetDay(null); return null; }
+      if (!prev) { 
+        setDragging(null); 
+        setDragTargetDay(null); 
+        return null; 
+      }
+      
       const reservation = d.reservation;
+      if (!reservation || !reservation.id) {
+        setDragging(null);
+        setDragTargetDay(null);
+        return null;
+      }
+      
       const origDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
       let targetDate = new Date(origDate);
       const currentTargetDay = dragRef._targetDay;
@@ -662,18 +852,21 @@ const CalendarView = ({
       const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
       targetDate.setHours(openHour + Math.floor(snapMinutes / 60), snapMinutes % 60, 0, 0);
       const snapDuration = Math.round(prev.duration / 5) * 5;
-      setLocalReservations(rs => rs.map(r =>
-        r.id === reservation.id ? { ...r, reservation_date: targetDate, from_time: savedFromTime, duration_minutes: snapDuration } : r
-      ));
       const fromH = targetDate.getHours();
       const fromM = targetDate.getMinutes();
       const savedFromTime = `${String(fromH).padStart(2,'0')}:${String(fromM).padStart(2,'0')}`;
+      
+      setLocalReservations(rs => rs.map(r =>
+        r.id === reservation.id ? { ...r, reservation_date: targetDate, from_time: savedFromTime, duration_minutes: snapDuration } : r
+      ));
+      
       updateDoc(doc(db, 'reservations', reservation.id), {
         reservation_date: targetDate,
         from_time: savedFromTime,
         duration_minutes: snapDuration,
         updated_at: new Date(),
       }).catch(err => { console.error('Failed to update:', err); setLocalReservations(reservations); });
+      
       setDragging(null);
       setDragTargetDay(null);
       return null;
@@ -684,10 +877,8 @@ const CalendarView = ({
 
   useEffect(() => {
     if (dragging) {
-      // Mouse events
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
-      // Touch events for mobile/tablet
       window.addEventListener('touchmove', handleMouseMove, { passive: false });
       window.addEventListener('touchend', handleMouseUp, { passive: false });
       window.addEventListener('touchcancel', handleMouseUp, { passive: false });
@@ -758,9 +949,9 @@ const CalendarView = ({
       ? (() => { const n = new Date(); return ((n.getHours() - openHour) * 60 + n.getMinutes()) / 15; })()
       : -1;
 
-    // Responsive table column width
-    const responsiveTableColWidth = isMobile ? 100 : TABLE_COL_WIDTH;
-    const responsiveHourWidth = isMobile ? 140 : (isTablet ? 180 : HOUR_WIDTH);
+    // Responsive table column width - improved for tablets
+    const responsiveTableColWidth = isMobile ? 90 : (isTablet ? 110 : TABLE_COL_WIDTH);
+    const responsiveHourWidth = isMobile ? 110 : (isTablet ? 150 : HOUR_WIDTH);
     const responsiveCellWidth = responsiveHourWidth / 4;
 
     const renderResBar = (r, tableId) => {
@@ -785,63 +976,78 @@ const CalendarView = ({
       const hasInternalNote = r.internal_notes && r.internal_notes.trim().length > 0;
 
       return (
-          <div
-            key={r.id}
-            onMouseDown={(e) => {
-              if (e.button !== 0) return;
-              e.preventDefault();
-              e.stopPropagation();
-              const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-              const origSlot = minutesToSlot(resDate, r.from_time);
-              const origDuration = r.duration_minutes || 75;
-              const dragTableId = isMultiTable ? null : tableId;
-              const info = {
-                id: r.id, type: 'table-move',
-                startX: e.clientX,
-                origSlot, origStart: origSlot * 15, origDuration,
-                tableId: dragTableId, reservation: r, hasMoved: false,
-                isMultiTable, originalTableIds: r.table_ids,
-                startClientX: e.clientX,
-              };
-              dragRef.current = info;
-              setDragging(info);
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              const touch = e.touches[0];
-              const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-              const origSlot = minutesToSlot(resDate, r.from_time);
-              const origDuration = r.duration_minutes || 75;
-              const dragTableId = isMultiTable ? null : tableId;
-              const info = {
-                id: r.id, type: 'table-move',
-                startX: touch.clientX,
-                origSlot, origStart: origSlot * 15, origDuration,
-                tableId: dragTableId, reservation: r, hasMoved: false,
-                isMultiTable, originalTableIds: r.table_ids,
-                startClientX: touch.clientX,
-                isTouch: true,
-              };
-              dragRef.current = info;
-              setDragging(info);
-            }}
-            onMouseUp={(e) => {
-              if (dragRef.current && !dragRef.current.hasMoved) {
-                dragRef.current = null;
-                setDragging(null);
-                setDragState(null);
-                onReservationClick(r);
-              }
-            }}
-            onTouchEnd={(e) => {
-              if (dragRef.current && !dragRef.current.hasMoved) {
-                dragRef.current = null;
-                setDragging(null);
-                setDragState(null);
-                onReservationClick(r);
-              }
-            }}
+        <div
+          key={r.id}
+          className={`reservation-bar absolute top-1 rounded-lg overflow-hidden select-none group/res ${isActive ? 'ring-2 ring-primary/50 z-30' : 'z-10'}`}
+          style={{
+            left: left + 1, width: Math.max(width, 32),
+            height: (isTablet ? TABLE_ROW_HEIGHT - 10 : TABLE_ROW_HEIGHT - 8),
+            background: styles.bg,
+            border: `1px solid ${styles.border}`,
+            borderLeft: `3px solid ${styles.border}`,
+            cursor: dragging?.id === r.id ? (dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'grab',
+            boxShadow: isActive ? `0 4px 16px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 2px 8px rgba(0,0,0,0.1)` : '0 1px 2px rgba(0,0,0,0.05)'),
+            touchAction: 'none',
+          }}
+          onMouseDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+            const origSlot = minutesToSlot(resDate, r.from_time);
+            const origDuration = r.duration_minutes || 75;
+            const dragTableId = isMultiTable ? null : tableId;
+            const info = {
+              id: r.id, type: 'table-move',
+              startX: e.clientX,
+              startY: e.clientY,
+              origSlot, origStart: origSlot * 15, origDuration,
+              tableId: dragTableId, reservation: r, hasMoved: false,
+              isMultiTable, originalTableIds: r.table_ids,
+              startClientX: e.clientX,
+            };
+            dragRef.current = info;
+            setDragging(info);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const touch = e.touches[0];
+            if (!touch) return;
+            
+            const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+            const origSlot = minutesToSlot(resDate, r.from_time);
+            const origDuration = r.duration_minutes || 75;
+            const dragTableId = isMultiTable ? null : tableId;
+            const info = {
+              id: r.id, type: 'table-move',
+              startX: touch.clientX,
+              startY: touch.clientY,
+              origSlot, origStart: origSlot * 15, origDuration,
+              tableId: dragTableId, reservation: r, hasMoved: false,
+              isMultiTable, originalTableIds: r.table_ids,
+              startClientX: touch.clientX,
+              isTouch: true,
+            };
+            dragRef.current = info;
+            setDragging(info);
+          }}
+          onMouseUp={(e) => {
+            if (dragRef.current && !dragRef.current.hasMoved) {
+              dragRef.current = null;
+              setDragging(null);
+              setDragState(null);
+              onReservationClick(r);
+            }
+          }}
+          onTouchEnd={(e) => {
+            if (dragRef.current && !dragRef.current.hasMoved) {
+              dragRef.current = null;
+              setDragging(null);
+              setDragState(null);
+              onReservationClick(r);
+            }
+          }}
           onMouseEnter={() => setHoveredReservation(r.id)}
           onMouseLeave={() => setHoveredReservation(null)}
           onContextMenu={(e) => {
@@ -854,16 +1060,6 @@ const CalendarView = ({
             setDragging(null);
             setDragState(null);
             setContextMenu({ position: { x: e.clientX, y: e.clientY }, reservation: r });
-          }}
-          className={`absolute top-1 rounded-lg overflow-hidden select-none group/res ${isActive ? 'ring-2 ring-primary/50 z-30' : 'z-10'}`}
-          style={{
-            left: left + 1, width: Math.max(width, 32),
-            height: TABLE_ROW_HEIGHT - 8,
-            background: styles.bg,
-            border: `1px solid ${styles.border}`,
-            borderLeft: `3px solid ${styles.border}`,
-            cursor: dragging?.id === r.id ? (dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'grab',
-            boxShadow: isActive ? `0 4px 16px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 2px 8px rgba(0,0,0,0.1)` : '0 1px 2px rgba(0,0,0,0.05)'),
           }}
         >
           {isMultiTable && (
@@ -912,11 +1108,11 @@ const CalendarView = ({
                 ⛓ {r.table_ids.length}
               </span>
             )}
-            <span className="text-[9px] md:text-xs font-mono font-semibold whitespace-nowrap" style={{ color: styles.text }}>
+            <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-mono font-semibold whitespace-nowrap`} style={{ color: styles.text }}>
               {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
             </span>
             {width > 50 && (
-              <span className="text-[9px] md:text-xs font-medium truncate" style={{ color: styles.text }}>
+              <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-medium truncate`} style={{ color: styles.text }}>
                 {isMobile ? r.customer_name?.split(' ')[0] || 'Guest' : `${r.customer_name?.split(' ').slice(-1)[0] || 'Guest'} (${r.number_of_guests})`}
               </span>
             )}
@@ -934,38 +1130,48 @@ const CalendarView = ({
               </span>
             )}
           </div>
-            <div
-              className={`absolute top-0 right-0 bottom-0 w-3 md:w-4 flex items-center justify-center cursor-ew-resize opacity-0 group-hover/res:opacity-100 transition-opacity ${isDarkMode ? 'hover:bg-gray-700/20' : 'hover:bg-black/5'}`}
-              onMouseDown={(e) => {
-                e.preventDefault(); e.stopPropagation();
-                const origSlot = minutesToSlot(resDate);
-                const origDuration = r.duration_minutes || 75;
-                const info = {
-                  id: r.id, type: 'table-resize',
-                  startX: e.clientX,
-                  origSlot, origStart: origSlot * 15, origDuration,
-                  tableId, reservation: r, hasMoved: false,
-                };
-                dragRef.current = info;
-                setDragging(info);
-              }}
-              onTouchStart={(e) => {
-                e.preventDefault(); e.stopPropagation();
-                const touch = e.touches[0];
-                const origSlot = minutesToSlot(resDate);
-                const origDuration = r.duration_minutes || 75;
-                const info = {
-                  id: r.id, type: 'table-resize',
-                  startX: touch.clientX,
-                  origSlot, origStart: origSlot * 15, origDuration,
-                  tableId, reservation: r, hasMoved: false,
-                  isTouch: true,
-                };
-                dragRef.current = info;
-                setDragging(info);
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div
+            className={`absolute top-0 right-0 bottom-0 w-3 md:w-4 flex items-center justify-center cursor-ew-resize opacity-0 group-hover/res:opacity-100 transition-opacity ${isDarkMode ? 'hover:bg-gray-700/20' : 'hover:bg-black/5'}`}
+            onMouseDown={(e) => {
+              e.preventDefault(); e.stopPropagation();
+              const origSlot = minutesToSlot(resDate);
+              const origDuration = r.duration_minutes || 75;
+              const info = {
+                id: r.id, type: 'table-resize',
+                startX: e.clientX,
+                startY: e.clientY,
+                origSlot, origStart: origSlot * 15, origDuration,
+                tableId, reservation: r, hasMoved: false,
+              };
+              dragRef.current = info;
+              setDragging(info);
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault(); 
+              e.stopPropagation();
+              const touch = e.touches[0];
+              if (!touch) return;
+              
+              // Add haptic feedback if available
+              if (navigator.vibrate) {
+                navigator.vibrate(10);
+              }
+              
+              const origSlot = minutesToSlot(resDate);
+              const origDuration = r.duration_minutes || 75;
+              const info = {
+                id: r.id, type: 'table-resize',
+                startX: touch.clientX,
+                startY: touch.clientY,
+                origSlot, origStart: origSlot * 15, origDuration,
+                tableId, reservation: r, hasMoved: false,
+                isTouch: true,
+              };
+              dragRef.current = info;
+              setDragging(info);
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={`flex flex-col items-center gap-0.5 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} rounded-full w-0.5 md:w-1 h-3 md:h-4`} />
             <div className={`flex flex-col items-center gap-0.5 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} rounded-full w-0.5 md:w-1 h-3 md:h-4`} />
           </div>
@@ -989,8 +1195,13 @@ const CalendarView = ({
 
       return (
         <div key={tableId} data-table-row={tableId}
-          className={`flex border-b transition-colors ${isDarkMode ? 'border-gray-700 hover:bg-gray-800/30' : 'border-gray-200 hover:bg-gray-50/30'}`}
-          style={{ height: TABLE_ROW_HEIGHT }}>
+          className={`flex border-b transition-all duration-200 ${isDragTarget ? (isDarkMode ? 'bg-blue-900/30 border-blue-700' : 'bg-blue-50/50 border-blue-300') : (isDarkMode ? 'border-gray-700 hover:bg-gray-800/30' : 'border-gray-200 hover:bg-gray-50/30')}`}
+          style={{ 
+            height: isTablet ? 38 : TABLE_ROW_HEIGHT,
+            transform: isDragTarget ? 'scale(1.01)' : 'scale(1)',
+            boxShadow: isDragTarget ? 'inset 0 0 20px rgba(59, 130, 246, 0.1)' : 'none',
+          }}
+        >
           <div
             className={`flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all duration-150 ${
               isUnassigned ? (isDarkMode ? 'bg-orange-900/30 border-orange-800' : 'bg-gradient-to-r from-orange-50 to-orange-50/30 border-orange-200') : (isDarkMode ? 'bg-gray-800/50 group-hover:bg-gray-700/80 border-gray-700' : 'bg-gray-50/50 group-hover:bg-gray-100/80 border-gray-200')
@@ -1018,22 +1229,41 @@ const CalendarView = ({
           </div>
 
           <div 
-            className={`relative overflow-hidden transition-all duration-150 ${isDragTarget ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50/20') : ''}`}
-            style={{ width: (closeHour - openHour) * responsiveHourWidth }}
+            className={`relative overflow-hidden transition-all duration-150 flex-1 ${isDragTarget ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50/20') : ''}`}
+            style={{ position: 'relative', minWidth: (closeHour - openHour) * responsiveHourWidth }}
           >
-            {/* Vertical hour grid lines */}
-            {Array.from({ length: closeHour - openHour }, (_, i) => (
-              <div key={i} className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} style={{ left: i * responsiveHourWidth }} />
+            {/* Vertical hour grid lines - absolute positioned relative to parent */}
+            {Array.from({ length: closeHour - openHour + 1 }, (_, i) => (
+              <div 
+                key={`hour-${i}`} 
+                className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} 
+                style={{ left: i * responsiveHourWidth, zIndex: 1 }} 
+              />
             ))}
+
             {/* Vertical quarter-hour grid lines */}
-            {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => (
-              <div key={`slot-${i}`} className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`} style={{ left: i * responsiveCellWidth }} />
-            ))}
-            {/* Vertical half-hour markers */}
-            {Array.from({ length: (closeHour - openHour) * 2 }, (_, i) => (
-              <div key={`half-${i}`} className={`absolute top-0 bottom-0 border-l border-dashed ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} style={{ left: (i * 2) * (responsiveCellWidth / 2) + responsiveCellWidth }} />
-            ))}
-            
+            {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => {
+              const slotWidth = responsiveHourWidth / 4;
+              return (
+                <div 
+                  key={`slot-${i}`} 
+                  className={`absolute top-0 bottom-0 border-l ${i % 4 === 0 ? 'border-gray-300' : (isDarkMode ? 'border-gray-800' : 'border-gray-200')}`} 
+                  style={{ left: (i + 1) * slotWidth, zIndex: 1 }} 
+                />
+              );
+            })}
+
+            {/* Half-hour markers */}
+            {Array.from({ length: (closeHour - openHour) * 2 }, (_, i) => {
+              const halfWidth = responsiveHourWidth / 2;
+              return (
+                <div 
+                  key={`half-${i}`} 
+                  className={`absolute top-0 bottom-0 border-l border-dashed ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} 
+                  style={{ left: (i + 0.5) * halfWidth, zIndex: 1 }}
+                />
+              );
+            })}
             <div className={`absolute inset-0 cursor-crosshair z-0 hover:bg-gradient-to-r hover:from-transparent ${isDarkMode ? 'hover:to-primary/10' : 'hover:to-primary/5'} transition-colors`}
               onClick={(e) => {
                 if (dragging) return;
@@ -1053,43 +1283,44 @@ const CalendarView = ({
     return (
       <div className={`flex-1 overflow-hidden flex flex-col ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         <div className="flex-1 overflow-auto" ref={scrollRef}>
-          <div style={{ width: '100%' }}>
+          <div className="w-full">
             {/* Sticky header with enhanced design - Responsive */}
-            <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : 48 }}>
+            <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : (isTablet ? 44 : 48) }}>
               <div className={`flex-shrink-0 ${isDarkMode ? 'bg-gradient-to-r from-gray-900 to-gray-800 border-r-2 border-gray-700' : 'bg-gradient-to-r from-gray-800 to-gray-900 border-r-2 border-gray-700'} flex items-center justify-center`}
                 style={{ width: responsiveTableColWidth }}>
                 <div className="text-center">
                   <div className="text-[8px] md:text-xs font-bold text-gray-200 uppercase tracking-wider">Table</div>
-                  {!isMobile && (
+                  {!isMobile && !isTablet && (
                     <div className="flex items-center gap-1 justify-center text-gray-400 text-[10px] mt-0.5">
                       <FiUsers className="w-2.5 h-2.5" /> Capacity
                     </div>
                   )}
                 </div>
               </div>
-              <div className={`flex relative overflow-x-auto ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`} style={{ minWidth: (closeHour - openHour) * responsiveHourWidth }}>
+              <div className={`flex relative overflow-x-auto flex-1 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`} style={{ minWidth: (closeHour - openHour) * responsiveHourWidth, position: 'relative' }}>
                 {Array.from({ length: closeHour - openHour }, (_, hourIndex) => {
                   const hour = openHour + hourIndex;
                   return (
                     <div key={hourIndex} className={`relative border-r flex-shrink-0 ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
-                      style={{ width: responsiveHourWidth }}>
+                      style={{ width: responsiveHourWidth, position: 'relative', zIndex: 2 }}>
                       <div className={`absolute inset-0 flex ${settings?.timeBarShowsStartOfHour ? 'items-start' : 'items-end'} justify-start ${settings?.timeBarShowsStartOfHour ? 'pt-1 md:pt-2' : 'pb-1 md:pb-2'} pl-1 md:pl-2 ${isDarkMode ? 'bg-gradient-to-r from-gray-800 to-transparent' : 'bg-gradient-to-r from-gray-50 to-transparent'}`}>
                         <div className="flex items-baseline gap-0.5 md:gap-1">
-                          <span className={`text-[10px] md:text-sm font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          <span className={`${isMobile ? 'text-[9px]' : 'text-[10px] md:text-sm'} font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {String(hour).padStart(2,'0')}
                           </span>
                           <span className={`text-[8px] md:text-[10px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>:00</span>
                         </div>
                       </div>
                       <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] md:text-[9px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>:30</div>
-                      <div className={`absolute top-0 bottom-0 left-1/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
-                      <div className={`absolute top-0 bottom-0 left-2/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} />
-                      <div className={`absolute top-0 bottom-0 left-3/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
+                      {/* Quarter hour markers in header */}
+                      <div className={`absolute top-0 bottom-0 left-1/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} style={{ zIndex: 1 }} />
+                      <div className={`absolute top-0 bottom-0 left-2/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} style={{ zIndex: 1 }} />
+                      <div className={`absolute top-0 bottom-0 left-3/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} style={{ zIndex: 1 }} />
                     </div>
                   );
                 })}
                 {nowSlot >= 0 && nowSlot <= totalTableSlots && (
-                  <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: nowSlot * responsiveCellWidth }}>
+                  <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: nowSlot * responsiveCellWidth, zIndex: 3 }}>
                     <div className="flex items-start">
                       <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full -ml-1 mt-0.5 shadow-lg" />
                       <div className="w-0.5 h-full bg-rose-500" />
@@ -1134,7 +1365,7 @@ const CalendarView = ({
                     return (
                       <div key={comboKey} data-table-row={comboKey}
                         className={`flex border-b transition-colors ${isDarkMode ? 'border-purple-900/50 group hover:bg-purple-900/20' : 'border-purple-100 group hover:bg-purple-50/30'}`}
-                        style={{ height: TABLE_ROW_HEIGHT }}>
+                        style={{ height: isTablet ? 38 : TABLE_ROW_HEIGHT }}>
                         <div className={`flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all ${isDarkMode ? 'border-purple-800 bg-purple-900/30 group-hover:bg-purple-800/40' : 'border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/30 group-hover:from-purple-100 group-hover:to-purple-200/30'}`}
                           style={{ width: responsiveTableColWidth }}>
                           <div className="flex items-center gap-1 md:gap-2 min-w-0">
@@ -1151,8 +1382,27 @@ const CalendarView = ({
                             )}
                           </div>
                         </div>
-                        <div className={`relative overflow-hidden ${isDragTarget ? (isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50/30') : ''}`}
-                          style={{ width: (closeHour - openHour) * responsiveHourWidth }}>
+                        <div className={`relative overflow-hidden flex-1 ${isDragTarget ? (isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50/30') : ''}`}
+                          style={{ position: 'relative', minWidth: (closeHour - openHour) * responsiveHourWidth }}>
+                          {/* Grid lines for combinations */}
+                          {Array.from({ length: closeHour - openHour + 1 }, (_, i) => (
+                            <div 
+                              key={`combo-hour-${i}`} 
+                              className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} 
+                              style={{ left: i * responsiveHourWidth, zIndex: 1 }} 
+                            />
+                          ))}
+                          {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => {
+                            const slotWidth = responsiveHourWidth / 4;
+                            return (
+                              <div 
+                                key={`combo-slot-${i}`} 
+                                className={`absolute top-0 bottom-0 border-l ${i % 4 === 0 ? 'border-gray-300' : (isDarkMode ? 'border-gray-800' : 'border-gray-200')}`} 
+                                style={{ left: (i + 1) * slotWidth, zIndex: 1 }} 
+                              />
+                            );
+                          })}
+                          {/* Rest of the combinations content */}
                           <div className={`absolute inset-0 cursor-crosshair z-0 ${isDarkMode ? 'hover:bg-purple-900/10' : 'hover:bg-purple-50/10'} transition-colors`}
                             onClick={(e) => {
                               if (dragging) return;
@@ -1195,7 +1445,7 @@ const CalendarView = ({
     const isWeek = viewRange === 'week';
 
     // Responsive time column width
-    const responsiveTimeColWidth = isMobile ? 50 : TIME_COL_WIDTH;
+    const responsiveTimeColWidth = isMobile ? 40 : (isTablet ? 55 : TIME_COL_WIDTH);
 
     return (
       <div className={`flex-1 overflow-hidden flex flex-col ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
@@ -1204,15 +1454,15 @@ const CalendarView = ({
             {days.map((day, i) => {
               const dayRes = getReservationsForDay(day);
               return (
-                <div key={i} className={`flex-1 py-2 md:py-4 text-center border-l transition-all duration-200 min-w-[60px] ${
+                <div key={i} className={`flex-1 py-1 sm:py-2 md:py-4 text-center border-l transition-all duration-200 min-w-[40px] sm:min-w-[50px] md:min-w-[60px] ${
                   isToday(day) ? (isDarkMode ? 'bg-amber-900/30' : 'bg-gradient-to-b from-amber-50 to-amber-100/30') : (isDarkMode ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50')
                 } ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                  <div className={`text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-0.5 md:mb-1 ${
+                  <div className={`text-[8px] sm:text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-0.5 md:mb-1 ${
                     isToday(day) ? (isDarkMode ? 'text-amber-400' : 'text-amber-600') : (isDarkMode ? 'text-gray-400' : 'text-gray-500')
                   }`}>
                     {isMobile ? day.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 1) : day.toLocaleDateString('en-US', { weekday: 'short' })}
                   </div>
-                  <div className={`text-base md:text-2xl font-bold mt-0.5 ${
+                  <div className={`text-sm sm:text-base md:text-2xl font-bold mt-0.5 ${
                     isToday(day) ? (isDarkMode ? 'text-amber-400' : 'text-amber-700') : (isDarkMode ? 'text-gray-300' : 'text-gray-800')
                   }`}>
                     {day.getDate()}
@@ -1250,7 +1500,7 @@ const CalendarView = ({
 
               return (
                 <div key={dayIdx} data-day-col={day.toDateString()}
-                  className={`flex-1 relative border-l transition-all duration-200 min-w-[80px] ${
+                  className={`flex-1 relative border-l transition-all duration-200 min-w-[60px] sm:min-w-[80px] ${
                     isToday(day) && !isWeek ? (isDarkMode ? 'bg-amber-900/20' : 'bg-gradient-to-b from-amber-50/50 to-transparent') : (isDarkMode ? 'bg-gray-900' : 'bg-white')
                   } ${isDropTarget ? (isDarkMode ? 'bg-blue-900/40 shadow-inner' : 'bg-blue-50/40 shadow-inner') : ''} ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   {hours.map((hour, hourIdx) => {
@@ -1313,7 +1563,7 @@ const CalendarView = ({
 
                       return (
                         <div key={r.id}
-                          className={`absolute rounded-lg md:rounded-xl overflow-hidden pointer-events-auto ${
+                          className={`reservation-bar absolute rounded-lg md:rounded-xl overflow-hidden pointer-events-auto ${
                             isActive ? 'z-30 shadow-2xl ring-2 ring-primary/50' : 'z-10 hover:shadow-xl hover:z-20'
                           }`}
                           style={{
@@ -1322,6 +1572,7 @@ const CalendarView = ({
                             borderLeft: showCompact ? `2px solid ${styles.border}` : `4px solid ${styles.border}`,
                             boxShadow: isActive ? `0 8px 24px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 4px 12px rgba(0,0,0,0.1)` : `0 1px 3px rgba(0,0,0,0.08)`),
                             cursor: dragging?.id === r.id && dragging.type === 'move' ? 'grabbing' : 'grab',
+                            touchAction: 'none',
                           }}
                           onMouseDown={(e) => {
                             if (e.button === 2) return;
@@ -1474,12 +1725,12 @@ const CalendarView = ({
                             )}
                           </div>
                           {!showCompact && (
-                              <div
-                                className={`absolute bottom-0 left-0 right-0 h-2 md:h-3 flex items-center justify-center cursor-ns-resize ${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-black/5'} rounded-b-xl transition-colors`}
-                                onMouseDown={(e) => handleMouseDownResize(e, r)}
-                                onTouchStart={(e) => handleMouseDownResize(e, r)}
-                                onClick={(e) => e.stopPropagation()}
-                              >
+                            <div
+                              className={`absolute bottom-0 left-0 right-0 h-2 md:h-3 flex items-center justify-center cursor-ns-resize ${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-black/5'} rounded-b-xl transition-colors`}
+                              onMouseDown={(e) => handleMouseDownResize(e, r)}
+                              onTouchStart={(e) => handleMouseDownResize(e, r)}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <div className="w-4 md:w-8 h-0.5 rounded-full" style={{ backgroundColor: styles.border, opacity: 0.4 }} />
                             </div>
                           )}
@@ -1519,7 +1770,7 @@ const CalendarView = ({
                 const inMonth = isCurrentMonth(day);
                 return (
                   <div key={di}
-                    className={`min-h-[80px] md:min-h-[140px] p-1 md:p-3 cursor-pointer group transition-all duration-200 ${
+                    className={`min-h-[70px] sm:min-h-[80px] md:min-h-[140px] p-1 md:p-3 cursor-pointer group transition-all duration-200 ${
                       inMonth ? (isDarkMode ? 'bg-gray-800 hover:bg-gray-700/50' : 'bg-white hover:bg-gradient-to-b hover:from-orange-50 hover:to-transparent') : (isDarkMode ? 'bg-gray-800/30' : 'bg-gray-50/50')
                     } ${isToday(day) ? 'ring-2 ring-primary ring-inset' : ''}`}
                     onClick={() => { 
@@ -1587,7 +1838,12 @@ const CalendarView = ({
 
   return (
     <div className={`h-full flex flex-col select-none relative ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}
-      style={{ cursor: dragging ? (dragging.type === 'resize' ? 'ns-resize' : dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'default' }}>
+      style={{ 
+        cursor: dragging ? (dragging.type === 'resize' ? 'ns-resize' : dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'default',
+        touchAction: isTouchDevice ? 'none' : 'none',
+        minHeight: '100%',
+        transition: 'transform 0.05s ease',
+      }}>
 
       {/* ─── Loading Overlay ────────────────────────────────────────────────── */}
       {isLoading && (
@@ -1626,7 +1882,7 @@ const CalendarView = ({
             </div>
           )}
 
-          {/* Right: View Controls + Theme Toggle */}
+          {/* Right: View Controls + Theme Toggle + Refresh */}
           <div className="flex items-center gap-1 md:gap-3 w-full md:w-auto justify-end">
             <div className={`flex rounded-xl overflow-hidden border-2 shadow-sm ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
               {['day','week','month'].map(r => (
@@ -1641,6 +1897,21 @@ const CalendarView = ({
                 </button>
               ))}
             </div>
+            
+            {/* Manual refresh button for tablets */}
+            {(isTablet || isTouchDevice) && (
+              <button 
+                onClick={() => {
+                  setForceRender(prev => prev + 1);
+                  setViewRange('day');
+                  setTimeout(() => setViewRange(viewRange), 50);
+                }}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'}`}
+                title="Refresh Calendar"
+              >
+                <FiRefreshCw className="w-4 h-4" />
+              </button>
+            )}
             
             {/* Theme Toggle Button */}
             <button 
