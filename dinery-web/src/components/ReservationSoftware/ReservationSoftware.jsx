@@ -10,7 +10,7 @@ import ReservationTableView from './ReservationTableView';
 import { 
   FiPlus, FiCalendar, FiList, FiSettings, FiChevronDown, 
   FiChevronLeft, FiChevronRight, FiClock, FiUsers, 
-  FiSearch, FiFilter, FiGrid, FiMenu, FiX 
+  FiSearch, FiFilter, FiGrid, FiMenu, FiX, FiSun, FiMoon
 } from 'react-icons/fi';
 import { useTheme } from '../../ThemeContext';
 import ReservationSettings from './ReservationSettings';
@@ -287,7 +287,7 @@ const ReservationSoftware = () => {
               onClick={toggleTheme}
               className={`p-1.5 md:p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
             >
-              {isDarkMode ? <FiCalendar className="w-4 h-4 md:w-4.5 md:h-4.5" /> : <FiCalendar className="w-4 h-4 md:w-4.5 md:h-4.5" />}
+              {isDarkMode ? <FiSun className="w-4 h-4 md:w-4.5 md:h-4.5" /> : <FiMoon className="w-4 h-4 md:w-4.5 md:h-4.5" />}
             </button>
           </div>
         </div>
@@ -476,16 +476,17 @@ const ReservationSoftware = () => {
             }}
           />
         ) : (
-          <ListView
-            reservations={reservations}
-            selectedDate={selectedDate}
-            startDate={startDate}
-            endDate={endDate}
-            onDateChange={setSelectedDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={(date) => { if (date >= startDate) setEndDate(date); }}
-            onReservationClick={handleReservationClick}
-          />
+        <ListView
+          key={viewMode + selectedDate.toISOString()}
+          reservations={reservations}
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          startDate={selectedDate}
+          endDate={selectedDate}
+          onStartDateChange={setSelectedDate}
+          onEndDateChange={setSelectedDate}
+          onReservationClick={handleReservationClick}
+        />
         )}
       </div>
 

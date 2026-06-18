@@ -10,6 +10,49 @@ import { useTheme } from '../../ThemeContext';
 
 const db = getFirestore();
 
+// ─── Custom Hook: Long Press ──────────────────────────────────────────────────
+const useLongPress = (onLongPress, onClick, { delay = 500 } = {}) => {
+  const [isLongPress, setIsLongPress] = useState(false);
+  const timerRef = useRef(null);
+  const isTouchRef = useRef(false);
+
+  const start = useCallback((e) => {
+    // Only handle touch events for long press
+    if (e.type === 'touchstart') {
+      isTouchRef.current = true;
+      setIsLongPress(false);
+      timerRef.current = setTimeout(() => {
+        setIsLongPress(true);
+        onLongPress(e);
+      }, delay);
+    }
+  }, [onLongPress, delay]);
+
+  const clear = useCallback((e) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    // If it was a touch event and not a long press, trigger onClick
+    if (isTouchRef.current && !isLongPress && e.type === 'touchend') {
+      onClick(e);
+    }
+    isTouchRef.current = false;
+    setIsLongPress(false);
+  }, [onClick, isLongPress]);
+
+  return {
+    onMouseDown: (e) => {
+      // For mouse, just trigger onClick
+      if (e.button === 0) onClick(e);
+    },
+    onTouchStart: start,
+    onTouchEnd: clear,
+    onTouchCancel: clear,
+    onContextMenu: (e) => e.preventDefault(), // Prevent default context menu on touch devices
+  };
+};
+
 // ─── Floor map constants ────────────────────────────────────────────────────────
 const GRID    = 20;
 const CHAIR_W = 16;
@@ -302,6 +345,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
   // Selection
   const [selectedTableIds, setSelectedTableIds] = useState([]);
+  const [longPressTarget, setLongPressTarget] = useState(null); 
 
   // Right panel
   const [searchQ,      setSearchQ]      = useState("");
@@ -867,6 +911,47 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                     style={{ cursor: "pointer" }}
                     onClick={(e) => handleTableClick(table.id, e)}
                     onContextMenu={(e) => handleTableRightClick(table.id, e)}
+                    onTouchStart={(e) => {
+                      // Store touch start time and position
+                      const touch = e.touches[0];
+                      table._touchStart = { time: Date.now(), x: touch.clientX, y: touch.clientY };
+                      // Set a timer for long press detection
+                      table._longPressTimer = setTimeout(() => {
+                        // If finger hasn't moved much, it's a long press
+                        handleTableRightClick(table.id, e);
+                        table._isLongPress = true;
+                      }, 500);
+                    }}
+                    onTouchMove={(e) => {
+                      // If finger moves, cancel long press
+                      if (table._longPressTimer) {
+                        const touch = e.touches[0];
+                        const start = table._touchStart;
+                        if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 15) {
+                          clearTimeout(table._longPressTimer);
+                          table._longPressTimer = null;
+                        }
+                      }
+                    }}
+                    onTouchEnd={(e) => {
+                      // Clear the timer
+                      if (table._longPressTimer) {
+                        clearTimeout(table._longPressTimer);
+                        table._longPressTimer = null;
+                      }
+                      // If it wasn't a long press, trigger click
+                      if (!table._isLongPress) {
+                        handleTableClick(table.id, e);
+                      }
+                      table._isLongPress = false;
+                    }}
+                    onTouchCancel={() => {
+                      if (table._longPressTimer) {
+                        clearTimeout(table._longPressTimer);
+                        table._longPressTimer = null;
+                      }
+                      table._isLongPress = false;
+                    }}
                   >
                     {/* Chairs */}
                     {shape === "round"
@@ -1456,6 +1541,46 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                         x: e.clientX, 
                         y: e.clientY 
                       });
+                    }}
+                    onTouchStart={(e) => {
+                      const touch = e.touches[0];
+                      res._touchStart = { time: Date.now(), x: touch.clientX, y: touch.clientY };
+                      res._longPressTimer = setTimeout(() => {
+                        setMealPickerRes({ 
+                          resId: res.id, 
+                          name: res.customer_name || 'Guest', 
+                          x: touch.clientX || e.clientX, 
+                          y: touch.clientY || e.clientY 
+                        });
+                        res._isLongPress = true;
+                      }, 500);
+                    }}
+                    onTouchMove={(e) => {
+                      if (res._longPressTimer) {
+                        const touch = e.touches[0];
+                        const start = res._touchStart;
+                        if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 15) {
+                          clearTimeout(res._longPressTimer);
+                          res._longPressTimer = null;
+                        }
+                      }
+                    }}
+                    onTouchEnd={(e) => {
+                      if (res._longPressTimer) {
+                        clearTimeout(res._longPressTimer);
+                        res._longPressTimer = null;
+                      }
+                      if (!res._isLongPress) {
+                        setExpandedRes(isExpanded ? null : res.id);
+                      }
+                      res._isLongPress = false;
+                    }}
+                    onTouchCancel={() => {
+                      if (res._longPressTimer) {
+                        clearTimeout(res._longPressTimer);
+                        res._longPressTimer = null;
+                      }
+                      res._isLongPress = false;
                     }}
                   >
                     {/* Checkbox / row num */}

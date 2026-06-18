@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   FiChevronLeft, FiChevronRight, FiUser, FiPhone, FiMail, 
   FiClock, FiUsers, FiCalendar, FiMessageSquare, FiFilter,
-  FiArrowRight, FiTag, FiPercent
+  FiArrowRight, FiTag, FiPercent, FiX, FiSearch
 } from 'react-icons/fi';
 
 const ListView = ({ 
@@ -19,6 +19,7 @@ const ListView = ({
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('time');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
 
   const formatDateForInput = (date) => {
     if (!date) return '';
@@ -26,11 +27,15 @@ const ListView = ({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
+  // Responsive detection
+  const isMobile = window.innerWidth < 640;
+
   const getSourceBadge = (source) => {
     if (source === 'mobile_app') {
       return (
-        <span className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-0.5 sm:gap-1">
-          Mobile App
+        <span className="px-1.5 sm:px-3 py-0.5 rounded-full text-[8px] sm:text-xs font-semibold border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-0.5 sm:gap-1">
+          📱
+          <span className="hidden xs:inline">Mobile</span>
         </span>
       );
     }
@@ -68,7 +73,7 @@ const ListView = ({
     const config = statusConfig[status?.toLowerCase()] || statusConfig.pending;
     
     return (
-      <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold border ${config.bg} ${config.text} ${config.border}`}>
+      <span className={`px-1.5 sm:px-3 py-0.5 rounded-full text-[8px] sm:text-xs font-semibold border ${config.bg} ${config.text} ${config.border}`}>
         {config.label}
       </span>
     );
@@ -151,64 +156,63 @@ const ListView = ({
     return `${formatTime(start)} - ${formatTime(end)}`;
   };
 
-  return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Header with date range pickers */}
-      <div className="bg-white border-b border-gray-300 px-3 sm:px-6 py-2 sm:py-4">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-6">
-          <div className="flex items-center gap-1 sm:gap-2">
-            <FiCalendar className="w-3 h-3 sm:w-4 sm:h-4 text-[#fe8a24]" />
-            <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide">FROM</span>
-            <input
-              type="date"
-              value={formatDateForInput(startDate)}
-              onChange={(e) => {
-                const d = new Date(e.target.value);
-                onStartDateChange(d);
-              }}
-              className="px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-200 rounded-xl text-[10px] sm:text-sm focus:outline-none focus:border-[#fe8a24] bg-gray-50 w-[100px] sm:w-auto"
-            />
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide">TO</span>
-            <input
-              type="date"
-              value={formatDateForInput(endDate)}
-              min={formatDateForInput(startDate)}
-              onChange={(e) => {
-                const d = new Date(e.target.value);
-                onEndDateChange(d);
-              }}
-              className="px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-200 rounded-xl text-[10px] sm:text-sm focus:outline-none focus:border-[#fe8a24] bg-gray-50 w-[100px] sm:w-auto"
-            />
-          </div>
-          {startDate && endDate && (
-            <span className="text-[10px] sm:text-sm text-gray-500 truncate max-w-[200px] sm:max-w-none">
-              {new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — {new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </span>
-          )}
-        </div>
-      </div>
+  // Get date range text
+  const getDateRangeText = () => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (start.toDateString() === end.toDateString()) {
+        return start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    return '';
+  };
 
-      {/* Search and Filters */}
-      <div className="bg-white border-b border-gray-300 px-3 sm:px-6 py-2 sm:py-4">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-          <div className="flex-1 min-w-[120px] sm:min-w-[200px]">
+  return (
+    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
+      
+      {/* ─── Search and Filters Bar ─────────────────────────────────────────── */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-2 sm:py-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {/* Search Input */}
+          <div className="flex-1 min-w-[120px] sm:min-w-[200px] relative">
+            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
-              placeholder={window.innerWidth < 640 ? "Search..." : "Search by name, email, phone..."}
+              placeholder={isMobile ? "Search..." : "Search by name, email, phone..."}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-xs sm:text-sm bg-white"
+              className="w-full pl-8 pr-8 py-1.5 sm:py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 transition-all text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              >
+                <FiX className="w-3 h-3 text-gray-400" />
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-2">
-            <FiFilter className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
+          {/* Filter Toggle - Mobile */}
+          <button
+            onClick={() => setIsFilterVisible(!isFilterVisible)}
+            className={`p-1.5 sm:p-2 rounded-lg border transition-all ${
+              isFilterVisible || filterStatus !== 'all' || sortBy !== 'time'
+                ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400'
+                : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            <FiFilter className="w-4 h-4" />
+          </button>
+
+          {/* Filters - Desktop always visible, Mobile toggleable */}
+          <div className={`flex items-center gap-2 ${isMobile ? (isFilterVisible ? 'flex w-full mt-1' : 'hidden') : 'flex'}`}>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-2 sm:px-3 py-1 sm:py-2 border border-gray-300 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-white max-w-[80px] sm:max-w-none"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="all">All</option>
               <option value="pending">Pending</option>
@@ -216,14 +220,11 @@ const ListView = ({
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
-          </div>
 
-          <div className="flex items-center gap-1 sm:gap-2">
-            <span className="text-[10px] sm:text-sm font-medium text-gray-700 hidden xs:inline">Sort:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-2 sm:px-3 py-1 sm:py-2 border border-gray-300 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 bg-white max-w-[100px] sm:max-w-none"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="time">Time ↑</option>
               <option value="time-desc">Time ↓</option>
@@ -231,27 +232,35 @@ const ListView = ({
               <option value="guests">Most</option>
               <option value="guests-asc">Least</option>
             </select>
-          </div>
 
-          <div className="bg-orange-50 border border-orange-300 px-2 sm:px-3 py-0.5 sm:py-1.5 rounded-lg ml-auto">
-            <span className="text-[10px] sm:text-sm font-semibold text-orange-700 whitespace-nowrap">
-              {sortedReservations.length} {window.innerWidth < 640 ? '' : 'reservation' + (sortedReservations.length !== 1 ? 's' : '')}
+            {/* Date Range Display */}
+            {getDateRangeText() && (
+              <span className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400 truncate max-w-[150px] sm:max-w-[250px] ml-auto">
+                {getDateRangeText()}
+              </span>
+            )}
+
+            {/* Count */}
+            <span className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg ml-auto">
+              <span className="text-[10px] sm:text-sm font-semibold text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                {sortedReservations.length}
+              </span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Reservations List */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+      {/* ─── Reservations List ───────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
         {sortedReservations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-orange-100 border border-orange-300 rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
-              <FiCalendar className="w-8 h-8 sm:w-12 sm:h-12 text-orange-600" />
+            <div className="w-16 h-16 sm:w-24 sm:h-24 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
+              <FiCalendar className="w-8 h-8 sm:w-12 sm:h-12 text-orange-600 dark:text-orange-400" />
             </div>
-            <h3 className="text-base sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2">
+            <h3 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1 sm:mb-2">
               No reservations found
             </h3>
-            <p className="text-xs sm:text-sm text-gray-600 max-w-md">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-md">
               {searchTerm 
                 ? `No results matching "${searchTerm}"`
                 : filterStatus !== 'all' 
@@ -260,12 +269,12 @@ const ListView = ({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 gap-2 sm:gap-3 md:gap-4">
             {sortedReservations.map((reservation) => (
               <div
                 key={reservation.id}
                 onClick={() => onReservationClick(reservation)}
-                className="bg-white border border-gray-300 rounded-xl hover:border-orange-400 hover:shadow-md cursor-pointer transition-all duration-200 overflow-hidden"
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-orange-400 dark:hover:border-orange-600 hover:shadow-md dark:hover:shadow-gray-800 cursor-pointer transition-all duration-200 overflow-hidden"
               >
                 {/* Status Bar */}
                 <div className={`h-1 ${
@@ -276,109 +285,87 @@ const ListView = ({
                   'bg-gray-500'
                 }`} />
 
-                <div className="p-3 sm:p-6">
-                  <div className="flex items-start justify-between">
+                <div className="p-3 sm:p-4 md:p-5">
+                  <div className="flex items-start gap-2 sm:gap-4">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 dark:bg-orange-900/50 border border-orange-200 dark:border-orange-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <FiUser className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 dark:text-orange-400" />
+                    </div>
+
+                    {/* Content */}
                     <div className="flex-1 min-w-0">
-                      {/* Header */}
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-                        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-orange-100 border border-orange-300 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <FiUser className="w-4 h-4 sm:w-6 sm:h-6 text-orange-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-sm sm:text-xl font-semibold text-gray-900 truncate max-w-[150px] sm:max-w-none">
-                            {reservation.customer_name || 'Guest'}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1">
+                      {/* Header: Name + Badges */}
+                      <div className="flex flex-wrap items-start justify-between gap-1 sm:gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                              {reservation.customer_name || 'Guest'}
+                            </h3>
                             {getStatusBadge(reservation.status)}
                             {getSourceBadge(reservation.source)}
-                            {reservation.ServiceType_Reservation && (
-                              <span className="px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 border border-gray-300 rounded-full text-[10px] sm:text-xs font-medium text-gray-700">
-                                {window.innerWidth < 640 && reservation.ServiceType_Reservation.length > 8 
-                                  ? reservation.ServiceType_Reservation.slice(0, 6) + '…' 
-                                  : reservation.ServiceType_Reservation}
-                              </span>
-                            )}
+                          </div>
+                          {reservation.ServiceType_Reservation && (
+                            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 inline-block">
+                              {reservation.ServiceType_Reservation}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Arrow - hidden on very small screens */}
+                        <div className="hidden xs:flex flex-shrink-0 ml-2">
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg flex items-center justify-center">
+                            <FiArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-600 dark:text-orange-400" />
                           </div>
                         </div>
                       </div>
 
-                      {/* Details Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+                      {/* Details Grid - Responsive */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3 mt-2 sm:mt-3">
                         {/* Date */}
-                        <div className="flex items-start gap-2 sm:gap-3">
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 border border-orange-300 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <FiCalendar className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
-                          </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <FiCalendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-[8px] sm:text-xs font-medium text-gray-500 uppercase">Date</p>
-                            <p className="text-[10px] sm:text-sm font-semibold text-gray-900 truncate max-w-[80px] sm:max-w-none">
+                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Date</p>
+                            <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                               {formatDate(reservation.reservation_date)}
                             </p>
                           </div>
                         </div>
 
                         {/* Time */}
-                        <div className="flex items-start gap-2 sm:gap-3">
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 border border-orange-300 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <FiClock className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[8px] sm:text-xs font-medium text-gray-500 uppercase">Time</p>
-                            <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <FiClock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
+                          <div>
+                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Time</p>
+                            <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
                               {formatTime(reservation.reservation_date)}
-                            </p>
-                            <p className="text-[8px] sm:text-xs text-gray-600 hidden sm:block">
-                              {formatTimeRange(reservation.reservation_date, reservation.duration_minutes)}
                             </p>
                           </div>
                         </div>
 
                         {/* Guests */}
-                        <div className="flex items-start gap-2 sm:gap-3">
-                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 border border-orange-300 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <FiUsers className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
-                          </div>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <FiUsers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                           <div>
-                            <p className="text-[8px] sm:text-xs font-medium text-gray-500 uppercase">Guests</p>
-                            <p className="text-[10px] sm:text-sm font-semibold text-gray-900">
+                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Guests</p>
+                            <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
                               {reservation.number_of_guests}
                             </p>
                           </div>
                         </div>
 
-                        {/* Phone */}
+                        {/* Phone - hide on smallest screens */}
                         {reservation.customer_phone && (
-                          <div className="flex items-start gap-2 sm:gap-3 col-span-2 sm:col-span-1">
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 border border-orange-300 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <FiPhone className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
-                            </div>
+                          <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 col-span-2 sm:col-span-1">
+                            <FiPhone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                             <div className="min-w-0">
-                              <p className="text-[8px] sm:text-xs font-medium text-gray-500 uppercase hidden sm:block">Phone</p>
+                              <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Phone</p>
                               <a 
                                 href={`tel:${reservation.customer_phone}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="text-[10px] sm:text-sm font-semibold text-gray-900 hover:text-orange-600 transition-colors truncate block max-w-[80px] sm:max-w-[150px]"
+                                className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 transition-colors truncate block"
                               >
                                 {reservation.customer_phone}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Email */}
-                        {reservation.customer_email && (
-                          <div className="flex items-start gap-2 sm:gap-3 col-span-2 sm:col-span-1">
-                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 border border-orange-300 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <FiMail className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-[8px] sm:text-xs font-medium text-gray-500 uppercase hidden sm:block">Email</p>
-                              <a 
-                                href={`mailto:${reservation.customer_email}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-[10px] sm:text-sm font-semibold text-gray-900 hover:text-orange-600 transition-colors truncate block max-w-[80px] sm:max-w-[200px]"
-                              >
-                                {reservation.customer_email}
                               </a>
                             </div>
                           </div>
@@ -387,9 +374,9 @@ const ListView = ({
 
                       {/* Special Requests */}
                       {reservation.special_requests && (
-                        <div className="mt-2 sm:mt-4 flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-gray-50 border border-gray-300 rounded-lg">
-                          <FiMessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 flex-shrink-0 mt-0.5" />
-                          <p className="text-[10px] sm:text-sm text-gray-700 italic truncate max-w-[200px] sm:max-w-none">
+                        <div className="mt-2 sm:mt-3 flex items-start gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg">
+                          <FiMessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
+                          <p className="text-[9px] sm:text-xs md:text-sm text-gray-600 dark:text-gray-400 italic truncate">
                             "{reservation.special_requests}"
                           </p>
                         </div>
@@ -397,28 +384,18 @@ const ListView = ({
 
                       {/* Offer Badge */}
                       {reservation.claimed_offer && (
-                        <div className="mt-2 sm:mt-3 inline-flex flex-wrap items-center gap-1 sm:gap-2 bg-orange-50 border border-orange-300 px-2 sm:px-3 py-1 sm:py-2 rounded-lg">
-                          <FiTag className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
-                          <span className="text-[10px] sm:text-sm font-semibold text-orange-700 truncate max-w-[120px] sm:max-w-none">
+                        <div className="mt-1.5 sm:mt-2 inline-flex flex-wrap items-center gap-1 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg">
+                          <FiTag className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-orange-600 dark:text-orange-400" />
+                          <span className="text-[8px] sm:text-xs font-medium text-orange-700 dark:text-orange-400 truncate max-w-[80px] sm:max-w-[150px]">
                             {reservation.claimed_offer}
                           </span>
                           {reservation.discount_percent > 0 && (
-                            <div className="flex items-center gap-0.5 sm:gap-1 bg-white border border-orange-300 px-1.5 sm:px-2 py-0.5 rounded">
-                              <FiPercent className="w-2 h-2 sm:w-3 sm:h-3 text-orange-600" />
-                              <span className="text-[8px] sm:text-xs font-bold text-orange-600">
-                                {reservation.discount_percent}% OFF
-                              </span>
-                            </div>
+                            <span className="text-[7px] sm:text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-700 border border-orange-200 dark:border-orange-700 px-1 sm:px-1.5 py-0.5 rounded">
+                              -{reservation.discount_percent}%
+                            </span>
                           )}
                         </div>
                       )}
-                    </div>
-
-                    {/* Arrow Icon */}
-                    <div className="ml-2 sm:ml-6 flex-shrink-0">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 border border-orange-300 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-                        <FiArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -428,11 +405,10 @@ const ListView = ({
         )}
       </div>
 
-      {/* Footer Stats */}
+      {/* ─── Footer Stats ────────────────────────────────────────────────────── */}
       {sortedReservations.length > 0 && (
-        <div className="border-t border-gray-300 px-3 sm:px-6 py-2 sm:py-3 bg-white flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-6 text-[10px] sm:text-sm">
-            <span className="text-[8px] sm:text-xs font-semibold text-gray-700 uppercase hidden xs:inline">Summary:</span>
+        <div className="border-t border-gray-200 dark:border-gray-700 px-3 sm:px-6 py-1.5 sm:py-2.5 bg-white dark:bg-gray-800 flex flex-wrap items-center justify-between gap-1 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-[9px] sm:text-xs">
             {['pending', 'confirmed', 'completed', 'cancelled'].map((status) => {
               const count = sortedReservations.filter(r => r.status?.toLowerCase() === status).length;
               if (count === 0) return null;
@@ -445,16 +421,16 @@ const ListView = ({
               };
               
               return (
-                <div key={status} className="flex items-center gap-1 sm:gap-2">
-                  <div className={`w-2 h-2 sm:w-3 sm:h-3 ${colors[status]} rounded-full border border-gray-300`}></div>
-                  <span className="text-[10px] sm:text-sm text-gray-700 font-medium capitalize hidden xs:inline">{status}</span>
-                  <span className="text-[10px] sm:text-sm text-gray-900 font-bold">{count}</span>
+                <div key={status} className="flex items-center gap-0.5 sm:gap-1">
+                  <div className={`w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 ${colors[status]} rounded-full`}></div>
+                  <span className="text-[8px] sm:text-xs text-gray-600 dark:text-gray-400 font-medium capitalize hidden xs:inline">{status}</span>
+                  <span className="text-[9px] sm:text-xs text-gray-800 dark:text-gray-200 font-bold">{count}</span>
                 </div>
               );
             })}
           </div>
           
-          <div className="text-[10px] sm:text-sm text-gray-600 bg-gray-100 border border-gray-300 px-2 sm:px-3 py-0.5 sm:py-1.5 rounded-lg whitespace-nowrap">
+          <div className="text-[9px] sm:text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-1.5 sm:px-2.5 py-0.5 rounded-lg whitespace-nowrap">
             Total: {sortedReservations.reduce((sum, r) => sum + (r.number_of_guests || 0), 0)}
           </div>
         </div>
