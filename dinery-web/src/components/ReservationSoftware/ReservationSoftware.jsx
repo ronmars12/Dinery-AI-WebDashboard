@@ -7,10 +7,16 @@ import ListView from './ListView';
 import ReservationModal from './ReservationModal';
 import CreateReservationModal from './CreateReservationModal';
 import ReservationTableView from './ReservationTableView';
-import { FiPlus, FiCalendar, FiList, FiSettings, FiChevronDown, FiChevronLeft, FiChevronRight, FiClock } from 'react-icons/fi';
+import { 
+  FiPlus, FiCalendar, FiList, FiSettings, FiChevronDown, 
+  FiChevronLeft, FiChevronRight, FiClock, FiUsers, 
+  FiSearch, FiFilter, FiGrid, FiMenu, FiX 
+} from 'react-icons/fi';
+import { useTheme } from '../../ThemeContext';
 import ReservationSettings from './ReservationSettings';
 
 const ReservationSoftware = () => {
+  const { isDarkMode, toggleTheme } = useTheme();
   const [reservations, setReservations] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [startDate, setStartDate] = useState(() => {
@@ -38,6 +44,7 @@ const ReservationSoftware = () => {
   const isStaff           = !!staffRestaurantId;
   const db = firestore;
   const [preSelectedTable, setPreSelectedTable] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Current time state
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -161,13 +168,7 @@ const ReservationSoftware = () => {
   // ─── Date Navigation Functions ──────────────────────────────────────────────
   const navigateDate = (direction) => {
     const newDate = new Date(selectedDate);
-    if (viewMode === 'calendar') {
-      // For calendar view, we navigate days
-      newDate.setDate(newDate.getDate() + direction);
-    } else {
-      // For other views, navigate days as well
-      newDate.setDate(newDate.getDate() + direction);
-    }
+    newDate.setDate(newDate.getDate() + direction);
     setSelectedDate(newDate);
   };
 
@@ -176,44 +177,49 @@ const ReservationSoftware = () => {
   };
 
   const VIEW_TABS = [
-    { key: 'calendar',          label: 'Calendar',        icon: <FiCalendar className="w-4 h-4" /> },
-    { key: 'reservation-table', label: 'Table/List',      icon: (
+    { key: 'calendar', label: 'Calendar', icon: <FiCalendar className="w-4 h-4" /> },
+    { key: 'reservation-table', label: 'Table/List', icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
         </svg>
       )
     },
-    { key: 'list',              label: 'List',            icon: <FiList className="w-4 h-4" /> },
+    { key: 'list', label: 'List', icon: <FiList className="w-4 h-4" /> },
   ];
 
-  // Get responsive view tabs
-  const getViewTabs = () => {
-    if (isMobile) {
-      return VIEW_TABS.map(({ key, label, icon }) => ({
-        key,
-        label: key === 'calendar' ? '' : key === 'reservation-table' ? '' : '',
-        icon
-      }));
-    }
-    return VIEW_TABS;
+  // Get current day stats
+  const getDayStats = () => {
+    const dayRes = reservations.filter(r => {
+      const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+      const d = new Date(selectedDate);
+      d.setHours(0, 0, 0, 0);
+      const rdDate = new Date(rd);
+      rdDate.setHours(0, 0, 0, 0);
+      return rdDate.getTime() === d.getTime() && r.status !== 'cancelled';
+    });
+    const totalGuests = dayRes.reduce((sum, r) => sum + (r.number_of_guests || 0), 0);
+    return { count: dayRes.length, guests: totalGuests };
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50" style={{ height: "100vh", maxHeight: "100%" }}>
-      {/* Header - Clean & Modern */}
-      <div className="bg-white border-b border-gray-200 shadow-sm flex-shrink-0">
+    <div className={`h-full flex flex-col ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`} style={{ height: "100vh", maxHeight: "100%" }}>
+      
+      {/* ─── HEADER ────────────────────────────────────────────────────────────── */}
+      <div className={`flex-shrink-0 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         
-        {/* Top Row: Restaurant Name + Actions */}
-        <div className="flex items-center justify-between px-4 md:px-6 py-2.5">
-          {/* Left: Restaurant Name */}
-          <div className="flex items-center gap-3 min-w-0">
-            {restaurants.length > 0 && !isStaff && (
+        {/* Top Bar: Restaurant + Actions */}
+        <div className="flex items-center justify-between px-3 md:px-5 py-2 gap-2">
+          {/* Left: Restaurant */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {restaurants.length > 1 && !isStaff ? (
               <div className="relative">
                 <select
                   value={selectedRestaurant?.id || ''}
                   onChange={(e) => { const r = restaurants.find(r => r.id === e.target.value); setSelectedRestaurant(r); }}
-                  className="appearance-none bg-transparent border-0 focus:ring-0 text-base md:text-lg font-bold text-gray-900 pr-6 cursor-pointer hover:text-[#fe8a24] transition-colors"
+                  className={`appearance-none bg-transparent border-0 focus:ring-0 text-sm md:text-base font-bold pr-6 cursor-pointer transition-colors truncate max-w-[120px] md:max-w-[200px] ${
+                    isDarkMode ? 'text-gray-100 hover:text-primary' : 'text-gray-900 hover:text-[#fe8a24]'
+                  }`}
                 >
                   {restaurants.map(r => (
                     <option key={r.id} value={r.id} className="font-normal">
@@ -221,184 +227,222 @@ const ReservationSoftware = () => {
                     </option>
                   ))}
                 </select>
-                <FiChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <FiChevronDown className={`absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
               </div>
-            )}
-            {restaurants.length === 1 && !isStaff && (
-              <span className="text-base md:text-lg font-bold text-gray-900 truncate">
-                {selectedRestaurant?.name}
-              </span>
-            )}
-            {selectedRestaurant?.address && !isMobile && (
-              <span className="text-sm text-gray-400 truncate hidden lg:inline">
-                • {selectedRestaurant.address}
+            ) : (
+              <span className={`text-sm md:text-base font-bold truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                {selectedRestaurant?.name || 'Restaurant'}
               </span>
             )}
           </div>
 
-          {/* Right: Action Buttons */}
-          <div className="flex items-center gap-2">
-            {/* Walk-in */}
-            <button 
-              onClick={handleWalkIn}
-              className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm"
-            >
-              <span className="text-base">🚶</span>
-              {!isMobile && 'Walk-in'}
-            </button>
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+            {/* Mobile Menu Toggle */}
+            {isMobile && (
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`p-1.5 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+              >
+                {isMobileMenuOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
+              </button>
+            )}
+
+            {/* Walk-in - show on larger screens */}
+            {!isMobile && (
+              <button 
+                onClick={handleWalkIn}
+                className={`flex items-center gap-1 px-2.5 md:px-3.5 py-1.5 rounded-lg font-medium transition-all text-xs md:text-sm ${
+                  isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                <span className="text-base">🚶</span>
+                <span className="hidden sm:inline">Walk-in</span>
+              </button>
+            )}
 
             {/* Quick Book */}
             <button 
               onClick={() => { setModalMode('quickbook'); setSelectedReservationDate(null); setShowCreateModal(true); }}
-              className="flex items-center gap-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm shadow-sm"
+              className={`flex items-center gap-1 px-2.5 md:px-3.5 py-1.5 rounded-lg font-medium transition-all text-xs md:text-sm shadow-sm ${
+                isDarkMode ? 'bg-primary hover:bg-primary/80 text-white' : 'bg-[#fe8a24] hover:bg-[#ff9d47] text-white'
+              }`}
             >
-              <FiPlus className="w-4 h-4" /> 
-              {isMobile ? 'Quick' : 'Quick Book'}
+              <FiPlus className="w-3.5 h-3.5 md:w-4 md:h-4" /> 
+              <span className="hidden sm:inline">Quick</span>
             </button>
 
-            {/* Create Booking - Desktop only */}
-            {!isMobile && (
+            {/* Settings */}
+            {(!isStaff || staffRole === 'admin' || staffRole === 'manager') && !isMobile && (
               <button 
-                onClick={() => { setModalMode('full'); setSelectedReservationDate(null); setShowCreateModal(true); }}
-                className="flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm"
+                onClick={() => setShowSettings(true)}
+                className={`p-1.5 md:p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
               >
-                <FiPlus className="w-4 h-4" /> Create
+                <FiSettings className="w-4 h-4 md:w-4.5 md:h-4.5" />
               </button>
             )}
 
-            {/* Settings */}
-            {(!isStaff || staffRole === 'admin' || staffRole === 'manager') && (
-              <button 
-                onClick={() => setShowSettings(true)}
-                className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm"
-              >
-                <FiSettings className="w-4 h-4" /> 
-                {isMobile ? '' : 'Settings'}
-              </button>
-            )}
+            {/* Theme Toggle */}
+            <button 
+              onClick={toggleTheme}
+              className={`p-1.5 md:p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+            >
+              {isDarkMode ? <FiCalendar className="w-4 h-4 md:w-4.5 md:h-4.5" /> : <FiCalendar className="w-4 h-4 md:w-4.5 md:h-4.5" />}
+            </button>
           </div>
         </div>
 
-        {/* Middle Row: Date Navigation */}
-        <div className="flex items-center justify-center px-4 md:px-6 py-2 border-t border-gray-100">
-          {/* Center: Date Navigation + Stats + Time */}
-          <div className="flex items-center gap-3 md:gap-4">
+        {/* Mobile Action Buttons */}
+        {isMobile && isMobileMenuOpen && (
+          <div className={`px-3 py-2 border-t flex flex-wrap gap-1.5 ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+            <button 
+              onClick={handleWalkIn}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium flex-1 justify-center ${
+                isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              <span className="text-base">🚶</span> Walk-in
+            </button>
+            <button 
+              onClick={() => setShowSettings(true)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium flex-1 justify-center ${
+                isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              <FiSettings className="w-3.5 h-3.5" /> Settings
+            </button>
+          </div>
+        )}
+
+        {/* Middle Bar: Date Navigation + Stats */}
+        <div className={`flex items-center justify-center px-2 md:px-5 py-1.5 border-t flex-wrap gap-1 md:gap-2 ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          
+          {/* Date Navigation */}
+          <div className="flex items-center gap-1 md:gap-2">
             <button 
               onClick={() => navigateDate(-1)}
-              className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className={`p-1 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
             >
-              <FiChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+              <FiChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
             
             <button 
               onClick={goToToday}
-              className="px-3 md:px-4 py-1 md:py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white text-xs md:text-sm font-medium rounded-lg transition-colors shadow-sm"
+              className={`px-2 md:px-3 py-0.5 md:py-1 rounded-lg text-[10px] md:text-xs font-medium transition-colors shadow-sm ${
+                isDarkMode ? 'bg-primary text-white hover:bg-primary/80' : 'bg-[#fe8a24] text-white hover:bg-[#ff9d47]'
+              }`}
             >
               Today
             </button>
             
             <button 
               onClick={() => navigateDate(1)}
-              className="p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className={`p-1 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
             >
-              <FiChevronRight className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
+              <FiChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
+          </div>
 
-            {/* Date Display with Picker */}
-            <div className="relative flex items-center gap-2 md:gap-3 ml-1 md:ml-2">
-              <FiCalendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#fe8a24]" />
-              <input 
-                type="date" 
-                value={formatDateForInput(selectedDate)}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    const parts = e.target.value.split('-');
-                    const newDate = new Date(
-                      parseInt(parts[0]),
-                      parseInt(parts[1]) - 1,
-                      parseInt(parts[2])
-                    );
-                    if (!isNaN(newDate.getTime())) {
-                      setSelectedDate(newDate);
-                    }
+          {/* Date Picker */}
+          <div className="relative flex items-center gap-1 md:gap-2">
+            <FiCalendar className={`w-3 h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-primary' : 'text-[#fe8a24]'}`} />
+            <input 
+              type="date" 
+              value={formatDateForInput(selectedDate)}
+              onChange={(e) => {
+                if (e.target.value) {
+                  const parts = e.target.value.split('-');
+                  const newDate = new Date(
+                    parseInt(parts[0]),
+                    parseInt(parts[1]) - 1,
+                    parseInt(parts[2])
+                  );
+                  if (!isNaN(newDate.getTime())) {
+                    setSelectedDate(newDate);
                   }
-                }}
-                className="text-sm md:text-base font-semibold text-gray-800 bg-transparent border-0 focus:ring-0 focus:outline-none cursor-pointer hover:text-[#fe8a24] transition-colors"
-                style={{ 
-                  width: isMobile ? '140px' : '200px',
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none',
-                  appearance: 'none',
-                  paddingRight: '20px'
-                }}
-              />
-              {/* Custom arrow indicator */}
-              <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
+                }
+              }}
+              className={`text-xs md:text-sm font-semibold bg-transparent border-0 focus:ring-0 focus:outline-none cursor-pointer transition-colors ${
+                isDarkMode ? 'text-gray-200 hover:text-primary' : 'text-gray-800 hover:text-[#fe8a24]'
+              }`}
+              style={{ 
+                width: isMobile ? '100px' : '140px',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                appearance: 'none',
+                paddingRight: '16px'
+              }}
+            />
+          </div>
 
-            {/* Stats + Time Display */}
-            <div className="flex items-center gap-2 md:gap-3 ml-2 md:ml-4 pl-2 md:pl-4 border-l border-gray-300">
-              <span className="text-xs md:text-sm font-medium text-gray-600">
-                {(() => {
-                  const dayRes = reservations.filter(r => {
-                    const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-                    const d = new Date(selectedDate);
-                    d.setHours(0, 0, 0, 0);
-                    const rdDate = new Date(rd);
-                    rdDate.setHours(0, 0, 0, 0);
-                    return rdDate.getTime() === d.getTime() && r.status !== 'cancelled';
-                  });
-                  const totalGuests = dayRes.reduce((sum, r) => sum + (r.number_of_guests || 0), 0);
-                  return `${dayRes.length} res · ${totalGuests} guests`;
-                })()}
+          {/* Stats + Time */}
+          <div className={`flex items-center gap-1 md:gap-3 px-2 md:px-3 py-0.5 md:py-1 rounded-lg ${
+            isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
+          }`}>
+            <div className="flex items-center gap-1">
+              <FiUsers className={`w-3 h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+              <span className={`text-[10px] md:text-xs font-medium whitespace-nowrap ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                {getDayStats().count} res · {getDayStats().guests} guests
               </span>
-              <div className="w-px h-4 bg-gray-300" />
-              <div className="flex items-center gap-1.5">
-                <FiClock className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-500" />
-                <span className="text-xs md:text-sm font-mono font-semibold text-gray-700 tabular-nums min-w-[65px] md:min-w-[75px]">
-                  {formatTime(currentTime)}
-                </span>
-              </div>
+            </div>
+            <div className={`w-px h-3 md:h-4 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
+            <div className="flex items-center gap-1">
+              <FiClock className={`w-3 h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+              <span className={`text-[10px] md:text-xs font-mono font-semibold tabular-nums min-w-[50px] md:min-w-[65px] ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {formatTime(currentTime)}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Bottom Row: View Tabs */}
-        <div className="flex items-center px-4 md:px-6 pb-2.5 pt-1 border-t border-gray-100">
-          {/* View Tabs */}
-          <div className="flex items-center gap-1">
-            {getViewTabs().map(({ key, label, icon }) => (
+        {/* Bottom Bar: View Tabs */}
+        <div className={`flex items-center px-3 md:px-5 py-1.5 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+          <div className="flex items-center gap-0.5 md:gap-1 w-full overflow-x-auto scrollbar-hide">
+            {VIEW_TABS.map(({ key, label, icon }) => (
               <button 
                 key={key} 
                 onClick={() => setViewMode(key)}
-                className={`flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-xs md:text-sm ${
+                className={`flex items-center gap-1.5 px-2.5 md:px-4 py-1.5 md:py-2 rounded-lg font-medium transition-all text-[10px] md:text-sm whitespace-nowrap ${
                   viewMode === key 
-                    ? 'bg-[#fe8a24] text-white shadow-sm' 
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? (isDarkMode ? 'bg-primary text-white shadow-sm' : 'bg-[#fe8a24] text-white shadow-sm')
+                    : (isDarkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100')
                 }`}
               >
                 {icon} 
-                {!isMobile && label}
-                {isMobile && key === 'calendar' && '📅'}
-                {isMobile && key === 'reservation-table' && '📋'}
-                {isMobile && key === 'list' && '📄'}
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">
+                  {key === 'calendar' && '📅'}
+                  {key === 'reservation-table' && '📋'}
+                  {key === 'list' && '📄'}
+                </span>
               </button>
             ))}
+            
+            {/* Spacer */}
+            <div className="flex-1" />
+            
+            {/* Quick action on tablet/desktop */}
+            {!isMobile && (
+              <button 
+                onClick={() => { setModalMode('full'); setSelectedReservationDate(null); setShowCreateModal(true); }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+              >
+                <FiPlus className="w-3.5 h-3.5" /> New Booking
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* ─── MAIN CONTENT ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-hidden min-h-0">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-sm sm:text-base text-gray-600">Loading reservations...</p>
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin mx-auto mb-3 ${isDarkMode ? '' : ''}`} />
+              <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Loading reservations...</p>
             </div>
           </div>
         ) : viewMode === 'calendar' ? (
@@ -445,7 +489,7 @@ const ReservationSoftware = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* ─── MODALS ────────────────────────────────────────────────────────────── */}
       {showEditModal && selectedReservation && (
         <ReservationModal reservation={selectedReservation} onClose={handleCloseEditModal} />
       )}
