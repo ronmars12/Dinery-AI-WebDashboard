@@ -915,12 +915,12 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                       // Store touch start time and position
                       const touch = e.touches[0];
                       table._touchStart = { time: Date.now(), x: touch.clientX, y: touch.clientY };
-                      // Set a timer for long press detection
+                      // Set a timer for long press detection - 2 seconds hold
                       table._longPressTimer = setTimeout(() => {
                         // If finger hasn't moved much, it's a long press
                         handleTableRightClick(table.id, e);
                         table._isLongPress = true;
-                      }, 500);
+                      }, 2000); // Changed to 2 seconds
                     }}
                     onTouchMove={(e) => {
                       // If finger moves, cancel long press
@@ -1553,7 +1553,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                           y: touch.clientY || e.clientY 
                         });
                         res._isLongPress = true;
-                      }, 500);
+                      }, 2000); // Changed to 2 seconds
                     }}
                     onTouchMove={(e) => {
                       if (res._longPressTimer) {
