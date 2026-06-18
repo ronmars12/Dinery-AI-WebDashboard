@@ -72,7 +72,7 @@ const COLORS = {
 
 const CalendarView = ({
   reservations, selectedDate, onDateChange, onReservationClick,
-  onCreateReservation, selectedRestaurant,
+  onCreateReservation, selectedRestaurant, forceRender: externalForceRender = 0,
 }) => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [currentDate, setCurrentDate] = useState(selectedDate);
@@ -151,6 +151,13 @@ const CalendarView = ({
     
     return () => window.removeEventListener('resize', handleResize);
   }, [isTablet]);
+
+  // Also force re-render when external forceRender changes
+  useEffect(() => {
+    if (externalForceRender > 0) {
+      setForceRender(prev => prev + 1);
+    }
+  }, [externalForceRender]);
 
   useEffect(() => { setLocalReservations(reservations); }, [reservations]);
 

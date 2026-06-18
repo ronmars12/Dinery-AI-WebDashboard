@@ -40,9 +40,19 @@ const ReservationSoftware = () => {
   const [viewMode, setViewMode] = useState('calendar');
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
-  const staffRestaurantId = sessionStorage.getItem("staffRestaurantId");
-  const staffRole         = sessionStorage.getItem("staffRole");
-  const isStaff           = !!staffRestaurantId;
+  
+  // Safely get sessionStorage values - wrap in try/catch
+  let staffRestaurantId = null;
+  let staffRole = null;
+  try {
+    staffRestaurantId = sessionStorage.getItem("staffRestaurantId");
+    staffRole = sessionStorage.getItem("staffRole");
+  } catch (e) {
+    // sessionStorage not available
+    console.log('sessionStorage not available, using default values');
+  }
+  
+  const isStaff = !!staffRestaurantId;
   const db = firestore;
   const [preSelectedTable, setPreSelectedTable] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -54,6 +64,9 @@ const ReservationSoftware = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
+  
+  // Force re-render for tablet
+  const [forceRender, setForceRender] = useState(0);
 
   // Update time every second
   useEffect(() => {
@@ -66,9 +79,12 @@ const ReservationSoftware = () => {
   useEffect(() => {
     const checkScreenSize = () => {
       const width = window.innerWidth;
+      const isTabletDevice = (width >= 768 && width <= 1024) || 
+        (/iPad|Macintosh/.test(navigator.userAgent) && width >= 768 && width <= 1024 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+      
       setIsMobile(width < 640);
-      setIsTablet(width >= 640 && width < 1024);
-      setIsDesktop(width >= 1024);
+      setIsTablet(width >= 640 && width < 1024 || isTabletDevice);
+      setIsDesktop(width >= 1024 && !isTabletDevice);
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
@@ -121,8 +137,11 @@ const ReservationSoftware = () => {
 
     // Staff use the restaurant's Owner_ID, not their own uid
     const ownerUid = isStaff
-      ? (selectedRestaurant?.Owner_ID || currentUser.uid)
-      : currentUser.uid;
+      ? (selectedRestaurant?.Owner_ID || currentUser?.uid)
+      : currentUser?.uid;
+
+    // If no ownerUid, return early
+    if (!ownerUid) return;
 
     const q = query(
       collection(db, 'reservations'),
@@ -150,7 +169,7 @@ const ReservationSoftware = () => {
   const handleWalkIn = () => { setSelectedReservationDate(null); setModalMode('walkin'); setShowCreateModal(true); };
   const handleCreateReservationFromSlot = (dateTime) => { setSelectedReservationDate(dateTime); setModalMode('full'); setShowCreateModal(true); };
   const handleCloseEditModal   = () => { setShowEditModal(false);   setSelectedReservation(null); };
-  const handleCloseCreateModal = () => { setShowCreateModal(false); setSelectedReservationDate(null); setModalMode('full'); };
+  const handleCloseCreateModal = () => { setShowCreateModal(false); setSelectedReservationDate(null); setModalMode('full'); setPreSelectedTable(null); };
 
   // ─── Helper Functions ──────────────────────────────────────────────────────────
   const formatDateForInput = (date) => {
@@ -183,14 +202,22 @@ const ReservationSoftware = () => {
   // ─── Reload Function ─────────────────────────────────────────────────────────
   const handleReload = async () => {
     setRefreshing(true);
+    // Force a re-render for tablets
+    setForceRender(prev => prev + 1);
+    
     // Force a refresh by re-fetching data
     if (selectedRestaurant) {
       const start = getStartOfDay(startDate);
       const end   = getEndOfDay(endDate);
       const currentUser = auth.currentUser;
       const ownerUid = isStaff
-        ? (selectedRestaurant?.Owner_ID || currentUser.uid)
-        : currentUser.uid;
+        ? (selectedRestaurant?.Owner_ID || currentUser?.uid)
+        : currentUser?.uid;
+
+      if (!ownerUid) {
+        setRefreshing(false);
+        return;
+      }
 
       const q = query(
         collection(db, 'reservations'),
@@ -516,7 +543,7 @@ const ReservationSoftware = () => {
           </div>
         ) : viewMode === 'calendar' ? (
           <CalendarView
-            key={selectedDate.toISOString()}
+            key={selectedDate.toISOString() + forceRender}
             reservations={reservations}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
@@ -526,6 +553,7 @@ const ReservationSoftware = () => {
           />
         ) : viewMode === 'reservation-table' ? (
           <ReservationTableView
+            key={forceRender}
             selectedRestaurant={selectedRestaurant}
             reservations={reservations}
             selectedDate={selectedDate}
@@ -546,7 +574,7 @@ const ReservationSoftware = () => {
           />
         ) : (
           <ListView
-            key={viewMode + selectedDate.toISOString()}
+            key={viewMode + selectedDate.toISOString() + forceRender}
             reservations={reservations}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
@@ -561,10 +589,15 @@ const ReservationSoftware = () => {
 
       {/* ─── MODALS ────────────────────────────────────────────────────────────── */}
       {showEditModal && selectedReservation && (
-        <ReservationModal reservation={selectedReservation} onClose={handleCloseEditModal} />
+        <ReservationModal 
+          key={selectedReservation.id + forceRender}
+          reservation={selectedReservation} 
+          onClose={handleCloseEditModal} 
+        />
       )}
       {showCreateModal && (
         <CreateReservationModal
+          key={forceRender}
           onClose={() => {
             setShowCreateModal(false);
             setSelectedReservationDate(null);
@@ -579,7 +612,11 @@ const ReservationSoftware = () => {
         />
       )}
       {showSettings && (!isStaff || staffRole === 'admin' || staffRole === 'manager') && (
-        <ReservationSettings selectedRestaurant={selectedRestaurant} onClose={() => setShowSettings(false)} />
+        <ReservationSettings 
+          key={forceRender}
+          selectedRestaurant={selectedRestaurant} 
+          onClose={() => setShowSettings(false)} 
+        />
       )}
     </div>
   );
