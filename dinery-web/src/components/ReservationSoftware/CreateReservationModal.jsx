@@ -1197,7 +1197,17 @@ const CreateReservationModal = ({
           ✅ {toast}
         </div>
       )}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+     <div
+      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      onClick={e => {
+        // Don't close if a native picker (date/time) is active
+        if (document.activeElement?.type === 'date' || document.activeElement?.type === 'time') {
+          document.activeElement.blur();
+          return;
+        }
+        onClose();
+      }}
+    />
 
       <div className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[92vh] flex flex-col ${modalMode==='full' ? 'max-w-4xl' : 'max-w-lg'}`}>
 
@@ -1391,6 +1401,66 @@ const CreateReservationModal = ({
 
             </div>
           )}
+
+            {/* ══ QUICK BOOK STEP 1 ══ */}
+            {isQuickBook && step === 1 && (
+              <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
+
+                <GuestPicker
+                  guests={guests}
+                  setGuests={setGuests}
+                  maxGuests={maxGuests}
+                  showCustomGuests={showCustomGuests}
+                  setShowCustomGuests={setShowCustomGuests}
+                  customGuests={customGuests}
+                  setCustomGuests={setCustomGuests}
+                />
+
+                <TimeSlotGrid {...timeSlotProps} />
+
+                <TableSelector {...tableSelectorProps} />
+
+                {menuItems.length > 0 && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowMenuSelector(!showMenuSelector)}
+                      className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                    >
+                      {showMenuSelector
+                        ? <FiChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                        : <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />}
+                      {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
+                      {selectedMenuItems.length > 0 && (
+                        <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
+                          {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
+                        </span>
+                      )}
+                    </button>
+                    {showMenuSelector && (
+                      <div className="mt-2 sm:mt-3">
+                        {loadingMenu ? (
+                          <div className="flex items-center justify-center py-6 sm:py-8">
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                          </div>
+                        ) : (
+                          <MenuItemSelector
+                            menuItems={menuItems}
+                            selectedItems={selectedMenuItems}
+                            guests={guests}
+                            onAddItem={handleAddMenuItem}
+                            onRemoveItem={handleRemoveMenuItem}
+                            onUpdateQuantity={handleUpdateMenuItemQuantity}
+                            getCategoryName={getCategoryName}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
+            )}
 
           {/* ══ QUICK BOOK STEP 2 ══ */}
           {isQuickBook && step===2 && (
@@ -1622,10 +1692,54 @@ const CreateReservationModal = ({
 
                   <div>
                     <label className={labelCls}>Date *</label>
-                    <input type="date"
-                      value={`${getReservationDate().getFullYear()}-${String(getReservationDate().getMonth()+1).padStart(2,'0')}-${String(getReservationDate().getDate()).padStart(2,'0')}`}
-                      onChange={e=>{const [y,mo,d]=e.target.value.split('-');const nd=new Date(formData.reservation_date||new Date());nd.setFullYear(parseInt(y),parseInt(mo)-1,parseInt(d));setFormData(p=>({...p,reservation_date:nd}));}}
-                      className={inputCls}/>
+                    <div className="flex gap-2 items-center">
+                      {/* Month */}
+                      <select
+                        value={getReservationDate().getMonth() + 1}
+                        onChange={e => {
+                          const nd = new Date(formData.reservation_date || new Date());
+                          nd.setMonth(parseInt(e.target.value) - 1);
+                          setFormData(p => ({ ...p, reservation_date: nd }));
+                        }}
+                        className={inputCls + ' flex-[2]'}
+                      >
+                        {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                          <option key={i} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                      {/* Day */}
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={getReservationDate().getDate()}
+                        onChange={e => {
+                          const val = parseInt(e.target.value);
+                          if (!val || val < 1 || val > 31) return;
+                          const nd = new Date(formData.reservation_date || new Date());
+                          nd.setDate(val);
+                          setFormData(p => ({ ...p, reservation_date: nd }));
+                        }}
+                        className={inputCls + ' flex-1 text-center'}
+                        placeholder="DD"
+                      />
+                      {/* Year */}
+                      <input
+                        type="number"
+                        min="2024"
+                        max="2099"
+                        value={getReservationDate().getFullYear()}
+                        onChange={e => {
+                          const val = parseInt(e.target.value);
+                          if (!val || val < 2024) return;
+                          const nd = new Date(formData.reservation_date || new Date());
+                          nd.setFullYear(val);
+                          setFormData(p => ({ ...p, reservation_date: nd }));
+                        }}
+                        className={inputCls + ' flex-[1.2] text-center'}
+                        placeholder="YYYY"
+                      />
+                    </div>
                   </div>
 
                   <div>
