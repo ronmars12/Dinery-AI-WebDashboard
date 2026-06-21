@@ -1,11 +1,11 @@
 // src/components/reservation-software/CreateReservationModal.jsx
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { collection, addDoc, getDocs, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, getDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { auth, firestore } from '../../firebase';
 import {
   FiX, FiSave, FiUser, FiPhone, FiMail, FiChevronRight, FiUsers,
   FiClock, FiCheck, FiArrowLeft, FiLock, FiGlobe, FiPlus, FiMinus,
-  FiTrash2, FiChevronDown, FiSearch
+  FiTrash2, FiChevronDown, FiSearch, FiAlertCircle
 } from 'react-icons/fi';
 
 const sortTables = (tables) => {
@@ -54,153 +54,377 @@ const StepPill = ({ step, current, label }) => (
   </div>
 );
 
-// ── TimeSlotGrid ──
-const TimeSlotGrid = ({ loadingSettings, timeSlots, selectedSlot, setSelectedSlot, openTime, closeTime, compact }) => (
-  <div>
-    <p className={labelCls}>
-      <FiClock className="inline w-3 h-3 mr-1"/>Time Slot{' '}
-      <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">({openTime}–{closeTime})</span>
-    </p>
-    {loadingSettings ? (
-      <div className="flex items-center justify-center py-6 sm:py-8 bg-gray-50 rounded-xl">
-        <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin"/>
+// ─── Table Availability Check ──────────────────────────────────────────────────
+const checkTableAvailability = async (tableId, date, fromTime, duration, restaurantId, collectionName, excludeReservationId = null) => {
+  try {
+    const db = firestore;
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    // Get all reservations for the restaurant on this day
+    const q = query(
+      collection(db, 'reservations'),
+      where('restaurant_id', '==', restaurantId),
+      where('reservation_date', '>=', dayStart),
+      where('reservation_date', '<=', dayEnd),
+      where('status', 'in', ['confirmed', 'pending'])
+    );
+
+    const querySnapshot = await getDocs(q);
+    const reservations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // Parse the requested time
+    const [reqHour, reqMin] = fromTime.split(':').map(Number);
+    const reqStartMinutes = reqHour * 60 + reqMin;
+    const reqEndMinutes = reqStartMinutes + duration;
+
+    // Check each reservation for overlap
+    for (const reservation of reservations) {
+      // Skip the current reservation if editing (exclude by ID)
+      if (excludeReservationId && reservation.id === excludeReservationId) continue;
+      
+      // Check if this reservation uses the same table
+      const reservationTableIds = reservation.table_ids || (reservation.table_id ? [reservation.table_id] : []);
+      
+      // Skip if this reservation doesn't use the table we're checking
+      if (!reservationTableIds.includes(tableId)) continue;
+
+      // Get the reservation time
+      const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
+      const resTime = reservation.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`;
+      const [resHour, resMin] = resTime.split(':').map(Number);
+      const resStartMinutes = resHour * 60 + resMin;
+      const resDuration = reservation.duration_minutes || 75;
+      const resEndMinutes = resStartMinutes + resDuration;
+
+      // Check for overlap
+      if (reqStartMinutes < resEndMinutes && reqEndMinutes > resStartMinutes) {
+        const resDateOnly = new Date(resDate);
+        const reqDateOnly = new Date(date);
+        if (resDateOnly.toDateString() === reqDateOnly.toDateString()) {
+          return {
+            available: false,
+            conflictingReservation: {
+              id: reservation.id,
+              name: reservation.customer_name || 'Guest',
+              time: resTime,
+              duration: resDuration,
+              status: reservation.status
+            }
+          };
+        }
+      }
+    }
+
+    return { available: true };
+  } catch (error) {
+    console.error('Error checking table availability:', error);
+    return { available: true, error: error.message };
+  }
+};
+
+// ─── Check multiple tables for availability ───────────────────────────────────
+const checkMultipleTablesAvailability = async (tableIds, date, fromTime, duration, restaurantId, collectionName, excludeReservationId = null) => {
+  if (!tableIds || tableIds.length === 0) {
+    return { available: true, conflicts: [] };
+  }
+
+  const conflicts = [];
+  let allAvailable = true;
+
+  for (const tableId of tableIds) {
+    const result = await checkTableAvailability(
+      tableId,
+      date,
+      fromTime,
+      duration,
+      restaurantId,
+      collectionName,
+      excludeReservationId
+    );
+
+    if (!result.available) {
+      allAvailable = false;
+      conflicts.push({
+        tableId,
+        conflict: result.conflictingReservation
+      });
+    }
+  }
+
+  return {
+    available: allAvailable,
+    conflicts: conflicts
+  };
+};
+
+// ── TableAvailabilityBadge ──
+const TableAvailabilityBadge = ({ available, checking }) => {
+  if (checking) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-gray-400">
+        <div className="w-3 h-3 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+        Checking...
       </div>
-    ) : timeSlots.length === 0 ? (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 text-center text-[10px] sm:text-sm text-red-500 font-medium">No available slots</div>
-    ) : (
-      <>
-        <div className={`grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-1.5 ${compact ? 'max-h-40 sm:max-h-48' : 'max-h-56 sm:max-h-64'} overflow-y-auto pr-1`}>
-          {timeSlots.map((slot, i) => {
-            const isSel = selectedSlot?.startTime === slot.startTime;
-            const label = slot.startTime;
-            return (
-              <button key={i} type="button" onClick={() => setSelectedSlot(slot)}
-                className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all ${
-                  isSel
-                    ? 'bg-[#fe8a24] text-white shadow-md scale-105'
-                    : 'bg-gray-50 border border-gray-200 text-gray-600 hover:border-[#fe8a24] hover:text-[#fe8a24] hover:bg-orange-50'
-                }`}>
-                {label}
-              </button>
-            );
-          })}
+    );
+  }
+  
+  if (available === null || available === undefined) {
+    return null;
+  }
+  
+  if (available) {
+    return (
+      <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+        <FiCheck className="w-3 h-3" />
+        Available
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex items-center gap-1 text-xs text-amber-500 font-medium">
+      <FiAlertCircle className="w-3 h-3" />
+      Some tables unavailable
+    </div>
+  );
+};
+
+// ── TimeSlotGrid ──
+const TimeSlotGrid = ({ 
+  loadingSettings, timeSlots, selectedSlot, setSelectedSlot, 
+  openTime, closeTime, compact, unavailableSlots, tableAvailability 
+}) => {
+  // Get all unavailable slots from conflicts
+  const allUnavailableSlots = useMemo(() => {
+    const slots = [...(unavailableSlots || [])];
+    if (tableAvailability && tableAvailability.available === false && tableAvailability.conflicts) {
+      tableAvailability.conflicts.forEach(conflict => {
+        if (conflict.conflict?.time) {
+          slots.push(conflict.conflict.time);
+        }
+      });
+    }
+    return slots;
+  }, [unavailableSlots, tableAvailability]);
+
+  return (
+    <div>
+      <p className={labelCls}>
+        <FiClock className="inline w-3 h-3 mr-1"/>Time Slot{' '}
+        <span className="text-gray-300 normal-case font-normal text-[10px] sm:text-xs">({openTime}–{closeTime})</span>
+      </p>
+      {loadingSettings ? (
+        <div className="flex items-center justify-center py-6 sm:py-8 bg-gray-50 rounded-xl">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin"/>
         </div>
-        {selectedSlot && (
-          <div className="mt-2 bg-green-50 border border-green-200 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <FiCheck className="w-3 h-3 sm:w-4 sm:h-4 text-green-600"/>
-              <span className="text-[10px] sm:text-sm font-bold text-green-700">{selectedSlot.label}</span>
-            </div>
-            <button type="button" onClick={() => setSelectedSlot(null)} className="text-green-500 hover:text-green-700">
-              <FiX className="w-3 h-3 sm:w-4 sm:h-4"/>
-            </button>
+      ) : timeSlots.length === 0 ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 sm:p-4 text-center text-[10px] sm:text-sm text-red-500 font-medium">No available slots</div>
+      ) : (
+        <>
+          <div className={`grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-1.5 ${compact ? 'max-h-40 sm:max-h-48' : 'max-h-56 sm:max-h-64'} overflow-y-auto pr-1`}>
+            {timeSlots.map((slot, i) => {
+              const isSel = selectedSlot?.startTime === slot.startTime;
+              const isUnavailable = allUnavailableSlots.includes(slot.startTime);
+              
+              return (
+                <button 
+                  key={i} 
+                  type="button" 
+                  onClick={() => {
+                    if (!isUnavailable) {
+                      setSelectedSlot(slot);
+                    }
+                  }}
+                  disabled={isUnavailable}
+                  className={`py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-xs font-semibold transition-all relative ${
+                    isSel
+                      ? 'bg-[#fe8a24] text-white shadow-md scale-105'
+                      : isUnavailable
+                      ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed line-through'
+                      : 'bg-gray-50 border border-gray-200 text-gray-600 hover:border-[#fe8a24] hover:text-[#fe8a24] hover:bg-orange-50'
+                  }`}
+                >
+                  {slot.startTime}
+                  {isUnavailable && (
+                    <span className="absolute -top-1 -right-1 text-[10px]">🚫</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        )}
-      </>
-    )}
-  </div>
-);
+          {selectedSlot && (
+            <div className="mt-2 bg-green-50 border border-green-200 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <FiCheck className="w-3 h-3 sm:w-4 sm:h-4 text-green-600"/>
+                <span className="text-[10px] sm:text-sm font-bold text-green-700">{selectedSlot.label}</span>
+              </div>
+              <button type="button" onClick={() => setSelectedSlot(null)} className="text-green-500 hover:text-green-700">
+                <FiX className="w-3 h-3 sm:w-4 sm:h-4"/>
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 // ── TableSelector ──
 const TableSelector = ({
   tables, combinations, selectedTableIds, selectedCombination,
   setSelectedTableIds, setSelectedCombination, setTableError,
   tableError, guests, combinedCapacity, capacityOk, preSelectedTableId,
-}) => (
-  <div className="space-y-3">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <p className={labelCls}>🪑 Assign Table</p>
-      {selectedTableIds.length > 0 && (
-        <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${capacityOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-          Cap {combinedCapacity} {capacityOk ? '✓' : `— need ${guests}`}
-        </span>
-      )}
-    </div>
-    {tableError && <p className="text-[10px] sm:text-xs text-red-500 font-semibold flex items-center gap-1">⚠ {tableError}</p>}
+  tableAvailability, checkingAvailability, checkTableAvailabilityForSlots,
+  selectedDate, fromTime, duration, excludeReservationId,
+}) => {
+  // Get unavailable table IDs from conflicts
+  const unavailableTableIds = useMemo(() => {
+    if (!tableAvailability || tableAvailability.available !== false) return [];
+    return tableAvailability.conflicts?.map(c => c.tableId) || [];
+  }, [tableAvailability]);
 
-    {combinations.length > 0 && (
-      <div>
-        <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">Combinations</p>
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          {combinations.map(combo => {
-            const isSel = selectedCombination?.id === combo.id;
-            return (
-              <button key={combo.id} type="button"
-                onClick={() => {
-                  setTableError('');
-                  if (isSel) { setSelectedCombination(null); setSelectedTableIds([]); }
-                  else { setSelectedCombination(combo); setSelectedTableIds(combo.tableIds); }
-                }}
-                className={`relative flex flex-col gap-0.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border-2 text-[10px] sm:text-xs font-semibold transition-all ${
-                  isSel ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-400'
-                }`}>
-                {isSel && (
-                  <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                    <FiCheck className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white"/>
-                  </span>
-                )}
-                <span className="font-bold text-[10px] sm:text-xs">{combo.name}</span>
-                <span className="text-gray-400 text-[8px] sm:text-[10px]">{combo.minCapacity}–{combo.maxCapacity} pax</span>
-              </button>
-            );
-          })}
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className={labelCls}>🪑 Assign Table</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          {selectedTableIds.length > 0 && (
+            <span className={`text-[10px] sm:text-xs font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${capacityOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+              Cap {combinedCapacity} {capacityOk ? '✓' : `— need ${guests}`}
+            </span>
+          )}
+          {selectedTableIds.length > 0 && (
+            <TableAvailabilityBadge 
+              available={tableAvailability?.available} 
+              checking={checkingAvailability}
+            />
+          )}
         </div>
       </div>
-    )}
+      {tableError && <p className="text-[10px] sm:text-xs text-red-500 font-semibold flex items-center gap-1">⚠ {tableError}</p>}
+      {tableAvailability && tableAvailability.available === false && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 sm:px-4 py-1.5 sm:py-2">
+          <p className="text-[10px] sm:text-xs text-amber-700 font-medium flex items-center gap-1.5">
+            <FiAlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+            Some tables are already booked for this time slot (greyed out)
+          </p>
+        </div>
+      )}
 
-    {tables.length === 0 ? (
-      <p className="text-xs sm:text-sm text-gray-400 italic">No tables available yet.</p>
-    ) : (
-      <div>
-        {combinations.length > 0 && (
-          <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">Individual Tables</p>
-        )}
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          {sortTables(tables).map(t => {
-            const isSel = selectedTableIds.includes(t.id);
-            const isPreSel = t.id === preSelectedTableId;
-            return (
-            <button key={t.id} type="button"
-              onClick={() => {
-                setTableError('');
-                setSelectedTableIds(prev => prev.includes(t.id) ? prev.filter(x => x !== t.id) : [...prev, t.id]);
-              }}
-              className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border-2 text-[10px] sm:text-xs font-bold transition-all ${
-                isSel     ? 'border-[#fe8a24] bg-orange-50 text-[#fe8a24]' :
-                isPreSel  ? 'border-orange-300 bg-orange-50/50 text-orange-400' :
-                            'border-gray-200 text-gray-600 hover:border-[#fe8a24]'
-              }`}>
-              {isSel && (
-                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#fe8a24] rounded-full flex items-center justify-center">
-                  <FiCheck className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white"/>
-                </span>
-              )}
-              <span className="text-[10px] sm:text-xs">{t.name}</span>
-              <span className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full ${isSel ? 'bg-[#fe8a24]/20' : 'bg-gray-100'}`}>
-                <FiUsers className="inline w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5"/>{t.maxCapacity}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  )}
+      {combinations.length > 0 && (
+        <div>
+          <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">Combinations</p>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            {combinations.map(combo => {
+              const isSel = selectedCombination?.id === combo.id;
+              return (
+                <button key={combo.id} type="button"
+                  onClick={() => {
+                    setTableError('');
+                    if (isSel) { 
+                      setSelectedCombination(null); 
+                      setSelectedTableIds([]); 
+                    } else { 
+                      setSelectedCombination(combo); 
+                      setSelectedTableIds(combo.tableIds);
+                      if (selectedDate && fromTime && duration) {
+                        checkTableAvailabilityForSlots(combo.tableIds);
+                      }
+                    }
+                  }}
+                  className={`relative flex flex-col gap-0.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border-2 text-[10px] sm:text-xs font-semibold transition-all ${
+                    isSel ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-400'
+                  }`}>
+                  {isSel && (
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <FiCheck className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white"/>
+                    </span>
+                  )}
+                  <span className="font-bold text-[10px] sm:text-xs">{combo.name}</span>
+                  <span className="text-gray-400 text-[8px] sm:text-[10px]">{combo.minCapacity}–{combo.maxCapacity} pax</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-  {selectedCombination && (
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-2 sm:p-3 flex flex-wrap gap-1 sm:gap-1.5">
-      <span className="text-[10px] sm:text-xs font-bold text-blue-700 w-full">🔗 {selectedCombination.name}</span>
-      {selectedCombination.tableNames.map((n, i) => (
-        <span key={i} className="text-[8px] sm:text-[10px] bg-blue-100 text-blue-600 px-1.5 sm:px-2 py-0.5 rounded-full font-medium">{n}</span>
-      ))}
+      {tables.length === 0 ? (
+        <p className="text-xs sm:text-sm text-gray-400 italic">No tables available yet.</p>
+      ) : (
+        <div>
+          {combinations.length > 0 && (
+            <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 sm:mb-2">Individual Tables</p>
+          )}
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            {sortTables(tables).map(t => {
+              const isSel = selectedTableIds.includes(t.id);
+              const isPreSel = t.id === preSelectedTableId;
+              const isUnavailable = unavailableTableIds.includes(t.id);
+              
+              return (
+                <button 
+                  key={t.id} 
+                  type="button"
+                  onClick={() => {
+                    if (isUnavailable) return; // Simply return without showing error
+                    setTableError('');
+                    const newIds = prev => prev.includes(t.id) ? prev.filter(x => x !== t.id) : [...prev, t.id];
+                    setSelectedTableIds(newIds);
+                    if (selectedDate && fromTime && duration) {
+                      checkTableAvailabilityForSlots(newIds(selectedTableIds));
+                    }
+                  }}
+                  className={`relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border-2 text-[10px] sm:text-xs font-bold transition-all ${
+                    isSel ? 'border-[#fe8a24] bg-orange-50 text-[#fe8a24]' :
+                    isPreSel ? 'border-orange-300 bg-orange-50/50 text-orange-400' :
+                    isUnavailable ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' :
+                    'border-gray-200 text-gray-600 hover:border-[#fe8a24] hover:bg-orange-50'
+                  }`}
+                  disabled={isUnavailable}
+                  title={isUnavailable ? 'This table is already booked for this time slot' : ''}
+                >
+                  {isSel && (
+                    <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#fe8a24] rounded-full flex items-center justify-center">
+                      <FiCheck className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white"/>
+                    </span>
+                  )}
+                  <span className="text-[10px] sm:text-xs">{t.name}</span>
+                  <span className={`text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full ${isSel ? 'bg-[#fe8a24]/20' : isUnavailable ? 'bg-gray-200' : 'bg-gray-100'}`}>
+                    <FiUsers className="inline w-2 h-2 sm:w-2.5 sm:h-2.5 mr-0.5"/>{t.maxCapacity}
+                  </span>
+                  {isUnavailable && (
+                    <span className="text-[10px] text-gray-400 ml-1">🚫</span>
+                  )}
+                  {!isUnavailable && isSel && checkingAvailability && (
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 border-2 border-[#fe8a24] border-t-transparent rounded-full animate-spin ml-1" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {selectedCombination && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-2 sm:p-3 flex flex-wrap gap-1 sm:gap-1.5">
+          <span className="text-[10px] sm:text-xs font-bold text-blue-700 w-full">🔗 {selectedCombination.name}</span>
+          {selectedCombination.tableNames.map((n, i) => (
+            <span key={i} className="text-[8px] sm:text-[10px] bg-blue-100 text-blue-600 px-1.5 sm:px-2 py-0.5 rounded-full font-medium">{n}</span>
+          ))}
+        </div>
+      )}
+      {!selectedCombination && selectedTableIds.length > 1 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-orange-700 font-medium">
+          🔗 Combined: {sortTables(tables.filter(t => selectedTableIds.includes(t.id))).map(t => t.name).join(' + ')} · {combinedCapacity} guests total
+        </div>
+      )}
     </div>
-  )}
-    {!selectedCombination && selectedTableIds.length > 1 && (
-      <div className="bg-orange-50 border border-orange-200 rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-xs text-orange-700 font-medium">
-        🔗 Combined: {sortTables(tables.filter(t => selectedTableIds.includes(t.id))).map(t => t.name).join(' + ')} · {combinedCapacity} guests total
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 // ── GuestPicker ──
 const GuestPicker = ({ guests, setGuests, maxGuests, showCustomGuests, setShowCustomGuests, customGuests, setCustomGuests }) => (
@@ -428,11 +652,13 @@ const CreateReservationModal = ({
   modalMode = 'full',
   preSelectedTableId = null,
   preSelectedTableName = null,
+  excludeReservationId = null,
+  existingReservationData = null,
 }) => {
   const isWalkIn    = modalMode === 'walkin';
   const isQuickBook = modalMode === 'quickbook';
   
-  // Safely get staffRestaurantId - handle case where sessionStorage might not be available
+  // Safely get staffRestaurantId
   let staffRestaurantId = null;
   try {
     staffRestaurantId = sessionStorage.getItem("staffRestaurantId");
@@ -441,7 +667,7 @@ const CreateReservationModal = ({
   }
   const isStaff = !!staffRestaurantId;
 
-  const [guests, setGuests]                     = useState(2);
+  const [guests, setGuests]                     = useState(existingReservationData?.number_of_guests || 2);
   const [customGuests, setCustomGuests]         = useState('');
   const [showCustomGuests, setShowCustomGuests] = useState(false);
   const [saving, setSaving]                     = useState(false);
@@ -452,15 +678,28 @@ const CreateReservationModal = ({
   const [loadingSettings, setLoadingSettings]   = useState(true);
 
   const [tables, setTables]                         = useState([]);
-  const [selectedTableIds, setSelectedTableIds]     = useState(preSelectedTableId ? [preSelectedTableId] : []);
+  const [selectedTableIds, setSelectedTableIds]     = useState(
+    existingReservationData?.table_ids || 
+    (preSelectedTableId ? [preSelectedTableId] : [])
+  );
   const [combinations, setCombinations]             = useState([]);
-  const [selectedCombination, setSelectedCombination] = useState(null);
+  const [selectedCombination, setSelectedCombination] = useState(
+    existingReservationData?.combination_id ? 
+      { id: existingReservationData.combination_id, name: existingReservationData.combination_name, tableIds: existingReservationData.table_ids, tableNames: existingReservationData.table_names } 
+      : null
+  );
+
+  // ─── Table Availability States ──────────────────────────────────────────────
+  const [tableAvailability, setTableAvailability] = useState(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [unavailableSlots, setUnavailableSlots] = useState([]);
 
   const [selectedSlot, setSelectedSlot]   = useState(null);
   const [step, setStep]                   = useState(1);
   const [showTimeSlots, setShowTimeSlots] = useState(true);
   const [isTimeManuallyChanged, setIsTimeManuallyChanged] = useState(false);
   const [fromTime, setFromTime] = useState(() => {
+    if (existingReservationData?.from_time) return existingReservationData.from_time;
     try {
       const now = new Date();
       return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -469,6 +708,7 @@ const CreateReservationModal = ({
     }
   });
   const [toTime, setToTime] = useState(() => {
+    if (existingReservationData?.to_time) return existingReservationData.to_time;
     try {
       const now = new Date();
       const end = new Date(now.getTime() + 60 * 60000);
@@ -482,21 +722,23 @@ const CreateReservationModal = ({
 
   const [menuItems, setMenuItems] = useState([]);
   const [menuCategories, setMenuCategories] = useState([]);
-  const [selectedMenuItems, setSelectedMenuItems] = useState([]);
+  const [selectedMenuItems, setSelectedMenuItems] = useState(
+    existingReservationData?.selected_menu_items || []
+  );
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [showMenuSelector, setShowMenuSelector] = useState(false);
 
   const [formData, setFormData] = useState({
-    customer_first_name:     '',
-    customer_last_name:      '',
-    customer_email:          '',
-    customer_phone:          '',
-    special_requests:        '',
-    internal_notes:          '',
-    ServiceType_Reservation: 'dine-in',
-    status:                  'confirmed',
-    meal_status:             '',
-    reservation_date:        selectedDate ? new Date(selectedDate) : new Date(),
+    customer_first_name:     existingReservationData?.customer_name?.split(' ')[0] || '',
+    customer_last_name:      existingReservationData?.customer_name?.split(' ').slice(1).join(' ') || '',
+    customer_email:          existingReservationData?.customer_email || '',
+    customer_phone:          existingReservationData?.customer_phone || '',
+    special_requests:        existingReservationData?.special_requests || '',
+    internal_notes:          existingReservationData?.internal_notes || '',
+    ServiceType_Reservation: existingReservationData?.ServiceType_Reservation || 'dine-in',
+    status:                  existingReservationData?.status || 'confirmed',
+    meal_status:             existingReservationData?.meal_status || '',
+    reservation_date:        existingReservationData?.reservation_date?.toDate?.() || selectedDate || new Date(),
   });
 
   const db = firestore;
@@ -505,6 +747,108 @@ const CreateReservationModal = ({
     setToast(message);
     setTimeout(() => { setToast(null); onClose(); }, 1800);
   };
+
+  // ─── Check table availability ──────────────────────────────────────────────
+  const checkTableAvailabilityForSlots = useCallback(async (tableIds, date, time, dur) => {
+    if (!tableIds || tableIds.length === 0 || !date || !time || !dur) {
+      setTableAvailability(null);
+      return;
+    }
+
+    const checkDate = date || selectedDate || new Date();
+    const checkTime = time || fromTime;
+    const checkDuration = dur || getEffectiveDuration(guests);
+
+    setCheckingAvailability(true);
+    setTableAvailability(null);
+
+    try {
+      const col = selectedRestaurant?._collection || 'restaurants';
+      const restaurantId = selectedRestaurant?.id;
+
+      const result = await checkMultipleTablesAvailability(
+        tableIds,
+        checkDate,
+        checkTime,
+        checkDuration,
+        restaurantId,
+        col,
+        excludeReservationId
+      );
+
+      setTableAvailability({
+        available: result.available,
+        conflicts: result.conflicts,
+        tableIds: tableIds
+      });
+    } catch (error) {
+      console.error('Error checking table availability:', error);
+      setTableAvailability({ available: true, error: error.message });
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }, [selectedDate, fromTime, guests, selectedRestaurant, excludeReservationId]);
+
+  // ─── Check all slots for availability ──────────────────────────────────────
+  const checkAllSlotsAvailability = useCallback(async (tableIds) => {
+    if (!tableIds || tableIds.length === 0 || !selectedDate) {
+      setUnavailableSlots([]);
+      return;
+    }
+
+    const col = selectedRestaurant?._collection || 'restaurants';
+    const restaurantId = selectedRestaurant?.id;
+    const duration = getEffectiveDuration(guests);
+    const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const daySettings = settings?.dayIntervals?.[dayName];
+    const interval = daySettings?.interval || settings?.timeSlotInterval || 30;
+    const matchingHours = selectedRestaurant?.customHours?.find(slot =>
+      slot.days?.some(d => d.name === dayName && !d.closed)
+    );
+    const ch = selectedRestaurant?.customHours?.[0];
+    const dayOpenTime = matchingHours?.openTime || ch?.openTime || '10:00';
+    const dayCloseTime = matchingHours?.closeTime || ch?.closeTime || '22:00';
+
+    if (!dayOpenTime || !dayCloseTime) return;
+
+    const [oH, oM] = dayOpenTime.split(':').map(Number);
+    const [cH, cM] = dayCloseTime.split(':').map(Number);
+    const oMin = oH * 60 + oM;
+    let cMin = cH * 60 + cM;
+    if (cMin <= oMin) cMin += 24 * 60;
+
+    const blocked = settings?.blockedTimeSlots?.[dayName] || [];
+    const slots = [];
+    for (let m = oMin; m < cMin; m += interval) {
+      const actualMin = m % (24 * 60);
+      const h = Math.floor(actualMin / 60);
+      const min = actualMin % 60;
+      const startTime = `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+      if (blocked.includes(startTime)) continue;
+      slots.push(startTime);
+    }
+
+    // Check each slot for each table
+    const unavailable = [];
+    for (const tableId of tableIds) {
+      for (const slot of slots) {
+        const result = await checkTableAvailability(
+          tableId,
+          selectedDate,
+          slot,
+          duration,
+          restaurantId,
+          col,
+          excludeReservationId
+        );
+        if (!result.available) {
+          unavailable.push(slot);
+        }
+      }
+    }
+
+    setUnavailableSlots(unavailable);
+  }, [selectedDate, guests, settings, selectedRestaurant, excludeReservationId]);
 
   useEffect(() => {
     if (!selectedRestaurant?.id) return;
@@ -518,7 +862,16 @@ const CreateReservationModal = ({
         const loadedTables = tabSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setTables(sortTables(loadedTables));
         setCombinations(comboSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        if (preSelectedTableId) setSelectedTableIds([preSelectedTableId]);
+        if (preSelectedTableId && !existingReservationData) {
+          setSelectedTableIds([preSelectedTableId]);
+          if (selectedDate && fromTime) {
+            const duration = getEffectiveDuration(guests);
+            checkTableAvailabilityForSlots([preSelectedTableId], selectedDate, fromTime, duration);
+          }
+        }
+        if (existingReservationData?.table_ids && existingReservationData.table_ids.length > 0) {
+          setSelectedTableIds(existingReservationData.table_ids);
+        }
       } catch(e) { console.error(e); }
     };
     fetchAll();
@@ -562,6 +915,23 @@ const CreateReservationModal = ({
     };
     load();
   }, [selectedRestaurant?.id]);
+
+  // Check availability when time changes
+  useEffect(() => {
+    if (selectedTableIds.length > 0 && selectedDate && fromTime) {
+      const duration = getEffectiveDuration(guests);
+      checkTableAvailabilityForSlots(selectedTableIds, selectedDate, fromTime, duration);
+    }
+  }, [selectedTableIds, selectedDate, fromTime, guests]);
+
+  // Check all slots when table selection changes
+  useEffect(() => {
+    if (selectedTableIds.length > 0 && selectedDate) {
+      checkAllSlotsAvailability(selectedTableIds);
+    } else {
+      setUnavailableSlots([]);
+    }
+  }, [selectedTableIds, selectedDate]);
 
   useEffect(() => {
     if (isTimeManuallyChanged) return;
@@ -638,6 +1008,17 @@ const CreateReservationModal = ({
     return { openTime: open, closeTime: close, maxGuests: maxFromSettings };
   })();
 
+  const getEffectiveDuration = (guestCount) => {
+    const def = settings?.defaultReservationDuration || 120;
+    if (!settings?.useGuestBasedDuration || !settings?.guestDurationRules?.length) return def;
+    const match = settings.guestDurationRules.find(
+      r => guestCount >= (r.minGuests || 1) && guestCount <= (r.maxGuests || 99)
+    );
+    return match ? match.duration : def;
+  };
+
+  const duration = getEffectiveDuration(guests);
+
   const addMinutes = (t, mins) => {
     const [h, m] = t.split(':').map(Number);
     const total = h * 60 + m + mins;
@@ -659,16 +1040,6 @@ const CreateReservationModal = ({
     const dayCloseTime = matchingHours?.closeTime || ch?.closeTime || closeTime || '22:00';
 
     if (!dayOpenTime || !dayCloseTime) return [];
-    
-    const getEffectiveDurationForSlot = (guestCount) => {
-      const def = settings?.defaultReservationDuration || 120;
-      if (!settings?.useGuestBasedDuration || !settings?.guestDurationRules?.length) return def;
-      const match = settings.guestDurationRules.find(
-        r => guestCount >= (r.minGuests || 1) && guestCount <= (r.maxGuests || 99)
-      );
-      return match ? match.duration : def;
-    };
-    const duration = getEffectiveDurationForSlot(guests);
 
     const [oH, oM] = dayOpenTime.split(':').map(Number);
     const [cH, cM] = dayCloseTime.split(':').map(Number);
@@ -714,9 +1085,11 @@ const CreateReservationModal = ({
         slotDateTime.setHours(s.startH, s.startMin, 0, 0);
         if (slotDateTime <= now) return false;
       }
+      // Check if slot is unavailable
+      if (unavailableSlots.includes(s.startTime)) return false;
       return true;
     });
-  }, [openTime, closeTime, formData.reservation_date, settings, guests, selectedRestaurant]);
+  }, [openTime, closeTime, formData.reservation_date, settings, duration, unavailableSlots, selectedRestaurant]);
 
   const combinedCapacity = tables.filter(t => selectedTableIds.includes(t.id)).reduce((s,t) => s+(t.maxCapacity||0), 0);
   const capacityOk = selectedTableIds.length > 0 && combinedCapacity >= guests;
@@ -782,6 +1155,33 @@ const CreateReservationModal = ({
     if (!isWalkIn && !formData.customer_first_name?.trim()) { setError('First name is required'); return; }
     if (isQuickBook && !selectedSlot) { setError('Please select a time slot'); return; }
     if (settings?.requireTableAssignment && selectedTableIds.length===0) { setTableError('Please assign at least one table.'); return; }
+
+    // ─── Final availability check before saving ──────────────────────────────
+    if (selectedTableIds.length > 0) {
+      const checkDate = getReservationDate();
+      const checkTime = selectedSlot ? `${String(selectedSlot.startH).padStart(2,'0')}:${String(selectedSlot.startMin).padStart(2,'0')}` : fromTime;
+      const checkDuration = duration;
+
+      const result = await checkMultipleTablesAvailability(
+        selectedTableIds,
+        checkDate,
+        checkTime,
+        checkDuration,
+        selectedRestaurant?.id,
+        selectedRestaurant?._collection || 'restaurants',
+        excludeReservationId
+      );
+
+      if (!result.available) {
+        const conflictMessages = result.conflicts.map(c => {
+          const tableName = tables.find(t => t.id === c.tableId)?.name || c.tableId;
+          return `Table "${tableName}" is already booked for this time slot (${c.conflict?.name || 'another reservation'})`;
+        });
+        setTableError(conflictMessages.join('; '));
+        return;
+      }
+    }
+
     try {
       setSaving(true);
       let emailSettings = null;
@@ -790,30 +1190,24 @@ const CreateReservationModal = ({
         const settingsSnap = await getDoc(doc(db, col, selectedRestaurant.id, 'reservationSettings', 'config'));
         if (settingsSnap.exists()) emailSettings = settingsSnap.data();
       } catch (e) { /* settings optional */ }
+
       if (settings?.requireTableAssignment) {
         const cap = selectedCombination ? selectedCombination.maxCapacity
           : tables.filter(t=>selectedTableIds.includes(t.id)).reduce((s,t)=>s+(t.maxCapacity||0),0);
         if (cap < guests) { setTableError(`Table capacity (${cap}) cannot fit ${guests} guests`); setSaving(false); return; }
       }
       
-      // Safely get current user
       let currentUser = null;
       try {
         currentUser = auth.currentUser;
-      } catch (e) {
-        // Auth not initialized
-      }
+      } catch (e) {}
       
       if (!currentUser) {
-        // For calendar clicks, we might not have auth initialized yet
-        // Try to get user from session or use a fallback
         try {
           const { getAuth } = await import('firebase/auth');
           const authInstance = getAuth();
           currentUser = authInstance.currentUser;
-        } catch (e) {
-          // Still no auth
-        }
+        } catch (e) {}
       }
       
       if (!currentUser) throw new Error('Not authenticated. Please refresh and try again.');
@@ -832,16 +1226,8 @@ const CreateReservationModal = ({
       const reservationDate = getReservationDate();
       const primaryTableId  = selectedTableIds[0];
       const primaryTable    = tables.find(t=>t.id===primaryTableId);
-      const getEffectiveDuration = (guestCount) => {
-        const def = settings?.defaultReservationDuration || 75;
-        if (!settings?.useGuestBasedDuration || !settings?.guestDurationRules?.length) return def;
-        const match = settings.guestDurationRules.find(
-          r => guestCount >= (r.minGuests || 1) && guestCount <= (r.maxGuests || 99)
-        );
-        return match ? match.duration : def;
-      };
       
-      const duration = (() => {
+      const finalDuration = (() => {
         if (isQuickBook) return getEffectiveDuration(guests);
         if (isWalkIn) {
           const [fh, fm] = fromTime.split(':').map(Number);
@@ -891,17 +1277,17 @@ const CreateReservationModal = ({
           ? `${String(selectedSlot.startH).padStart(2,'0')}:${String(selectedSlot.startMin).padStart(2,'0')}`
           : fromTime,
         to_time: (() => {
-            if (untilClose) return closeTime;
-            if ((isQuickBook || (modalMode === 'full' && showTimeSlots)) && selectedSlot) {
-              const slotDur = getEffectiveDuration(guests);
-              const totalMins = selectedSlot.startH * 60 + selectedSlot.startMin + slotDur;
-              const h = Math.floor(totalMins / 60) % 24;
-              const m = totalMins % 60;
-              return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-            }
-            return toTime;
-          })(),
-        duration_minutes:  duration,
+          if (untilClose) return closeTime;
+          if ((isQuickBook || (modalMode === 'full' && showTimeSlots)) && selectedSlot) {
+            const slotDur = getEffectiveDuration(guests);
+            const totalMins = selectedSlot.startH * 60 + selectedSlot.startMin + slotDur;
+            const h = Math.floor(totalMins / 60) % 24;
+            const m = totalMins % 60;
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+          }
+          return toTime;
+        })(),
+        duration_minutes:  finalDuration,
         ...(selectedCombination ? {
           combination_id: selectedCombination.id, combination_name: selectedCombination.name,
           table_ids: selectedCombination.tableIds, table_names: selectedCombination.tableNames,
@@ -920,7 +1306,7 @@ const CreateReservationModal = ({
         updateDoc(doc(db,colName,selectedRestaurant.id,'tables',tid),{
           current_status:'reserved', reserved_by:reservationData.customer_name,
           reserved_date:reservationDate, reserved_guests:guests,
-          reserved_duration_minutes:duration, reserved_source:isWalkIn?'walkin':'dashboard',
+          reserved_duration_minutes:finalDuration, reserved_source:isWalkIn?'walkin':'dashboard',
           updated_at:serverTimestamp(),
         }).catch(e=>console.warn('Table update failed:',tid,e))
       ));
@@ -995,94 +1381,73 @@ const CreateReservationModal = ({
   const modeLabel = isWalkIn ? ' Walk-in' : isQuickBook ? ' Quick Book' : ' Create Reservation';
 
   const ManualTimePicker = (
-  <>
-    <div className="grid grid-cols-2 gap-2 sm:gap-3">
-      <div className="bg-gray-50 border-2 border-gray-100 rounded-xl px-2 sm:px-4 py-1.5 sm:py-3 focus-within:border-[#fe8a24] transition-colors">
-        <p className="text-[8px] sm:text-[10px] text-gray-400 font-semibold uppercase mb-0.5 sm:mb-1">From</p>
-        <input
-          type="time"
-          value={fromTime}
-          onChange={e => {
-            const val = e.target.value;
-            setIsTimeManuallyChanged(true);
-            setFromTime(val);
-            
-            if (val && !untilClose) {
-              const [h, m] = val.split(':').map(Number);
-              let endMins = h * 60 + m + sittingTime;
-              if (endMins >= 24 * 60) {
-                endMins = endMins - 24 * 60;
-              }
-              const endH = Math.floor(endMins / 60);
-              const endM = endMins % 60;
-              const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
-              setToTime(endStr);
-            }
-            
-            if (modalMode === 'full' && val) {
-              const [h, m] = val.split(':').map(Number);
-              const nd = new Date(formData.reservation_date || new Date());
-              nd.setHours(h, m, 0, 0);
-              setFormData(p => ({ ...p, reservation_date: nd }));
-            }
-          }}
-          step="1800"
-          className="text-xs sm:text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent"
-        />
-      </div>
-      <div className={`bg-gray-50 border-2 rounded-xl px-2 sm:px-4 py-1.5 sm:py-3 transition-colors ${untilClose ? 'opacity-50 border-gray-100' : 'border-gray-100 focus-within:border-[#fe8a24]'}`}>
-        <p className="text-[8px] sm:text-[10px] text-gray-400 font-semibold uppercase mb-0.5 sm:mb-1">To</p>
-        <input
-          type="time"
-          value={untilClose ? closeTime : toTime}
-          disabled={untilClose}
-          onChange={e => {
-            const val = e.target.value;
-            if (val) {
+    <>
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <div className="bg-gray-50 border-2 border-gray-100 rounded-xl px-2 sm:px-4 py-1.5 sm:py-3 focus-within:border-[#fe8a24] transition-colors">
+          <p className="text-[8px] sm:text-[10px] text-gray-400 font-semibold uppercase mb-0.5 sm:mb-1">From</p>
+          <input
+            type="time"
+            value={fromTime}
+            onChange={e => {
+              const val = e.target.value;
               setIsTimeManuallyChanged(true);
-              setToTime(val);
-            }
-          }}
-          step="1800"
-          className="text-xs sm:text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent disabled:text-gray-400"
-        />
+              setFromTime(val);
+              
+              if (val && !untilClose) {
+                const [h, m] = val.split(':').map(Number);
+                let endMins = h * 60 + m + sittingTime;
+                if (endMins >= 24 * 60) {
+                  endMins = endMins - 24 * 60;
+                }
+                const endH = Math.floor(endMins / 60);
+                const endM = endMins % 60;
+                const endStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+                setToTime(endStr);
+              }
+              
+              if (modalMode === 'full' && val) {
+                const [h, m] = val.split(':').map(Number);
+                const nd = new Date(formData.reservation_date || new Date());
+                nd.setHours(h, m, 0, 0);
+                setFormData(p => ({ ...p, reservation_date: nd }));
+              }
+            }}
+            step="1800"
+            className="text-xs sm:text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent"
+          />
+        </div>
+        <div className={`bg-gray-50 border-2 rounded-xl px-2 sm:px-4 py-1.5 sm:py-3 transition-colors ${untilClose ? 'opacity-50 border-gray-100' : 'border-gray-100 focus-within:border-[#fe8a24]'}`}>
+          <p className="text-[8px] sm:text-[10px] text-gray-400 font-semibold uppercase mb-0.5 sm:mb-1">To</p>
+          <input
+            type="time"
+            value={untilClose ? closeTime : toTime}
+            disabled={untilClose}
+            onChange={e => {
+              const val = e.target.value;
+              if (val) {
+                setIsTimeManuallyChanged(true);
+                setToTime(val);
+              }
+            }}
+            step="1800"
+            className="text-xs sm:text-sm font-bold text-gray-800 focus:outline-none w-full bg-transparent disabled:text-gray-400"
+          />
+        </div>
       </div>
-    </div>
-    
-    <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
-      <button
-        type="button"
-        onClick={() => {
-          setIsTimeManuallyChanged(true);
-          const now = new Date();
-          const mins = now.getMinutes();
-          const roundedMins = Math.ceil(mins / 30) * 30;
-          now.setMinutes(roundedMins, 0, 0);
-          const time = now.toTimeString().slice(0, 5);
-          setFromTime(time);
-          if (!untilClose) {
-            const [fh, fm] = time.split(':').map(Number);
-            let endMins = fh * 60 + fm + sittingTime;
-            if (endMins >= 24 * 60) {
-              endMins = endMins - 24 * 60;
-            }
-            const endH = Math.floor(endMins / 60);
-            const endM = endMins % 60;
-            setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
-          }
-        }}
-        className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
-      >
-        Now
-      </button>
-      {openTime && (
+      
+      <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5 sm:mt-2">
         <button
           type="button"
           onClick={() => {
             setIsTimeManuallyChanged(true);
-            setFromTime(openTime);
+            const now = new Date();
+            const mins = now.getMinutes();
+            const roundedMins = Math.ceil(mins / 30) * 30;
+            now.setMinutes(roundedMins, 0, 0);
+            const time = now.toTimeString().slice(0, 5);
+            setFromTime(time);
             if (!untilClose) {
-              const [fh, fm] = openTime.split(':').map(Number);
+              const [fh, fm] = time.split(':').map(Number);
               let endMins = fh * 60 + fm + sittingTime;
               if (endMins >= 24 * 60) {
                 endMins = endMins - 24 * 60;
@@ -1094,75 +1459,96 @@ const CreateReservationModal = ({
           }}
           className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
         >
-          Open ({openTime})
+          Now
         </button>
-      )}
-    </div>
-    
-    <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1">
-      {[30, 45, 60, 75, 90, 120].map(duration => (
-        <button
-          key={duration}
-          type="button"
-          onClick={() => {
-            if (fromTime && !untilClose) {
+        {openTime && (
+          <button
+            type="button"
+            onClick={() => {
               setIsTimeManuallyChanged(true);
-              const [fh, fm] = fromTime.split(':').map(Number);
-              let endMins = fh * 60 + fm + duration;
-              if (endMins >= 24 * 60) {
-                endMins = endMins - 24 * 60;
+              setFromTime(openTime);
+              if (!untilClose) {
+                const [fh, fm] = openTime.split(':').map(Number);
+                let endMins = fh * 60 + fm + sittingTime;
+                if (endMins >= 24 * 60) {
+                  endMins = endMins - 24 * 60;
+                }
+                const endH = Math.floor(endMins / 60);
+                const endM = endMins % 60;
+                setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
               }
-              const endH = Math.floor(endMins / 60);
-              const endM = endMins % 60;
-              setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
+            }}
+            className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+          >
+            Open ({openTime})
+          </button>
+        )}
+      </div>
+      
+      <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1">
+        {[30, 45, 60, 75, 90, 120].map(duration => (
+          <button
+            key={duration}
+            type="button"
+            onClick={() => {
+              if (fromTime && !untilClose) {
+                setIsTimeManuallyChanged(true);
+                const [fh, fm] = fromTime.split(':').map(Number);
+                let endMins = fh * 60 + fm + duration;
+                if (endMins >= 24 * 60) {
+                  endMins = endMins - 24 * 60;
+                }
+                const endH = Math.floor(endMins / 60);
+                const endM = endMins % 60;
+                setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
+              }
+            }}
+            className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
+          >
+            {duration}m
+          </button>
+        ))}
+      </div>
+      
+      <label className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 cursor-pointer">
+        <input type="checkbox" checked={untilClose}
+          onChange={e => { 
+            setUntilClose(e.target.checked); 
+            if (e.target.checked) {
+              setToTime(closeTime);
+            } else {
+              if (fromTime) {
+                const [fh, fm] = fromTime.split(':').map(Number);
+                let endMins = fh * 60 + fm + sittingTime;
+                if (endMins >= 24 * 60) {
+                  endMins = endMins - 24 * 60;
+                }
+                const endH = Math.floor(endMins / 60);
+                const endM = endMins % 60;
+                setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
+              }
             }
           }}
-          className="px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-600"
-        >
-          {duration}m
-        </button>
-      ))}
-    </div>
-    
-    <label className="flex items-center gap-1.5 sm:gap-2 mt-1.5 sm:mt-2 cursor-pointer">
-      <input type="checkbox" checked={untilClose}
-        onChange={e => { 
-          setUntilClose(e.target.checked); 
-          if (e.target.checked) {
-            setToTime(closeTime);
-          } else {
-            if (fromTime) {
-              const [fh, fm] = fromTime.split(':').map(Number);
-              let endMins = fh * 60 + fm + sittingTime;
-              if (endMins >= 24 * 60) {
-                endMins = endMins - 24 * 60;
-              }
-              const endH = Math.floor(endMins / 60);
-              const endM = endMins % 60;
-              setToTime(`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`);
-            }
-          }
-        }}
-        className="w-3.5 h-3.5 sm:w-4 sm:h-4 accent-[#fe8a24]" />
-      <span className="text-[10px] sm:text-sm text-gray-500">Until close <span className="text-gray-300">({closeTime})</span></span>
-    </label>
-    
-    <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm bg-blue-50 border border-blue-200 rounded-xl px-2 sm:px-4 py-1.5 sm:py-2.5">
-      <span className="font-semibold text-blue-700">Selected:</span>
-      <span className="font-mono font-bold text-gray-800">{fromTime || '--:--'}</span>
-      <span className="text-gray-400">→</span>
-      <span className="font-mono font-bold text-gray-800">{untilClose ? closeTime : (toTime || '--:--')}</span>
-      {!untilClose && fromTime && toTime && (() => {
-        const [th, tm] = toTime.split(':').map(Number);
-        const [ffh, ffm] = fromTime.split(':').map(Number);
-        let dur = (th * 60 + tm) - (ffh * 60 + ffm);
-        if (dur < 0) dur += 24 * 60;
-        return dur > 0 ? <span className="text-[10px] sm:text-xs text-gray-400 ml-0.5 sm:ml-1">({dur} min)</span> : null;
-      })()}
-      {untilClose && <span className="text-[10px] sm:text-xs text-[#fe8a24] font-semibold ml-0.5 sm:ml-1">(until close)</span>}
-    </div>
-  </>
-);
+          className="w-3.5 h-3.5 sm:w-4 sm:h-4 accent-[#fe8a24]" />
+        <span className="text-[10px] sm:text-sm text-gray-500">Until close <span className="text-gray-300">({closeTime})</span></span>
+      </label>
+      
+      <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm bg-blue-50 border border-blue-200 rounded-xl px-2 sm:px-4 py-1.5 sm:py-2.5">
+        <span className="font-semibold text-blue-700">Selected:</span>
+        <span className="font-mono font-bold text-gray-800">{fromTime || '--:--'}</span>
+        <span className="text-gray-400">→</span>
+        <span className="font-mono font-bold text-gray-800">{untilClose ? closeTime : (toTime || '--:--')}</span>
+        {!untilClose && fromTime && toTime && (() => {
+          const [th, tm] = toTime.split(':').map(Number);
+          const [ffh, ffm] = fromTime.split(':').map(Number);
+          let dur = (th * 60 + tm) - (ffh * 60 + ffm);
+          if (dur < 0) dur += 24 * 60;
+          return dur > 0 ? <span className="text-[10px] sm:text-xs text-gray-400 ml-0.5 sm:ml-1">({dur} min)</span> : null;
+        })()}
+        {untilClose && <span className="text-[10px] sm:text-xs text-[#fe8a24] font-semibold ml-0.5 sm:ml-1">(until close)</span>}
+      </div>
+    </>
+  );
 
   const sessionButtons = (
     <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
@@ -1184,10 +1570,17 @@ const CreateReservationModal = ({
     tables, combinations, selectedTableIds, selectedCombination,
     setSelectedTableIds, setSelectedCombination, setTableError,
     tableError, guests, combinedCapacity, capacityOk, preSelectedTableId,
+    tableAvailability, checkingAvailability, checkTableAvailabilityForSlots,
+    selectedDate, fromTime, duration, excludeReservationId,
   };
 
   const timeSlotProps = {
     loadingSettings, timeSlots, selectedSlot, setSelectedSlot, openTime, closeTime,
+    unavailableSlots, tableAvailability,
+  };
+
+  const guestPickerProps = {
+    guests, setGuests, maxGuests, showCustomGuests, setShowCustomGuests, customGuests, setCustomGuests,
   };
 
   return (
@@ -1197,24 +1590,25 @@ const CreateReservationModal = ({
           ✅ {toast}
         </div>
       )}
-     <div
-      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      onClick={e => {
-        // Don't close if a native picker (date/time) is active
-        if (document.activeElement?.type === 'date' || document.activeElement?.type === 'time') {
-          document.activeElement.blur();
-          return;
-        }
-        onClose();
-      }}
-    />
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={e => {
+          if (document.activeElement?.type === 'date' || document.activeElement?.type === 'time') {
+            document.activeElement.blur();
+            return;
+          }
+          onClose();
+        }}
+      />
 
       <div className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[92vh] flex flex-col ${modalMode==='full' ? 'max-w-4xl' : 'max-w-lg'}`}>
 
         {/* Header */}
         <div className={`bg-gradient-to-r ${headerBg} px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 flex-shrink-0`}>
           <div className="min-w-0">
-            <p className="text-white font-bold text-sm sm:text-base">{modeLabel}</p>
+            <p className="text-white font-bold text-sm sm:text-base">
+              {existingReservationData ? 'Edit Booking' : modeLabel}
+            </p>
             {isWalkIn && <p className="text-white/60 text-[10px] sm:text-xs mt-0.5 truncate">{walkInLabel}</p>}
             {preSelectedTableName && <p className="text-white/70 text-[10px] sm:text-xs mt-0.5">🪑 Table {preSelectedTableName} pre-selected</p>}
             {selectedRestaurant?.customHours?.[0] && <p className="text-white/50 text-[10px] sm:text-xs mt-0.5 hidden sm:block">Hours: {openTime} – {closeTime}</p>}
@@ -1248,30 +1642,7 @@ const CreateReservationModal = ({
               {/* 1. Guests */}
               <div>
                 <p className={labelCls}><FiUsers className="inline w-3 h-3 mr-1"/>Guests</p>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {[1,2,3,4,5,6,7,8,9,10].map(g => (
-                    <button key={g} type="button" onClick={() => setGuests(g)}
-                      className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                        guests === g
-                          ? 'bg-[#fe8a24] text-white shadow-md scale-105'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}>
-                      {g}
-                    </button>
-                  ))}
-                  <button type="button"
-                    onClick={() => setShowCustomGuests(s => !s)}
-                    className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                      showCustomGuests ? 'bg-[#fe8a24] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}>
-                    +
-                  </button>
-                </div>
-                {showCustomGuests && (
-                  <input type="number" min="1" max={maxGuests} value={customGuests} autoFocus
-                    onChange={e => { setCustomGuests(e.target.value); setGuests(parseInt(e.target.value) || 1); }}
-                    className={inputCls + ' mt-2'} placeholder="Custom guest count" />
-                )}
+                <GuestPicker {...guestPickerProps} />
               </div>
 
               {/* 2. Sitting Time */}
@@ -1402,65 +1773,57 @@ const CreateReservationModal = ({
             </div>
           )}
 
-            {/* ══ QUICK BOOK STEP 1 ══ */}
-            {isQuickBook && step === 1 && (
-              <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
+          {/* ══ QUICK BOOK STEP 1 ══ */}
+          {isQuickBook && step === 1 && (
+            <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
 
-                <GuestPicker
-                  guests={guests}
-                  setGuests={setGuests}
-                  maxGuests={maxGuests}
-                  showCustomGuests={showCustomGuests}
-                  setShowCustomGuests={setShowCustomGuests}
-                  customGuests={customGuests}
-                  setCustomGuests={setCustomGuests}
-                />
+              <GuestPicker {...guestPickerProps} />
 
-                <TimeSlotGrid {...timeSlotProps} />
+              <TimeSlotGrid {...timeSlotProps} />
 
-                <TableSelector {...tableSelectorProps} />
+              <TableSelector {...tableSelectorProps} />
 
-                {menuItems.length > 0 && (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => setShowMenuSelector(!showMenuSelector)}
-                      className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
-                    >
-                      {showMenuSelector
-                        ? <FiChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
-                        : <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />}
-                      {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
-                      {selectedMenuItems.length > 0 && (
-                        <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
-                          {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
-                        </span>
-                      )}
-                    </button>
-                    {showMenuSelector && (
-                      <div className="mt-2 sm:mt-3">
-                        {loadingMenu ? (
-                          <div className="flex items-center justify-center py-6 sm:py-8">
-                            <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
-                          </div>
-                        ) : (
-                          <MenuItemSelector
-                            menuItems={menuItems}
-                            selectedItems={selectedMenuItems}
-                            guests={guests}
-                            onAddItem={handleAddMenuItem}
-                            onRemoveItem={handleRemoveMenuItem}
-                            onUpdateQuantity={handleUpdateMenuItemQuantity}
-                            getCategoryName={getCategoryName}
-                          />
-                        )}
-                      </div>
+              {menuItems.length > 0 && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMenuSelector(!showMenuSelector)}
+                    className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                  >
+                    {showMenuSelector
+                      ? <FiChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                      : <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />}
+                    {showMenuSelector ? 'Hide Party Menu' : '🍽️ Party Menu'}
+                    {selectedMenuItems.length > 0 && (
+                      <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
+                        {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
+                      </span>
                     )}
-                  </div>
-                )}
+                  </button>
+                  {showMenuSelector && (
+                    <div className="mt-2 sm:mt-3">
+                      {loadingMenu ? (
+                        <div className="flex items-center justify-center py-6 sm:py-8">
+                          <div className="w-5 h-5 sm:w-6 sm:h-6 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <MenuItemSelector
+                          menuItems={menuItems}
+                          selectedItems={selectedMenuItems}
+                          guests={guests}
+                          onAddItem={handleAddMenuItem}
+                          onRemoveItem={handleRemoveMenuItem}
+                          onUpdateQuantity={handleUpdateMenuItemQuantity}
+                          getCategoryName={getCategoryName}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-              </div>
-            )}
+            </div>
+          )}
 
           {/* ══ QUICK BOOK STEP 2 ══ */}
           {isQuickBook && step===2 && (
@@ -1811,13 +2174,18 @@ const CreateReservationModal = ({
         <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2 sm:gap-0 flex-shrink-0">
           <div className="text-[10px] sm:text-xs text-gray-400 flex flex-wrap items-center gap-1.5 sm:gap-3">
             {selectedTableIds.length > 0 && (
-              <span className="text-[#fe8a24] font-semibold">
+              <span className="text-[#fe8a24] font-semibold flex items-center gap-1">
                 🪑 {sortTables(tables.filter(t=>selectedTableIds.includes(t.id))).map(t=>t.name).join(' + ')}
               </span>
             )}
             {selectedMenuItems.length > 0 && (
-              <span className="text-green-600 font-semibold">
+              <span className="text-green-600 font-semibold flex items-center gap-1">
                 🍽️ {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} menu items
+              </span>
+            )}
+            {tableAvailability && tableAvailability.available === false && (
+              <span className="text-amber-500 font-medium flex items-center gap-1">
+                <FiAlertCircle className="w-3 h-3" /> Some tables unavailable
               </span>
             )}
           </div>
@@ -1833,25 +2201,45 @@ const CreateReservationModal = ({
               Cancel
             </button>
             {(isWalkIn || modalMode==='full') ? (
-              <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm disabled:opacity-50">
+              <button 
+                onClick={handleSave} 
+                disabled={saving || (tableAvailability && tableAvailability.available === false)}
+                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm ${
+                  saving || (tableAvailability && tableAvailability.available === false)
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#fe8a24] hover:bg-[#ff9d47] text-white'
+                }`}
+              >
                 <FiSave className="w-3 h-3 sm:w-4 sm:h-4"/>
-                {saving ? 'Saving…' : isWalkIn ? 'Save Walk-in' : 'Create Reservation'}
+                {saving ? 'Saving…' : isWalkIn ? 'Save Walk-in' : (existingReservationData ? 'Update Reservation' : 'Create Reservation')}
               </button>
             ) : isQuickBook && step===1 ? (
               <button
                 onClick={()=>{
                   if(!selectedSlot){setError('Please select a time slot');return;}
                   if(selectedTableIds.length===0){setTableError('Please assign a table first.');return;}
+                  if(tableAvailability && tableAvailability.available === false){setTableError('Selected table is not available for this time slot.');return;}
                   setError('');setTableError('');setStep(2);
                 }}
-                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm"
-                style={{backgroundColor:selectedSlot&&selectedTableIds.length>0?'#fe8a24':'#e5e7eb',color:selectedSlot&&selectedTableIds.length>0?'white':'#9ca3af'}}>
+                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm ${
+                  selectedSlot && selectedTableIds.length > 0 && tableAvailability?.available !== false
+                    ? 'bg-[#fe8a24] text-white hover:bg-[#ff9d47]'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
+                disabled={!selectedSlot || selectedTableIds.length === 0 || tableAvailability?.available === false}
+              >
                 Next <FiChevronRight className="w-3 h-3 sm:w-4 sm:h-4"/>
               </button>
             ) : (
-              <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm disabled:opacity-50">
+              <button 
+                onClick={handleSave} 
+                disabled={saving || (tableAvailability && tableAvailability.available === false)}
+                className={`flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-bold transition-all shadow-sm ${
+                  saving || (tableAvailability && tableAvailability.available === false)
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#fe8a24] hover:bg-[#ff9d47] text-white'
+                }`}
+              >
                 <FiCheck className="w-3 h-3 sm:w-4 sm:h-4"/>
                 {saving ? 'Confirming…' : 'Confirm Booking'}
               </button>

@@ -1120,7 +1120,7 @@ const CalendarView = ({
             </span>
             {width > 50 && (
               <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-medium truncate`} style={{ color: styles.text }}>
-                {isMobile ? r.customer_name?.split(' ')[0] || 'Guest' : `${r.customer_name?.split(' ').slice(-1)[0] || 'Guest'} (${r.number_of_guests})`}
+               {isMobile ? r.customer_name || 'Guest' : `${r.customer_name || 'Guest'} (${r.number_of_guests})`}
               </span>
             )}
             {width > 100 && isMultiTable && (
@@ -1655,12 +1655,12 @@ const CalendarView = ({
                                   )}
                                   {!showCompact && (
                                     <span className={`text-[10px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
-                                      {isMobile ? r.customer_name?.split(' ')[0] || 'Guest' : r.customer_name || 'Guest'}
+                                     {r.customer_name || 'Guest'}
                                     </span>
                                   )}
                                   {showCompact && (
                                     <span className={`text-[8px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
-                                      {r.customer_name?.split(' ')[0] || 'Guest'}
+                                      {r.customer_name || 'Guest'}
                                     </span>
                                   )}
                                 </div>
@@ -1819,7 +1819,7 @@ const CalendarView = ({
                                 {`${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
                               </span>
                               {!isMobile && (
-                                <span className={`ml-0.5 md:ml-1 truncate ${isDarkMode ? 'text-gray-300' : ''}`}>· {r.customer_name?.split(' ')[0] || 'Guest'}</span>
+                                <span className={`ml-0.5 md:ml-1 truncate ${isDarkMode ? 'text-gray-300' : ''}`}>· {r.customer_name || 'Guest'}</span>
                               )}
                               <span className={`text-[6px] md:text-[10px] opacity-60 flex-shrink-0 ${isDarkMode ? 'text-gray-400' : ''}`}>({r.number_of_guests})</span>
                             </div>

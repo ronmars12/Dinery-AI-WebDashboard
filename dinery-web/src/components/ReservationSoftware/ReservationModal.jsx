@@ -556,14 +556,24 @@ const ReservationModal = ({ reservation, onClose }) => {
           <span className="truncate">{toast.message}</span>
         </div>
       )}
+      
+      {/* Backdrop with touch-friendly events */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
         onClick={onClose}
+        onTouchEnd={(e) => {
+          // Prevent accidental closing on touch
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
       />
       
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp max-h-[95vh] overflow-y-auto">
-        {/* Header - Responsive */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-3 sm:py-4">
+      {/* Modal Container - fixed height with proper scrolling */}
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-slideUp max-h-[95vh] flex flex-col">
+        
+        {/* Header - Sticky */}
+        <div className="flex-shrink-0 sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <h3 className="text-base sm:text-2xl font-bold truncate">
@@ -575,15 +585,20 @@ const ReservationModal = ({ reservation, onClose }) => {
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:bg-white/20 rounded-full p-1.5 sm:p-2 transition-colors flex-shrink-0"
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                onClose();
+              }}
+              className="text-white hover:bg-white/20 rounded-full p-1.5 sm:p-2 transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
             >
               <FiX className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
         </div>
 
-        {/* Content - Responsive padding */}
-        <div className="p-3 sm:p-6">
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+          {/* ... (keep all existing content inside here) ... */}
 
           {/* ── Pending Request Banner ── */}
           {(liveReservation.change_request || liveReservation.cancel_reason || liveReservation.modification_summary) && (
@@ -733,7 +748,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                         setApprovalStatus(null);
                       }
                     }}
-                    className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all disabled:opacity-50">
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all disabled:opacity-50 min-h-[44px] min-w-[60px]">
                     {approvalStatus === 'loading' ? '...' : '✓ Approve'}
                   </button>
                   <button
@@ -756,7 +771,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                         setApprovalStatus(null);
                       }
                     }}
-                    className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-all disabled:opacity-50">
+                    className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-all disabled:opacity-50 min-h-[44px] min-w-[60px]">
                     {approvalStatus === 'loading' ? '...' : '✗ Reject'}
                   </button>
                 </div>
@@ -868,7 +883,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                               );
                             }}
                             title={`${t.name} · Cap. ${cap}`}
-                            className={`relative rounded-lg px-0.5 sm:px-1 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 ${
+                            className={`relative rounded-lg px-0.5 sm:px-1 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 min-h-[44px] ${
                               isSelected
                                 ? 'bg-[#fe8a24] border-[#fe8a24] text-white shadow-md scale-105'
                                 : guestFit
@@ -897,7 +912,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                       <button
                         type="button"
                         onClick={() => setSelectedTableIds([])}
-                        className="ml-auto text-[9px] sm:text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                        className="ml-auto text-[9px] sm:text-[10px] text-gray-400 hover:text-red-500 transition-colors min-h-[32px] min-w-[32px]"
                       >
                         Clear all
                       </button>
@@ -1122,7 +1137,7 @@ const ReservationModal = ({ reservation, onClose }) => {
                   <button
                     type="button"
                     onClick={() => setShowMenuSelector(!showMenuSelector)}
-                    className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors"
+                    className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors min-h-[44px]"
                   >
                     {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
                     {showMenuSelector ? 'Hide Party Menu' : 'Edit Party Menu'}
@@ -1268,12 +1283,16 @@ const ReservationModal = ({ reservation, onClose }) => {
           </div>
         </div>
 
-        {/* Footer - Responsive */}
-        <div className="sticky bottom-0 bg-gray-50 px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+        {/* Footer - Sticky with touch-friendly buttons */}
+        <div className="flex-shrink-0 sticky bottom-0 bg-gray-50 px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
           <button
             onClick={handleDelete}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
             disabled={deleting}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm min-h-[48px] min-w-[80px]"
           >
             <FiTrash2 className="w-4 h-4 sm:w-5 sm:h-5" />
             {deleting ? 'Deleting...' : 'Delete'}
@@ -1282,14 +1301,22 @@ const ReservationModal = ({ reservation, onClose }) => {
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={onClose}
-              className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm"
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                onClose();
+              }}
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm min-h-[48px] min-w-[80px]"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                handleSave();
+              }}
               disabled={saving}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm min-h-[48px] min-w-[80px]"
             >
               <FiSave className="w-4 h-4 sm:w-5 sm:h-5" />
               {saving ? 'Saving...' : 'Save Changes'}
