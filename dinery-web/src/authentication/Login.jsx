@@ -58,37 +58,42 @@ export default function Login() {
         return;
       }
 
-      // ── 2. Not in users collection — check restaurants/*/staff ─────────────
-      const { collection, query, where, getDocs } = await import("firebase/firestore");
+        // ── 2. Not in users collection — search across all restaurants for staff ──
+        const { collection, query, where, getDocs, collectionGroup } = await import("firebase/firestore");
 
-      const restaurantsSnap = await getDocs(collection(firestore, "restaurants"));
-
-      for (const restaurantDoc of restaurantsSnap.docs) {
-        const staffSnap = await getDocs(
-          query(
-            collection(firestore, "restaurants", restaurantDoc.id, "staff"),
-            where("uid", "==", uid)
-          )
+        // Use collectionGroup to search ALL staff subcollections at once (much faster)
+        const staffQuery = query(
+          collectionGroup(firestore, "staff"),
+          where("uid", "==", uid)
         );
 
+        const staffSnap = await getDocs(staffQuery);
+
         if (!staffSnap.empty) {
-          const staffData = staffSnap.docs[0].data();
+          const staffDoc = staffSnap.docs[0];
+          const staffData = staffDoc.data();
           const role = (staffData.role || "staff").toLowerCase();
 
-          // Store restaurantId in session so the app knows which restaurant this staff belongs to
-          sessionStorage.setItem("staffRestaurantId", restaurantDoc.id);
+          // Get the restaurant doc ID from the staff doc path
+          // Path is: restaurants/{restaurantId}/staff/{staffDocId}
+          const restaurantId = staffDoc.ref.parent.parent.id;
+
+          console.log("✅ Staff found:", { uid, role, restaurantId });
+
+          // Set ALL required sessionStorage values
+          sessionStorage.setItem("staffRestaurantId", restaurantId);
           sessionStorage.setItem("staffRole", role);
+          sessionStorage.setItem("staffCollection", "restaurants");
+          sessionStorage.setItem("staffOwnerId", staffData.Owner_ID || "");
 
           if (role === "admin" || role === "manager") {
             navigate("/");
           } else {
-            navigate("/staff-dashboard"); // create this route or change to "/" if preferred
+            navigate("/timesheets"); // or wherever staff should go
           }
           return;
         }
-      }
-
-      // ── 3. No doc found anywhere ───────────────────────────────────────────
+              // ── 3. No doc found anywhere ───────────────────────────────────────────
       console.warn("No user doc found for uid:", uid);
       navigate("/");
 

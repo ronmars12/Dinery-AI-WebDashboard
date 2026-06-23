@@ -489,6 +489,7 @@ export default function ManageReservationPage() {
           const tableName = assignment.isCombination ? assignment.combination.name : assignment.table.name;
           await fn({
             to: reservation.customer_email,
+            isReservation: true, 
             subject: `Reservation Confirmed – ${reservation.restaurant_name}`,
             html: `
               <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
@@ -562,6 +563,7 @@ const handleCancelRequest = async () => {
         const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
         await fn({
           to: reservation.customer_email,
+          isReservation: true, 
           subject: `Reservation Cancelled – ${reservation.restaurant_name}`,
           html: `
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
@@ -1023,8 +1025,7 @@ const handleCancelRequest = async () => {
                       })()}
                     </div>
                   </div>
-
-                  {/* Conflicting reservations at this slot — same logic as PublicReservationPage availability engine */}
+                  {/* Slot busyness indicator — no customer details exposed */}
                   {(() => {
                     if (!selectedDate || !selectedTime || !slotAvail) return null;
                     const diningDur  = settings?.defaultReservationDuration || 120;
@@ -1033,39 +1034,21 @@ const handleCancelRequest = async () => {
                     const [sh, sm] = selectedTime.split(':').map(Number);
                     slotDt.setHours(sh, sm, 0, 0);
                     const slotEnd = new Date(slotDt.getTime() + (diningDur + cleanupDur) * 60000);
-                    const conflicts = allReservations.filter(res => {
+                    const conflictCount = allReservations.filter(res => {
                       if (res.id === reservationId) return false;
                       const rDate = res.reservation_date?.toDate?.() || new Date(res.reservation_date);
                       const rEnd  = new Date(rDate.getTime() + ((res.duration_minutes || diningDur) + cleanupDur) * 60000);
                       return rDate < slotEnd && rEnd > slotDt;
-                    });
-                    if (!conflicts.length) return null;
+                    }).length;
+                    if (!conflictCount) return null;
                     return (
                       <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-white/35 text-[10px] font-bold uppercase tracking-wider mb-2">
-                          Other bookings at this time ({conflicts.length})
-                        </p>
-                        <div className="space-y-1.5">
-                          {conflicts.map(res => {
-                            const bookedTables = Array.isArray(res.table_names) && res.table_names.length
-                              ? res.table_names.join(' + ')
-                              : res.table_name || '—';
-                            const rDate = res.reservation_date?.toDate?.() || new Date(res.reservation_date);
-                            return (
-                              <div key={res.id} className="flex items-center justify-between text-xs text-white/40">
-                                <span>🪑 {bookedTables}</span>
-                                <span>{rDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} · {res.number_of_guests} guests</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <p className="text-white/20 text-[10px] mt-2">
-                          Your table will be assigned from available tables only.
+                        <p className="text-white/40 text-xs">
+                          This time slot is popular — your table will be assigned from available tables only.
                         </p>
                       </div>
                     );
                   })()}
-
                   {guests !== reservation.number_of_guests && (
                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3">
                       <p className="text-blue-300 text-xs font-semibold">

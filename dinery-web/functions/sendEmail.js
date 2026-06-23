@@ -35,15 +35,9 @@ const sendEmail = onCall(
     const isReservationEmail = request.data?.isReservation === true || 
                                request.data?.subject?.includes('Reservation');
     
-    // Check authentication - but allow reservation emails
     if (!request.auth && !isReservationEmail) {
-      console.warn("⚠️ Unauthenticated request - allowing for reservation emails");
-      // Don't throw error, allow it
-    } else if (!request.auth) {
-      console.error("❌ No authentication found for non-reservation email");
       throw new HttpsError("unauthenticated", "Must be signed in for non-reservation emails.");
     }
-
     const { to, subject, html, text, from, replyTo } = request.data;
 
     // Validate required fields

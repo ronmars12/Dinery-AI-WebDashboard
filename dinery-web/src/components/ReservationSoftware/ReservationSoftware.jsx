@@ -95,10 +95,13 @@ const ReservationSoftware = () => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
 
-    if (isStaff) {
-      getDoc(doc(db, 'restaurants', staffRestaurantId)).then((snap) => {
+   if (isStaff) {
+      const staffCollection = sessionStorage.getItem("staffCollection") || "restaurants";
+      getDoc(doc(db, staffCollection, staffRestaurantId)).then((snap) => {
         if (snap.exists()) {
-          const restaurant = { id: snap.id, ...snap.data(), _collection: 'restaurants' };
+          const restaurant = { id: snap.id, ...snap.data(), _collection: staffCollection };
+          console.log("✅ Staff restaurant loaded:", restaurant); 
+          console.log("✅ Owner_ID:", restaurant.Owner_ID);     
           setRestaurants([restaurant]);
           setSelectedRestaurant(restaurant);
         }
@@ -106,25 +109,27 @@ const ReservationSoftware = () => {
       return;
     }
 
-    // ── Owner: load all owned restaurants ─────────────────────────────────
-    const q1 = query(collection(db, 'restaurants'),    where('Owner_ID', '==', currentUser.uid));
-    const q2 = query(collection(db, 'TestRestaurant'), where('Owner_ID', '==', currentUser.uid));
+  const q1 = query(collection(db, 'restaurants'),    where('Owner_ID', '==', currentUser.uid));
+  const q2 = query(collection(db, 'TestRestaurant'), where('Owner_ID', '==', currentUser.uid));
 
-    const unsubscribe1 = onSnapshot(q1, (snapshot1) => {
-      const data1 = snapshot1.docs.map(doc => ({ id: doc.id, ...doc.data(), _collection: 'restaurants' }));
+  let unsub2 = null;
 
-      const unsubscribe2 = onSnapshot(q2, (snapshot2) => {
-        const data2 = snapshot2.docs.map(doc => ({ id: doc.id, ...doc.data(), _collection: 'TestRestaurant' }));
-        const restaurantsData = [...data1, ...data2];
-        setRestaurants(restaurantsData);
-        setSelectedRestaurant(prev => {
-          if (!prev) return restaurantsData[0] || null;
-          return restaurantsData.find(r => r.id === prev.id) || restaurantsData[0] || null;
-        });
-      }, (error) => { console.error('❌ Error fetching TestRestaurant:', error); });
-    }, (error) => { console.error('❌ Error fetching restaurants:', error); });
+  const unsub1 = onSnapshot(q1, (snap1) => {
+    const data1 = snap1.docs.map(d => ({ id: d.id, ...d.data(), _collection: 'restaurants' }));
 
-    return () => { unsubscribe1(); };
+    if (unsub2) unsub2();
+    unsub2 = onSnapshot(q2, (snap2) => {
+      const data2 = snap2.docs.map(d => ({ id: d.id, ...d.data(), _collection: 'TestRestaurant' }));
+      const all = [...data1, ...data2];
+      setRestaurants(all);
+      setSelectedRestaurant(prev =>
+        prev ? (all.find(r => r.id === prev.id) || all[0] || null) : (all[0] || null)
+      );
+    }, (error) => { console.error('❌ Error fetching TestRestaurant:', error); });
+  }, (error) => { console.error('❌ Error fetching restaurants:', error); });
+
+  return () => { unsub1(); if (unsub2) unsub2(); };
+
  }, [isStaff, staffRestaurantId]);
 
   // Fetch reservations
@@ -135,13 +140,20 @@ const ReservationSoftware = () => {
     const end   = getEndOfDay(endDate);
     const currentUser = auth.currentUser;
 
-    // Staff use the restaurant's Owner_ID, not their own uid
     const ownerUid = isStaff
-      ? (selectedRestaurant?.Owner_ID || currentUser?.uid)
+      ? selectedRestaurant?.Owner_ID
       : currentUser?.uid;
 
-    // If no ownerUid, return early
-    if (!ownerUid) return;
+    // Debug logs — remove these once reservations are loading correctly
+    console.log("🔍 selectedRestaurant:", selectedRestaurant);
+    console.log("🔍 Owner_ID:", selectedRestaurant?.Owner_ID);
+    console.log("🔍 isStaff:", isStaff);
+    console.log("🔍 ownerUid resolved to:", ownerUid);
+
+    if (!ownerUid) {
+      console.warn("⚠️ ownerUid is missing — reservations won't load. Check Owner_ID field in Firestore.");
+      return;
+    }
 
     const q = query(
       collection(db, 'reservations'),

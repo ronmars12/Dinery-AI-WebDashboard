@@ -3,13 +3,18 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
 const createStaffAccount = onCall(
-{
+  {
     enforceAppCheck: false,
+    region: "asia-southeast1",
     cors: [
       "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:3000",
       "https://dinery-9c261.web.app",
       "https://dinery-9c261.firebaseapp.com",
       "https://dinery-ai.netlify.app",
+      "https://dineryai.netlify.app",
+      "https://www.dineryai.netlify.app",
     ],
     timeoutSeconds: 60,
   },
@@ -17,7 +22,7 @@ const createStaffAccount = onCall(
     console.log("🔵 Cloud Function 'createStaffAccount' called");
     console.log("📊 Request data email:", request.data?.email);
     console.log("👤 Auth user:", request.auth?.uid);
-    
+
     if (!request.auth) {
       console.error("❌ No authentication found");
       throw new HttpsError("unauthenticated", "Must be signed in.");
@@ -26,7 +31,7 @@ const createStaffAccount = onCall(
     // Clean up email (trim and lowercase)
     let email = request.data?.email ?? "";
     email = email.trim().toLowerCase();
-    
+
     const password    = request.data?.password    ?? "";
     const displayName = request.data?.displayName ?? "";
 
@@ -45,9 +50,9 @@ const createStaffAccount = onCall(
 
     try {
       const userRecord = await admin.auth().createUser({
-        email: email,
-        password: password,
-        displayName: displayName,
+        email:         email,
+        password:      password,
+        displayName:   displayName,
         emailVerified: false,
       });
 
@@ -62,11 +67,11 @@ const createStaffAccount = onCall(
       if (err.code === "auth/email-already-exists") {
         throw new HttpsError("already-exists", "This email is already in use.");
       }
-      
+
       if (err.code === "auth/invalid-email") {
         throw new HttpsError("invalid-argument", `Invalid email address: ${email}`);
       }
-      
+
       if (err.code === "auth/weak-password") {
         throw new HttpsError("invalid-argument", "Password is too weak. Use at least 6 characters.");
       }

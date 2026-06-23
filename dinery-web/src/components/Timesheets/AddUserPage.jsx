@@ -587,7 +587,7 @@ export default function AddUserPage({ onBack, restaurantId }) {
       console.log("✅ Firestore document created:", firestoreDocId);
 
       // ── 2. SECOND: Create Auth account via Cloud Function ──
-      const functions = getFunctions();
+      const functions = getFunctions(undefined, "asia-southeast1");
       const createStaffAccount = httpsCallable(functions, "createStaffAccount");
 
       const result = await createStaffAccount({
