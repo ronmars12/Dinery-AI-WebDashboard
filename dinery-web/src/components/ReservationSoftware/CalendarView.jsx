@@ -1118,9 +1118,9 @@ const CalendarView = ({
             <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-mono font-semibold whitespace-nowrap`} style={{ color: styles.text }}>
               {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
             </span>
-            {width > 50 && (
+              {width > 50 && (
               <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-medium truncate`} style={{ color: styles.text }}>
-               {isMobile ? r.customer_name || 'Guest' : `${r.customer_name || 'Guest'} (${r.number_of_guests})`}
+              {isMobile ? `${r.number_of_guests} ${r.customer_name || 'Guest'}` : `${r.number_of_guests} · ${r.customer_name || 'Guest'}`}
               </span>
             )}
             {width > 100 && isMultiTable && (
@@ -1653,16 +1653,16 @@ const CalendarView = ({
                                       {r.cancel_reason ? '✕' : '!'}
                                     </span>
                                   )}
-                                  {!showCompact && (
-                                    <span className={`text-[10px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
-                                     {r.customer_name || 'Guest'}
-                                    </span>
-                                  )}
-                                  {showCompact && (
-                                    <span className={`text-[8px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
-                                      {r.customer_name || 'Guest'}
-                                    </span>
-                                  )}
+                                {!showCompact && (
+                                  <span className={`text-[10px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
+                                  {r.number_of_guests} · {r.customer_name || 'Guest'}
+                                  </span>
+                                )}
+                                {showCompact && (
+                                  <span className={`text-[8px] md:text-xs font-bold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`} style={{ color: styles.text }}>
+                                    {r.number_of_guests} · {r.customer_name || 'Guest'}
+                                  </span>
+                                )}
                                 </div>
                                 <span className="text-[8px] md:text-xs font-mono font-semibold whitespace-nowrap" style={{ color: styles.border }}>
                                   {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
