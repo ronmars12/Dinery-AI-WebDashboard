@@ -588,7 +588,6 @@ export default function PublicReservationPage() {
   const [notFound, setNotFound]                 = useState(false);
   const [loadError, setLoadError]               = useState(false);
   const [retryCount, setRetryCount]             = useState(0);
-  const [tabConflict, setTabConflict]           = useState(false);
   const [combinations, setCombinations]         = useState([]);
   const [step, setStep]                         = useState(1);
   const [selectedDate, setSelectedDate]         = useState(null);
@@ -636,35 +635,6 @@ export default function PublicReservationPage() {
 
     return () => unsubscribe();
   }, [db, restaurantData?.firestoreId]);
-
-  // ── Detect if same restaurant is open in another tab ──
-  useEffect(() => {
-    if (!restaurantId) return;
-    const TAB_KEY = '__dinery_active_tab__' + restaurantId;
-    const TAB_ID  = Math.random().toString(36).slice(2);
-
-    // Mark this tab as active
-    try { sessionStorage.setItem(TAB_KEY, TAB_ID); } catch {}
-
-    // Use BroadcastChannel if available (modern browsers)
-    let channel = null;
-    if (typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel('dinery_tabs_' + restaurantId);
-      // Announce this tab opened
-      channel.postMessage({ type: 'TAB_OPENED', tabId: TAB_ID });
-      // Listen for other tabs
-      channel.onmessage = (e) => {
-        if (e.data?.type === 'TAB_OPENED' && e.data?.tabId !== TAB_ID) {
-          setTabConflict(true);
-        }
-      };
-    }
-
-    return () => {
-      try { sessionStorage.removeItem(TAB_KEY); } catch {}
-      if (channel) channel.close();
-    };
-  }, [restaurantId]);
 
   useEffect(() => {
     const load = async () => {
@@ -1449,25 +1419,6 @@ export default function PublicReservationPage() {
   return (
     <div className={'min-h-screen relative overflow-hidden ' + bgClass} style={bgStyle}>
 
-      {/* ── Multiple tabs warning banner ── */}
-      {tabConflict && (
-        <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 py-3 bg-amber-500 shadow-lg">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg flex-shrink-0">⚠️</span>
-            <p className="text-amber-950 text-sm font-semibold leading-tight">
-              This reservation page is already open in another tab. 
-              <span className="font-normal"> To avoid booking errors, please use only one tab at a time.</span>
-            </p>
-          </div>
-          <button
-            onClick={() => setTabConflict(false)}
-            className="flex-shrink-0 w-7 h-7 rounded-full bg-amber-600/30 hover:bg-amber-600/50 flex items-center justify-center text-amber-950 font-bold text-base transition-colors"
-            aria-label="Dismiss">
-            ×
-          </button>
-        </div>
-      )}
-
       {config.backgroundMode === 'image' && config.backgroundImageUrl && (
         <div
           className="fixed inset-0 z-0 pointer-events-none"
@@ -1480,7 +1431,7 @@ export default function PublicReservationPage() {
       <div className="fixed inset-0 z-0 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 10%, rgba(255,255,255,0.03) 0%, transparent 50%)' }} />
 
-      <div className={`relative z-10 min-h-screen flex items-center justify-center p-4 py-16 ${tabConflict ? 'pt-24' : ''}`}>
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 py-16">
         <div className="w-full max-w-5xl">
 
           {config.logoUrl && (
