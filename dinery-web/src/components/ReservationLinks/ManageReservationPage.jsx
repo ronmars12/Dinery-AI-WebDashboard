@@ -484,7 +484,7 @@ export default function ManageReservationPage() {
 
       if (reservation.customer_email) {
         try {
-          const fn = httpsCallable(getFunctions(), 'sendEmail');
+          const fn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
           const firstName = reservation.customer_name?.split(' ')[0] || 'there';
           const tableName = assignment.isCombination ? assignment.combination.name : assignment.table.name;
           await fn({
@@ -558,7 +558,7 @@ const handleCancelRequest = async () => {
     // 3. Send cancellation confirmation email
     if (reservation?.customer_email) {
       try {
-        const fn = httpsCallable(getFunctions(), 'sendEmail');
+        const fn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
         const firstName = reservation.customer_name?.split(' ')[0] || 'there';
         const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
         await fn({
