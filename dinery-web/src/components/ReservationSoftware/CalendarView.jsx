@@ -88,7 +88,7 @@ const CalendarView = ({
   const [contextMenu, setContextMenu] = useState(null);
   const [combinations, setCombinations] = useState([]);
   const [hoveredReservation, setHoveredReservation] = useState(null);
-  
+  const [overlapMenu, setOverlapMenu] = useState(null);
   // Responsive: detect screen size with improved tablet detection
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
@@ -254,6 +254,25 @@ const CalendarView = ({
     }
   }, [contextMenu]);
 
+  useEffect(() => {
+    if (!contextMenu) return;
+    
+    const prevent = (e) => {
+      // Only prevent if not scrolling inside the meal status menu itself
+      if (e.target.closest('.meal-status-menu')) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    
+    document.addEventListener('wheel', prevent, { passive: false });
+    document.addEventListener('touchmove', prevent, { passive: false });
+    
+    return () => {
+      document.removeEventListener('wheel', prevent);
+      document.removeEventListener('touchmove', prevent);
+    };
+  }, [contextMenu]);
+
   // Cleanup function for drag state
   useEffect(() => {
     const handleCleanup = () => {
@@ -311,6 +330,45 @@ const CalendarView = ({
     }
   };
 
+  const getOverlappingReservations = (res, tableId, excludeId = null) => {
+    const dayStart = new Date(currentDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(currentDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    return localReservations.filter(r => {
+      if (r.id === res.id) return false;
+      if (excludeId && r.id === excludeId) return false;
+      const rTableIds = Array.isArray(r.table_ids) && r.table_ids.length > 0 ? r.table_ids : [r.table_id];
+      if (!rTableIds.includes(tableId)) return false;
+      const rDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+      if (rDate < dayStart || rDate > dayEnd) return false;
+      const aStart = minutesToSlot(res.reservation_date, res.from_time) * 15;
+      const aEnd = aStart + (res.duration_minutes || 75);
+      const bStart = minutesToSlot(rDate, r.from_time) * 15;
+      const bEnd = bStart + (r.duration_minutes || 75);
+      return aStart < bEnd && aEnd > bStart;
+    });
+  };
+
+  const checkDropCollision = (draggedRes, newTableId, newStartMinutes, duration) => {
+    const dayStart = new Date(currentDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(currentDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    return localReservations.find(r => {
+      if (r.id === draggedRes.id) return false;
+      const rTableIds = Array.isArray(r.table_ids) && r.table_ids.length > 0 ? r.table_ids : [r.table_id];
+      if (!rTableIds.includes(newTableId)) return false;
+      const rDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+      if (rDate < dayStart || rDate > dayEnd) return false;
+      const bStart = minutesToSlot(rDate, r.from_time) * 15;
+      const bEnd = bStart + (r.duration_minutes || 75);
+      return newStartMinutes < bEnd && (newStartMinutes + duration) > bStart;
+    });
+  };
+
   const { openHour, closeHour } = getRestaurantHours();
   const totalHours = closeHour - openHour;
   const totalHeight = totalHours * SLOT_HEIGHT;
@@ -334,34 +392,46 @@ const CalendarView = ({
         shadow: '0 2px 4px rgba(147, 51, 234, 0.1)'
       };
     }
-    
-    const map = {
-      confirmed: { 
-        bg: isDarkMode ? 'linear-gradient(135deg, #065f46 0%, #0a3d2e 100%)' : 'linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)', 
-        border: '#10b981', 
-        text: isDarkMode ? '#6ee7b7' : '#065f46', 
-        shadow: '0 2px 4px rgba(16, 185, 129, 0.1)' 
-      },
-      pending: { 
-        bg: isDarkMode ? 'linear-gradient(135deg, #78350f 0%, #4d2408 100%)' : 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)', 
-        border: '#f59e0b', 
-        text: isDarkMode ? '#fcd34d' : '#78350f', 
-        shadow: '0 2px 4px rgba(245, 158, 11, 0.1)' 
-      },
-      cancelled: { 
-        bg: isDarkMode ? 'linear-gradient(135deg, #7f1d1d 0%, #4c1313 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)', 
-        border: '#ef4444', 
-        text: isDarkMode ? '#fca5a5' : '#991b1b', 
-        shadow: '0 2px 4px rgba(239, 68, 68, 0.1)' 
-      },
-      completed: { 
-        bg: isDarkMode ? 'linear-gradient(135deg, #1e3a5f 0%, #11233a 100%)' : 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)', 
-        border: '#3b82f6', 
-        text: isDarkMode ? '#93c5fd' : '#1e40af', 
-        shadow: '0 2px 4px rgba(59, 130, 246, 0.1)' 
-      },
-    };
-    return map[status?.toLowerCase()] || map.pending;
+  const map = {
+    confirmed: { 
+      bg: isDarkMode ? 'linear-gradient(135deg, #065f46 0%, #0a3d2e 100%)' : 'linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)', 
+      border: '#10b981', 
+      text: isDarkMode ? '#6ee7b7' : '#065f46', 
+      shadow: '0 2px 4px rgba(16, 185, 129, 0.1)' 
+    },
+    pending: { 
+      bg: isDarkMode ? 'linear-gradient(135deg, #78350f 0%, #4d2408 100%)' : 'linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%)', 
+      border: '#f59e0b', 
+      text: isDarkMode ? '#fcd34d' : '#78350f', 
+      shadow: '0 2px 4px rgba(245, 158, 11, 0.1)' 
+    },
+    cancelled: { 
+      bg: isDarkMode ? 'linear-gradient(135deg, #7f1d1d 0%, #4c1313 100%)' : 'linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)', 
+      border: '#ef4444', 
+      text: isDarkMode ? '#fca5a5' : '#991b1b', 
+      shadow: '0 2px 4px rgba(239, 68, 68, 0.1)' 
+    },
+    completed: { 
+      bg: isDarkMode ? 'linear-gradient(135deg, #1e3a5f 0%, #11233a 100%)' : 'linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)', 
+      border: '#3b82f6', 
+      text: isDarkMode ? '#93c5fd' : '#1e40af', 
+      shadow: '0 2px 4px rgba(59, 130, 246, 0.1)' 
+    },
+    // add these two:
+    table_cleared: {
+      bg: isDarkMode ? 'linear-gradient(135deg, #1a3a1a 0%, #0f2410 100%)' : 'linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%)',
+      border: '#84cc16',
+      text: isDarkMode ? '#a3e635' : '#365314',
+      shadow: '0 2px 4px rgba(132, 204, 22, 0.1)'
+    },
+    no_show: {
+      bg: isDarkMode ? 'linear-gradient(135deg, #1f2937 0%, #111827 100%)' : 'linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%)',
+      border: '#6b7280',
+      text: isDarkMode ? '#9ca3af' : '#374151',
+      shadow: '0 2px 4px rgba(107, 114, 128, 0.1)'
+    },
+  };
+  return map[status?.toLowerCase()] || map.pending;
   };
 
   const getMealStatusConfig = (mealStatus) => {
@@ -404,9 +474,12 @@ const CalendarView = ({
       <>
         <div 
           className="fixed inset-0 z-40" 
-          onClick={(e) => { e.stopPropagation(); onClose(); }}
           onContextMenu={(e) => { e.preventDefault(); onClose(); }}
+          onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
+          onWheel={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onTouchMove={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onScroll={(e) => { e.preventDefault(); e.stopPropagation(); }}
         />
         <div
           className={`fixed z-50 rounded-xl shadow-2xl border py-2 min-w-[180px] md:min-w-[220px] meal-status-menu animate-in fade-in zoom-in-95 duration-100 ${
@@ -414,11 +487,9 @@ const CalendarView = ({
           }`}
           style={{
             left: `${Math.min(position.x, window.innerWidth - (isMobile ? 180 : 240))}px`,
-            top: position.y + 320 > window.innerHeight
-              ? `${Math.max(0, position.y - 320)}px`
+            top: position.y + 280 > window.innerHeight
+              ? `${Math.max(0, position.y - 280)}px`
               : `${position.y}px`,
-            maxHeight: '320px',
-            overflowY: 'auto',
           }}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
@@ -434,7 +505,7 @@ const CalendarView = ({
               <button
                 key={status || 'clear'}
                 onClick={() => handleSelect(status)}
-                className={`w-full px-3 md:px-4 py-2 md:py-2.5 flex items-center gap-2 md:gap-3 transition-all duration-150 ${
+                className={`w-full px-3 py-1.5 flex items-center gap-2 transition-all duration-150 ${
                   isActive ? (isDarkMode ? 'bg-gray-700' : 'bg-gray-50') : (isDarkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50')
                 }`}
               >
@@ -448,6 +519,116 @@ const CalendarView = ({
               </button>
             );
           })}
+        </div>
+      </>
+    );
+  };
+
+  const OverlapMenu = ({ overlapMenu, onClose }) => {
+    const { draggedRes, targetRes, originalTableId, newTableId, newFromTime, newDate, snapDuration, movedTable } = overlapMenu;
+
+    const handleSwitchTables = async () => {
+      try {
+        const aTableUpdate = {
+          table_id: newTableId,
+          table_name: movedTable?.name || '',
+          table_ids: [newTableId],
+          table_names: [movedTable?.name || ''],
+          combination_id: null,
+          combination_name: null,
+        };
+        const originalTable = tables.find(t => t.id === originalTableId);
+        const bTableUpdate = {
+          table_id: originalTableId,
+          table_name: originalTable?.name || '',
+          table_ids: [originalTableId],
+          table_names: [originalTable?.name || ''],
+          combination_id: null,
+          combination_name: null,
+        };
+        setLocalReservations(rs => rs.map(r => {
+          if (r.id === draggedRes.id) return { ...r, ...aTableUpdate };
+          if (r.id === targetRes.id) return { ...r, ...bTableUpdate };
+          return r;
+        }));
+        await Promise.all([
+          updateDoc(doc(db, 'reservations', draggedRes.id), { ...aTableUpdate, updated_at: serverTimestamp() }),
+          updateDoc(doc(db, 'reservations', targetRes.id), { ...bTableUpdate, updated_at: serverTimestamp() }),
+        ]);
+        onClose();
+      } catch (err) {
+        console.error('Switch tables failed:', err);
+      }
+    };
+
+    const handleOverlap = () => {
+      const aTableUpdate = {
+        table_id: newTableId,
+        table_name: movedTable?.name || '',
+        table_ids: [newTableId],
+        table_names: [movedTable?.name || ''],
+        combination_id: null,
+        combination_name: null,
+      };
+      setLocalReservations(rs => rs.map(r =>
+        r.id === draggedRes.id ? { ...r, ...aTableUpdate } : r
+      ));
+      updateDoc(doc(db, 'reservations', draggedRes.id), {
+        ...aTableUpdate,
+        updated_at: serverTimestamp(),
+      }).catch(err => console.error(err));
+      onClose();
+    };
+
+    return (
+      <>
+        <div 
+          className="fixed inset-0 z-40 bg-black/20" 
+          onClick={onClose}
+          onTouchEnd={(e) => { e.preventDefault(); onClose(); }}
+        />
+        <div
+          className={`fixed z-50 rounded-xl shadow-2xl border py-2 min-w-[200px] ${
+            isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+          }`}
+        style={{
+          left: isMobile ? '50%' : `${Math.min(overlapMenu.position.x - 100, window.innerWidth - 220)}px`,
+          top: isMobile ? '50%' : `${Math.min(overlapMenu.position.y - 20, window.innerHeight - 160)}px`,
+          transform: isMobile ? 'translate(-50%, -50%)' : 'none',
+          width: isMobile ? 'calc(100vw - 40px)' : 'auto',
+          maxWidth: isMobile ? '320px' : 'none',
+        }}
+        >
+          <div className={`px-4 py-2 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>Reservation Conflict</p>
+            <p className={`text-xs font-semibold mt-0.5 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+              {draggedRes.customer_name} → {targetRes.customer_name}
+            </p>
+          </div>
+          <button
+            onClick={handleSwitchTables}
+            onTouchEnd={(e) => { e.preventDefault(); handleSwitchTables(); }}
+            className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 min-h-[48px] ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}
+          >
+            <span>⇄</span>
+            <span className="text-sm font-medium">Switch tables</span>
+          </button>
+          <button
+            onClick={handleOverlap}
+            onTouchEnd={(e) => { e.preventDefault(); handleOverlap(); }}
+            className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 min-h-[48px] ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}
+          >
+            <span>⚠️</span>
+            <span className="text-sm font-medium">Overlap</span>
+          </button>
+          <button
+            onClick={onClose}
+            onTouchEnd={(e) => { e.preventDefault(); onClose(); }}
+            className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 min-h-[48px] ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}
+          >
+            <span>✕</span>
+            <span className="text-sm font-medium">Cancel</span>
+          </button>
         </div>
       </>
     );
@@ -774,8 +955,30 @@ const CalendarView = ({
           const isCombo = newTableId?.startsWith('combo__');
           const realComboId = isCombo ? newTableId.replace('combo__', '') : null;
           const movedCombo = isCombo ? combinations.find(c => c.id === realComboId) : null;
-
           const wasMultiTable = d.isMultiTable && d.originalTableIds?.length > 1;
+          const collision = !isUnassigned && !wasMultiTable
+            ? checkDropCollision(reservation, newTableId, prev.startMinutes, snapDuration)
+            : null;
+
+          if (collision) {
+            setOverlapMenu({
+              position: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+              draggedRes: reservation,
+              targetRes: collision,
+              originalTableId: d.tableId,
+              newTableId,
+              newFromTime,
+              newDate: new Date(newDate),
+              snapDuration,
+              movedTable,
+              isCombo,
+              realComboId,
+              movedCombo,
+            });
+            setDragging(null);
+            setDragState(null);
+            return null;
+          }
 
           const tableUpdate = wasMultiTable
             ? {
@@ -972,10 +1175,13 @@ const CalendarView = ({
         if (dragState.tableId === tableId) return null;
         return null;
       }
-      const styles = getReservationStyles(r.status, r.source); 
+      const styles = getReservationStyles(r.meal_status || r.status, r.source);
+      const isCleared = r.meal_status === 'table_cleared';
+      const isNoShow = r.meal_status === 'no_show';
       const left = slot * responsiveCellWidth;
-      const width = durSlots * responsiveCellWidth - 2;
-
+      const width = (isCleared ? (durSlots * 0.3) : durSlots) * responsiveCellWidth - 2;
+      const overlappingRes = getOverlappingReservations(r, tableId);
+      const isOverlapping = overlappingRes.length > 0;
       const isMultiTable = Array.isArray(r.table_ids) && r.table_ids.length > 1;
       const allTableNames = r.table_names?.join(', ') || r.table_name || '';
       const mealConfig = r.meal_status ? getMealStatusConfig(r.meal_status) : null;
@@ -995,6 +1201,7 @@ const CalendarView = ({
             cursor: dragging?.id === r.id ? (dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'grab',
             boxShadow: isActive ? `0 4px 16px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 2px 8px rgba(0,0,0,0.1)` : '0 1px 2px rgba(0,0,0,0.05)'),
             touchAction: 'none',
+            opacity: isNoShow ? 0.4 : 1,
           }}
           onMouseDown={(e) => {
             if (e.button !== 0) return;
@@ -1076,6 +1283,20 @@ const CalendarView = ({
                 height: 4,
                 background: `repeating-linear-gradient(90deg, ${styles.border} 0px, ${styles.border} 6px, transparent 6px, transparent 12px)`,
                 opacity: 0.4,
+              }}
+            />
+          )}
+          {isOverlapping && (
+            <div
+              className="absolute inset-0 pointer-events-none z-20 rounded-lg"
+              style={{
+                background: `repeating-linear-gradient(
+                  45deg,
+                  rgba(239, 68, 68, 0.3) 0px,
+                  rgba(239, 68, 68, 0.3) 6px,
+                  rgba(34, 197, 94, 0.3) 6px,
+                  rgba(34, 197, 94, 0.3) 12px
+                )`,
               }}
             />
           )}
@@ -1289,7 +1510,16 @@ const CalendarView = ({
 
     return (
       <div className={`flex-1 overflow-hidden flex flex-col ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
-        <div className="flex-1 overflow-auto" ref={scrollRef}>
+        <div 
+            className="flex-1 overflow-auto" 
+            ref={scrollRef}
+            onWheel={(e) => {
+              if (contextMenu) e.stopPropagation();
+            }}
+            onTouchMove={(e) => {
+              if (contextMenu) e.stopPropagation();
+            }}
+          >
           <div className="w-full">
             {/* Sticky header with enhanced design - Responsive */}
             <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : (isTablet ? 44 : 48) }}>
@@ -1485,7 +1715,16 @@ const CalendarView = ({
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+        <div 
+            className="flex-1 overflow-y-auto" 
+            ref={scrollRef}
+            onWheel={(e) => {
+              if (contextMenu) e.stopPropagation();
+            }}
+            onTouchMove={(e) => {
+              if (contextMenu) e.stopPropagation();
+            }}
+          >
           <div className="flex" style={{ height: totalHeight }}>
             <div className={`flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-r-2 border-gray-700' : 'bg-gray-50 border-r-2 border-gray-200'} sticky left-0 z-20 shadow-sm`} style={{ width: responsiveTimeColWidth }}>
               {hours.map((hour) => (
@@ -1557,7 +1796,7 @@ const CalendarView = ({
                       const duration = isActive ? dragState.duration : (r.duration_minutes || 75);
                       const top = (startMin / 60) * SLOT_HEIGHT;
                       const height = Math.max((duration / 60) * SLOT_HEIGHT, 32);
-                      const styles = getReservationStyles(r.status, r.source);
+                      const styles = getReservationStyles(r.meal_status || r.status, r.source);
                       const startMins = r.from_time ? (() => { const [h,m] = r.from_time.split(':').map(Number); return h*60+m; })() : resDate.getHours()*60+resDate.getMinutes();
                       const endTotalMins = startMins + duration;
                       const endTime = { getHours: () => Math.floor(endTotalMins/60)%24, getMinutes: () => endTotalMins%60 };
@@ -1988,6 +2227,12 @@ const CalendarView = ({
           position={contextMenu.position}
           reservation={contextMenu.reservation}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+      {overlapMenu && (
+        <OverlapMenu
+          overlapMenu={overlapMenu}
+          onClose={() => setOverlapMenu(null)}
         />
       )}
     </div>

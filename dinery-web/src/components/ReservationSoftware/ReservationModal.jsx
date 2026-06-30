@@ -215,6 +215,7 @@ const ReservationModal = ({ reservation, onClose }) => {
       from_time: reservation.from_time || '',
       to_time: reservation.to_time || '',
       source: reservation.source || '',
+      meal_status: reservation.meal_status || null, 
     });
 
   const [saving, setSaving] = useState(false);
@@ -1084,7 +1085,27 @@ const ReservationModal = ({ reservation, onClose }) => {
                 </select>
               </div>
             </div>
-      
+
+            {/* Meal Status - Full Width */}
+            <div className="md:col-span-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                Meal Status
+              </label>
+              <select
+                value={formData.meal_status || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, meal_status: e.target.value || null }))}
+                className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
+              >
+                <option value="">— None —</option>
+                <option value="arrived">🔴 Arrived</option>
+                <option value="food_delivered">🔵 Food Delivered</option>
+                <option value="dessert">🟣 Dessert</option>
+                <option value="bill_delivered">🟡 Bill Delivered</option>
+                <option value="table_cleared">🟢 Table Cleared</option>
+                <option value="no_show">⚫ No Show</option>
+              </select>
+            </div>
+
             {/* Notes Section - Full Width */}
             <div className="md:col-span-2">
               <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2 mb-3 sm:mb-4">

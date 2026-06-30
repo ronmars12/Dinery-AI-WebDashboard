@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
   collection,
   addDoc,
@@ -579,7 +580,8 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
 export default function PublicReservationPage() {
   const { restaurantId } = useParams();
   const db = firestore;
-
+  const [searchParams] = useSearchParams();
+  const offerCode = searchParams.get('offer') || '';
   const [config, setConfig]                     = useState(null);
   const [restaurantData, setRestaurantData]     = useState(null);
   const [restaurantTables, setRestaurantTables] = useState([]);
@@ -1240,6 +1242,10 @@ export default function PublicReservationPage() {
         time:                                 resDate.toISOString(),
         duration_minutes:                     diningDuration,
         special_requests:                     form.notes || '',
+        special_requests: offerCode
+        ? `${form.notes ? form.notes + '\n\n' : ''}Offer Applied: ${offerCode}`
+        : (form.notes || ''),
+        offer_code_applied: offerCode || null,
         customer_birthday:                    form.birthday || null,
         status:                               'confirmed',
 
@@ -1286,6 +1292,15 @@ export default function PublicReservationPage() {
       const newReservation = await addDoc(collection(db, 'reservations'), reservationData);
       const createdId = newReservation.id;
       setJustCreatedId(createdId);
+            
+      if (offerCode) {
+        try {
+          const statsRef = doc(db, 'crm_stats', restaurantData.firestoreId);
+          const statsSnap = await getDoc(statsRef);
+          const current = statsSnap.exists() ? (statsSnap.data().offerReservations || 0) : 0;
+          await setDoc(statsRef, { offerReservations: current + 1 }, { merge: true });
+        } catch (e) { console.warn('offer stat increment failed', e); }
+      }
 
      // Send confirmation email
       try {
