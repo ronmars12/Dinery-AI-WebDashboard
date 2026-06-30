@@ -1,8 +1,6 @@
-// src/pages/PublicReservationPage.jsx
-// PUBLIC — no login required. Route: /reserve/:restaurantId
+
 import React, { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useParams } from 'react-router-dom';
 import { useParams, useSearchParams } from 'react-router-dom';
 import {
   collection,
@@ -1241,7 +1239,6 @@ export default function PublicReservationPage() {
         reservation_date:                     resDate,
         time:                                 resDate.toISOString(),
         duration_minutes:                     diningDuration,
-        special_requests:                     form.notes || '',
         special_requests: offerCode
         ? `${form.notes ? form.notes + '\n\n' : ''}Offer Applied: ${offerCode}`
         : (form.notes || ''),
