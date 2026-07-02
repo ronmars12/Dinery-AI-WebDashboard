@@ -11,6 +11,7 @@ const I18N = {
     Analytics: "Analytics",
     Restaurant: "Restaurant",
     Offers: "Offers",
+    CRM: "CRM",
     "Booking Page": "Booking Page",
     "Reservation Software": "Reservation Software",
     "Table Management": "Table Management",
@@ -30,6 +31,7 @@ const I18N = {
     Analytics: "Analytiikka",
     Restaurant: "Ravintola",
     Offers: "Tarjoukset",
+    CRM: "CRM",
     "Booking Page": "Varaussivu",
     "Reservation Software": "Varausohjelmisto",
     "Table Management": "Pöytähallinta",
@@ -49,6 +51,7 @@ const I18N = {
     Analytics: "Analyse",
     Restaurant: "Restaurant",
     Offers: "Tilbud",
+    CRM: "CRM",
     "Booking Page": "Bestillingsside",
     "Reservation Software": "Reserveringsprogramvare",
     "Table Management": "Bordadministrasjon",
@@ -68,6 +71,7 @@ const I18N = {
     Analytics: "Analys",
     Restaurant: "Restaurang",
     Offers: "Erbjudanden",
+    CRM: "CRM",
     "Booking Page": "Bokningssida",
     "Reservation Software": "Bokningsprogramvara",
     "Table Management": "Bordshantering",
@@ -87,6 +91,7 @@ const I18N = {
     Analytics: "Analytik",
     Restaurant: "Restaurant",
     Offers: "Angebote",
+    CRM: "CRM",
     "Booking Page": "Buchungsseite",
     "Reservation Software": "Buchungssoftware",
     "Table Management": "Tischverwaltung",
@@ -104,15 +109,17 @@ const I18N = {
 };
 
 const navItems = [
-  { label: "Dashboard", displayLabel: "Analytics", icon: <DashboardIcon />, staffAllowed: true,  managerAllowed: true  },
-  { label: "Restaurant", icon: <RestaurantIcon />,                           staffAllowed: false, managerAllowed: true  },
-  { label: "Offers", icon: <OffersIcon />,                                   staffAllowed: false, managerAllowed: true  },
-  { label: "Reservation Software", icon: <ReservationSoftwareIcon />,        staffAllowed: true,  managerAllowed: true  },
-  { label: "Table Management", icon: <TableManagementIcon />,                staffAllowed: false, managerAllowed: true  },
-  { label: "Reservation Link", icon: <ReservationLinkIcon />,                staffAllowed: false, managerAllowed: true  },
-  { label: "Timesheet", icon: <TimesheetIcon />,                             staffAllowed: false, managerAllowed: true  },
-  { label: "Account Settings", icon: <SettingsIcon />,                       staffAllowed: true,  managerAllowed: true  },
+  { label: "Dashboard", displayLabel: "Analytics", icon: <DashboardIcon />,          staffAllowed: true,  managerAllowed: true  },
+  { label: "Restaurant",                            icon: <RestaurantIcon />,          staffAllowed: false, managerAllowed: true  },
+  { label: "Offers",                                icon: <OffersIcon />,              staffAllowed: false, managerAllowed: true  },
+  { label: "CRM",                                   icon: <CRMIcon />,                 staffAllowed: false, managerAllowed: true  },
+  { label: "Reservation Software",                  icon: <ReservationSoftwareIcon />, staffAllowed: true,  managerAllowed: true  },
+  { label: "Table Management",                      icon: <TableManagementIcon />,     staffAllowed: false, managerAllowed: true  },
+  { label: "Reservation Link",                      icon: <ReservationLinkIcon />,     staffAllowed: false, managerAllowed: true  },
+  { label: "Timesheet",                             icon: <TimesheetIcon />,           staffAllowed: false, managerAllowed: true  },
+  { label: "Account Settings",                      icon: <SettingsIcon />,            staffAllowed: true,  managerAllowed: true  },
 ];
+
 export default function Sidebar({
   activeItem,
   setActiveItem,
@@ -241,39 +248,41 @@ export default function Sidebar({
       </div>
 
       <nav className="flex flex-col flex-1 px-3 space-y-1">
-        {navItems.filter(item => {
-          if (!isStaff) return true;                          // owner sees everything
-          if (staffRole === 'manager' || staffRole === 'admin') return item.managerAllowed; // manager/admin sees all
-          return item.staffAllowed;                           // plain staff sees limited items
-        }).map((item) => {
-          const isActive = activeItem === item.label;
-          const visibleLabel = item.displayLabel || item.label;
+        {navItems
+          .filter((item) => {
+            if (!isStaff) return true;
+            if (staffRole === "manager" || staffRole === "admin") return item.managerAllowed;
+            return item.staffAllowed;
+          })
+          .map((item) => {
+            const isActive = activeItem === item.label;
+            const visibleLabel = item.displayLabel || item.label;
 
-          return (
-            <button
-              key={item.label}
-              onClick={() => setActiveItem && setActiveItem(item.label)}
-              className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 text-sm ${
-                isMinimized ? "justify-center" : ""
-              } ${
-                isActive
-                  ? "bg-[#fe8a24] text-[#23272f] font-semibold shadow-md"
-                  : "hover:bg-[#23272f]/80 text-[#f4f8f3]/90 hover:text-white"
-              }`}
-              title={isMinimized ? t(visibleLabel) : ""}
-            >
-              <span
-                className={`text-xl ${isMinimized ? "" : "mr-3"} ${
-                  isActive ? "text-[#23272f]" : "text-[#fe8a24]"
+            return (
+              <button
+                key={item.label}
+                onClick={() => setActiveItem && setActiveItem(item.label)}
+                className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 text-sm ${
+                  isMinimized ? "justify-center" : ""
+                } ${
+                  isActive
+                    ? "bg-[#fe8a24] text-[#23272f] font-semibold shadow-md"
+                    : "hover:bg-[#23272f]/80 text-[#f4f8f3]/90 hover:text-white"
                 }`}
+                title={isMinimized ? t(visibleLabel) : ""}
               >
-                {item.icon}
-              </span>
+                <span
+                  className={`text-xl ${isMinimized ? "" : "mr-3"} ${
+                    isActive ? "text-[#23272f]" : "text-[#fe8a24]"
+                  }`}
+                >
+                  {item.icon}
+                </span>
 
-              {!isMinimized && <span>{t(visibleLabel)}</span>}
-            </button>
-          );
-        })}
+                {!isMinimized && <span>{t(visibleLabel)}</span>}
+              </button>
+            );
+          })}
       </nav>
 
       <div className="px-3 mt-auto mb-4 space-y-2">
@@ -285,9 +294,7 @@ export default function Sidebar({
           title={isMinimized ? t("hide") : ""}
         >
           <FiMenu
-            className={`text-xl ${
-              isMinimized ? "" : "mr-3"
-            } text-[#fe8a24]`}
+            className={`text-xl ${isMinimized ? "" : "mr-3"} text-[#fe8a24]`}
           />
           {!isMinimized && <span>{t("hide")}</span>}
         </button>
@@ -300,9 +307,7 @@ export default function Sidebar({
           title={isMinimized ? t("logout") : ""}
         >
           <FiLogOut
-            className={`text-xl ${
-              isMinimized ? "" : "mr-3"
-            } text-[#fe8a24]`}
+            className={`text-xl ${isMinimized ? "" : "mr-3"} text-[#fe8a24]`}
           />
           {!isMinimized && <span>{t("logout")}</span>}
         </button>
@@ -325,6 +330,8 @@ export default function Sidebar({
     </aside>
   );
 }
+
+// ─── Icon Components ──────────────────────────────────────────────────────────
 
 function DashboardIcon({ className = "h-5 w-5" }) {
   return (
@@ -351,6 +358,19 @@ function OffersIcon({ className = "h-5 w-5" }) {
         strokeLinejoin="round"
         strokeWidth={2}
         d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"
+      />
+    </svg>
+  );
+}
+
+function CRMIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
       />
     </svg>
   );

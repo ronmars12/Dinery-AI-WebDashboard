@@ -2,11 +2,12 @@ import React from "react";
 import Dashboard from "./dashboard/Dashboard";
 import Restaurant from "./restaurant/Restaurant";
 import Offers from "./offers/Offers";
+import CRM from "./CRM/CRM";
 import ReservationSoftware from "./ReservationSoftware/ReservationSoftware";
 import AccountSettings from "./account/AccountSettings";
 import TableManagement from "./TablePage/TableManagement";
 import ReservationLinkPage from "./ReservationLinks/Reservationlinkpage";
-import EmployeeManagement from "./Timesheets/EmployeeManagement"; // ← changed
+import EmployeeManagement from "./Timesheets/EmployeeManagement";
 
 export default function MainContent({ activeItem, selectedRestaurant }) {
   const fullScreenStyles = "flex-1 h-full overflow-y-auto bg-gray-50";
@@ -35,6 +36,15 @@ export default function MainContent({ activeItem, selectedRestaurant }) {
         <div className={fullScreenStyles}>
           <div className="min-h-full flex flex-col">
             <Offers />
+          </div>
+        </div>
+      );
+
+    case "CRM":
+      return (
+        <div className={fullScreenStyles}>
+          <div className="min-h-full flex flex-col">
+            <CRM />
           </div>
         </div>
       );
@@ -69,7 +79,7 @@ export default function MainContent({ activeItem, selectedRestaurant }) {
     case "Timesheet":
       return (
         <div className="flex-1 h-full overflow-hidden flex flex-col">
-          <EmployeeManagement /> {/* ← full height, no scroll wrapper */}
+          <EmployeeManagement />
         </div>
       );
 

@@ -12,6 +12,7 @@ import SuperAdminDashboard from "./components/SuperAdmin/SuperAdminDashboard";
 import PublicReservationPage from "./components/ReservationLinks/Publicreservationpage";
 import dineryLogo from "./assets/dinery-logo.png";
 import ManageReservationPage from "./components/ReservationLinks/ManageReservationPage";
+import FeedbackPage from "./components/ReservationLinks/FeedbackPage";
 
 console.log('=== ENVIRONMENT VARIABLES TEST ===');
 console.log('Growth Price ID:', import.meta.env.VITE_STRIPE_GROWTH_PRICE_ID);
@@ -27,6 +28,7 @@ function AnimatedRoutes({ user, role }) {
       <Routes location={location} key={location.pathname}>
         <Route path="/reserve/:restaurantId" element={<PublicReservationPage />} />
         <Route path="/manage-reservation/:reservationId" element={<ManageReservationPage />} />
+        <Route path="/feedback/:reservationId" element={<FeedbackPage />} />
 
         {/* ── AUTH ROUTES ── */}
         {!user && (

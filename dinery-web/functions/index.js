@@ -26,6 +26,9 @@ exports.backfillAnalytics    = analytics.backfillAnalytics;
 const { sendEmail } = require("./sendEmail");
 exports.sendEmail = sendEmail;
 
+ // ── CRM: Thank You Email Automation (scheduled) ─────────────────────────────
+ const { sendThankYouEmails } = require("./sendThankYouEmails");
+ exports.sendThankYouEmails = sendThankYouEmails;
 // ── Staff account creation ────────────────────────────────────────────────────
 const { createStaffAccount } = require("./createStaffAccount");
 exports.createStaffAccount = createStaffAccount;
