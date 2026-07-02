@@ -1332,7 +1332,7 @@ export default function PublicReservationPage() {
               <p style="color:#888;font-size:12px;margin-top:24px;">
                 Need to make changes? You can manage your reservation here:
               </p>
-              <a href="${window.location.origin}/manage-reservation/${createdId}"
+             <a href="https://booking.dinery.ai/manage-reservation/${createdId}"
                 style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
                 Manage My Reservation
               </a>

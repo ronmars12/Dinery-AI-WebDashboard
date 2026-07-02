@@ -63,7 +63,7 @@ const sendEmail = onCall(
 
     try {
       console.log("🔄 Attempting to send email via Resend...");
-      console.log(`📤 From: ${from ?? "Dinery AI <no-reply@mail.dinery.ai>"}`);
+      console.log(`📤 From: ${from ?? "Dinery AI <bookings@mail.dinery.ai>"}`);
       console.log(`📤 To: ${Array.isArray(to) ? to.join(', ') : to}`);
       
       const response = await fetch("https://api.resend.com/emails", {
@@ -73,7 +73,7 @@ const sendEmail = onCall(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: from ?? "Dinery AI <no-reply@mail.dinery.ai>",
+          from: from ?? "Dinery AI <bookings@mail.dinery.ai>",
           to: Array.isArray(to) ? to : [to],
           subject,
           html: html || undefined,
