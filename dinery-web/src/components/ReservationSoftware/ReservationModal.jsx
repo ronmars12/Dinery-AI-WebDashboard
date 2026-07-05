@@ -458,7 +458,7 @@ const ReservationModal = ({ reservation, onClose }) => {
         updated_at: serverTimestamp(),
       });
 
-      const oldTableIds = reservation.table_ids?.length
+const oldTableIds = reservation.table_ids?.length
         ? reservation.table_ids
         : reservation.table_id ? [reservation.table_id] : [];
       const removedIds = oldTableIds.filter(id => !selectedTableIds.includes(id));
@@ -475,6 +475,47 @@ const ReservationModal = ({ reservation, onClose }) => {
 
       if (clearedStatuses.includes(formData.status)) {
         await clearAssignedTables();
+      }
+
+      // ── Notify customer of changes ──
+      if (formData.customer_email?.trim() && !clearedStatuses.includes(formData.status)) {
+        try {
+          const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
+          const resDate = formData.reservation_date;
+          const resDateFormatted = resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+          const displayFromTime = formData.from_time || formatTimeForInput(resDate);
+          const displayToTime = formData.to_time || (() => {
+            const end = new Date(resDate.getTime() + (formData.duration_minutes || 75) * 60000);
+            return `${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
+          })();
+          const tableNamesStr = selectedTables.map(t => t.name).join(' + ') || '—';
+
+          await sendEmailFn({
+            to: formData.customer_email.trim(),
+            subject: `Reservation Updated – ${reservation.restaurant_name || 'Restaurant'}`,
+            html: `
+              <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+                <h2 style="color:#22c55e;">Your reservation has been updated </h2>
+                <p>Hi ${formData.customer_name?.split(' ')[0] || 'there'},</p>
+                <p>Your booking at <strong>${reservation.restaurant_name || 'Restaurant'}</strong> has been updated. Here are the current details:</p>
+                <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                  <tr><td style="padding:8px 0;color:#888;">Date</td><td><strong>${resDateFormatted}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Time</td><td><strong>${displayFromTime} – ${displayToTime}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${formData.number_of_guests}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Table</td><td><strong>${tableNamesStr}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Status</td><td><strong style="text-transform:capitalize;">${formData.status}</strong></td></tr>
+                  ${formData.special_requests?.trim() ? `<tr><td style="padding:8px 0;color:#888;">Special Requests</td><td>${formData.special_requests}</td></tr>` : ''}
+                </table>
+                <p style="color:#888;font-size:12px;margin-top:24px;">
+                  If any of this looks wrong, please contact us directly.
+                </p>
+                <p style="color:#888;font-size:12px;margin-top:8px;">— ${reservation.restaurant_name || ''}</p>
+              </div>
+            `,
+          });
+        } catch (emailErr) {
+          console.error('❌ Update notification email failed:', emailErr?.message || emailErr);
+        }
       }
 
       console.log('✅ Reservation updated successfully');
