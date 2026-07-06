@@ -1124,7 +1124,26 @@ const handleCancelRequest = async () => {
             <h3 className="text-white font-bold text-2xl mb-2">
               {successMsg.includes('cancel') ? 'Request Sent!' : 'Reservation Updated!'}
             </h3>
-            <p className="text-white/50 text-base">{successMsg}</p>
+            <p className="text-white/50 text-base mb-6">{successMsg}</p>
+
+            {!successMsg.includes('cancel') && (
+              <button
+                onClick={async () => {
+                  // Refresh reservation data so the view reflects the new date/time/guests
+                  const snap = await getDoc(doc(db, 'reservations', reservationId));
+                  if (snap.exists()) setReservation({ id: snap.id, ...snap.data() });
+                  setMode('view');
+                  setModStep(1);
+                  setSelectedDate(null);
+                  setSelectedTime('');
+                  setSlotAvail(null);
+                }}
+                className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                style={{ backgroundColor: accent }}
+              >
+                Make Another Change
+              </button>
+            )}
           </div>
         )}
         </div>
