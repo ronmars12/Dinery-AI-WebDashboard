@@ -4,6 +4,7 @@ import { doc, updateDoc, collection, onSnapshot, getDoc, serverTimestamp } from 
 import { FiX, FiChevronLeft, FiChevronRight, FiCalendar, FiPlus, FiUsers, FiTrash2, FiClock, FiMapPin, FiMoreVertical, FiFileText, FiLock, FiSun, FiMoon, FiRefreshCw } from 'react-icons/fi';
 import { firestore, auth } from '../../firebase';
 import { useTheme } from '../../ThemeContext';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // ─── Note Indicator Component ──────────────────────────────────────────────────
 const NoteIndicator = ({ publicNote, internalNote, isDark }) => {
@@ -87,6 +88,7 @@ const CalendarView = ({
   const [settings, setSettings] = useState({ timeBarShowsStartOfHour: true });
   const [contextMenu, setContextMenu] = useState(null);
   const [combinations, setCombinations] = useState([]);
+  const [pendingTimeChange, setPendingTimeChange] = useState(null);
   const [hoveredReservation, setHoveredReservation] = useState(null);
   const [overlapMenu, setOverlapMenu] = useState(null);
   // Responsive: detect screen size with improved tablet detection
@@ -634,6 +636,102 @@ const CalendarView = ({
     );
   };
 
+  const TimeChangeConfirmModal = ({ pending, onClose }) => {
+    const [confirming, setConfirming] = useState(false);
+
+    const handleConfirm = async () => {
+      setConfirming(true);
+      const { reservation, newDate, newFromTime, duration, tableUpdate } = pending;
+
+      setLocalReservations(rs => rs.map(r =>
+        r.id === reservation.id
+          ? { ...r, reservation_date: newDate, from_time: newFromTime, duration_minutes: duration, ...(tableUpdate || {}) }
+          : r
+      ));
+
+      try {
+        await updateDoc(doc(db, 'reservations', reservation.id), {
+          reservation_date: newDate,
+          from_time: newFromTime,
+          duration_minutes: duration,
+          ...(tableUpdate || {}),
+          updated_at: serverTimestamp(),
+        });
+
+        if (reservation.customer_email?.trim() && !['cancelled','completed'].includes(reservation.status)) {
+          try {
+            const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
+            const resDateFormatted = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            await sendEmailFn({
+              to: reservation.customer_email.trim(),
+              subject: `Reservation Updated – ${reservation.restaurant_name || 'Restaurant'}`,
+              html: `
+                <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+                  <h2 style="color:#22c55e;">Your reservation time has changed ✏️</h2>
+                  <p>Hi ${reservation.customer_name?.split(' ')[0] || 'there'},</p>
+                  <p>Your booking at <strong>${reservation.restaurant_name || 'Restaurant'}</strong> was moved from <strong>${pending.oldFromTime}</strong> to <strong>${newFromTime}</strong>.</p>
+                  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                    <tr><td style="padding:8px 0;color:#888;">Date</td><td><strong>${resDateFormatted}</strong></td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">New Time</td><td><strong>${newFromTime}</strong></td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${reservation.number_of_guests}</strong></td></tr>
+                  </table>
+                  <a href="https://booking.dinery.ai/manage-reservation/${reservation.id}"
+                    style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
+                    Manage My Reservation
+                  </a>
+                  ${(settings?.contactEmail || settings?.contactPhone) ? `
+                    <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
+                      <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 Restaurant Contact</p>
+                      ${settings?.contactEmail ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">✉️ <a href="mailto:${settings.contactEmail}" style="color:#fe8a24;">${settings.contactEmail}</a></p>` : ''}
+                      ${settings?.contactPhone ? `<p style="margin:0;font-size:13px;color:#555;">📱 <a href="tel:${settings.contactPhone}" style="color:#fe8a24;">${settings.contactPhone}</a></p>` : ''}
+                    </div>
+                  ` : ''}
+                  <p style="color:#888;font-size:12px;margin-top:16px;">
+                    Questions or feedback? Reach us at <a href="mailto:feedback@yayas.no" style="color:#fe8a24;">feedback@yayas.no</a>
+                  </p>
+                </div>
+              `,
+            });
+          } catch (emailErr) {
+            console.error('❌ Time-change notification email failed:', emailErr?.message || emailErr);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to update time:', err);
+        setLocalReservations(reservations);
+      }
+
+      setConfirming(false);
+      onClose();
+    };
+
+    return (
+      <>
+        <div className="fixed inset-0 z-40 bg-black/30" onClick={() => !confirming && onClose()} />
+        <div className={`fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl border p-5 w-[90vw] max-w-sm ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+          <p className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Confirm time change</p>
+          <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            Would you like to change this reservation from <strong>{pending.oldFromTime}</strong> to <strong>{pending.newFromTime}</strong>?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => !confirming && onClose()}
+              disabled={confirming}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'} disabled:opacity-50`}>
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={confirming}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-[#fe8a24] hover:bg-[#ff9d47] disabled:opacity-50">
+              {confirming ? 'Saving…' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   const getDaysToDisplay = () => {
     if (viewRange === 'day') return [currentDate];
     if (viewRange === 'week') {
@@ -1009,6 +1107,25 @@ const CalendarView = ({
                 combination_name: null,
               };
 
+          const originalFromTime = reservation.from_time
+            || `${String(origDate.getHours()).padStart(2,'0')}:${String(origDate.getMinutes()).padStart(2,'0')}`;
+          const timeActuallyChanged = newFromTime !== originalFromTime;
+
+          if (timeActuallyChanged) {
+            setPendingTimeChange({
+              reservationId: reservation.id,
+              reservation,
+              oldFromTime: originalFromTime,
+              newFromTime,
+              newDate: new Date(newDate),
+              duration: snapDuration,
+              tableUpdate,
+              source: 'table',
+            });
+            setDragging(null);
+            return null;
+          }
+
             setLocalReservations(rs => rs.map(r =>
               r.id === reservation.id
                 ? {
@@ -1037,7 +1154,7 @@ const CalendarView = ({
       });
       return;
     }
-
+    
     setDragState(prev => {
       if (!prev) { 
         setDragging(null); 
@@ -1059,13 +1176,34 @@ const CalendarView = ({
         const parsed = new Date(currentTargetDay);
         if (!isNaN(parsed)) targetDate = new Date(parsed);
       }
-      const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
+const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
       targetDate.setHours(openHour + Math.floor(snapMinutes / 60), snapMinutes % 60, 0, 0);
       const snapDuration = Math.round(prev.duration / 5) * 5;
       const fromH = targetDate.getHours();
       const fromM = targetDate.getMinutes();
       const savedFromTime = `${String(fromH).padStart(2,'0')}:${String(fromM).padStart(2,'0')}`;
-      
+
+      const originalFromTime = reservation.from_time
+        || `${String(origDate.getHours()).padStart(2,'0')}:${String(origDate.getMinutes()).padStart(2,'0')}`;
+      const dayChanged = targetDate.toDateString() !== origDate.toDateString();
+      const timeActuallyChanged = d.type === 'move' && (savedFromTime !== originalFromTime || dayChanged);
+
+      if (timeActuallyChanged) {
+        setPendingTimeChange({
+          reservationId: reservation.id,
+          reservation,
+          oldFromTime: originalFromTime,
+          newFromTime: savedFromTime,
+          newDate: new Date(targetDate),
+          duration: snapDuration,
+          tableUpdate: null,
+          source: 'grid',
+        });
+        setDragging(null);
+        setDragTargetDay(null);
+        return null;
+      }
+
       setLocalReservations(rs => rs.map(r =>
         r.id === reservation.id ? { ...r, reservation_date: targetDate, from_time: savedFromTime, duration_minutes: snapDuration } : r
       ));
@@ -2233,6 +2371,12 @@ const CalendarView = ({
         <OverlapMenu
           overlapMenu={overlapMenu}
           onClose={() => setOverlapMenu(null)}
+        />
+      )}
+      {pendingTimeChange && (
+        <TimeChangeConfirmModal
+          pending={pendingTimeChange}
+          onClose={() => setPendingTimeChange(null)}
         />
       )}
     </div>

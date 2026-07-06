@@ -477,8 +477,27 @@ const oldTableIds = reservation.table_ids?.length
         await clearAssignedTables();
       }
 
+      // ── Determine if anything customer-facing actually changed ──
+      const originalDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
+      const newDate = formData.reservation_date;
+
+      const dateChanged =
+        originalDate.getFullYear() !== newDate.getFullYear() ||
+        originalDate.getMonth() !== newDate.getMonth() ||
+        originalDate.getDate() !== newDate.getDate();
+
+      const originalFromTime = reservation.from_time || formatTimeForInput(originalDate);
+      const newFromTime = formData.from_time || formatTimeForInput(newDate);
+      const originalToTime = reservation.to_time || '';
+      const newToTime = formData.to_time || '';
+
+      const timeChanged = originalFromTime !== newFromTime || originalToTime !== newToTime;
+      const guestsChanged = (reservation.number_of_guests || 0) !== (formData.number_of_guests || 0);
+
+      const shouldNotifyCustomer = dateChanged || timeChanged || guestsChanged;
+
       // ── Notify customer of changes ──
-      if (formData.customer_email?.trim() && !clearedStatuses.includes(formData.status)) {
+      if (formData.customer_email?.trim() && !clearedStatuses.includes(formData.status) && shouldNotifyCustomer) {
         try {
           const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
           const resDate = formData.reservation_date;
@@ -495,7 +514,7 @@ const oldTableIds = reservation.table_ids?.length
             subject: `Reservation Updated – ${reservation.restaurant_name || 'Restaurant'}`,
             html: `
               <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-                <h2 style="color:#22c55e;">Your reservation has been updated </h2>
+                <h2 style="color:#22c55e;">Your reservation has been updated ✏️</h2>
                 <p>Hi ${formData.customer_name?.split(' ')[0] || 'there'},</p>
                 <p>Your booking at <strong>${reservation.restaurant_name || 'Restaurant'}</strong> has been updated. Here are the current details:</p>
                 <table style="width:100%;border-collapse:collapse;margin:16px 0;">
@@ -506,8 +525,22 @@ const oldTableIds = reservation.table_ids?.length
                   <tr><td style="padding:8px 0;color:#888;">Status</td><td><strong style="text-transform:capitalize;">${formData.status}</strong></td></tr>
                   ${formData.special_requests?.trim() ? `<tr><td style="padding:8px 0;color:#888;">Special Requests</td><td>${formData.special_requests}</td></tr>` : ''}
                 </table>
-                <p style="color:#888;font-size:12px;margin-top:24px;">
-                  If any of this looks wrong, please contact us directly.
+                <p style="color:#888;font-size:12px;margin-top:8px;">
+                  Need to change the time again, or anything else? You can manage your reservation here:
+                </p>
+                <a href="https://booking.dinery.ai/manage-reservation/${reservation.id}"
+                  style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
+                  Manage My Reservation
+                </a>
+                ${(settings?.contactEmail || settings?.contactPhone) ? `
+                  <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
+                    <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 Restaurant Contact</p>
+                    ${settings?.contactEmail ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">✉️ <a href="mailto:${settings.contactEmail}" style="color:#fe8a24;">${settings.contactEmail}</a></p>` : ''}
+                    ${settings?.contactPhone ? `<p style="margin:0;font-size:13px;color:#555;">📱 <a href="tel:${settings.contactPhone}" style="color:#fe8a24;">${settings.contactPhone}</a></p>` : ''}
+                  </div>
+                ` : ''}
+                <p style="color:#888;font-size:12px;margin-top:16px;">
+                  Questions or feedback? Reach us at <a href="mailto:feedback@yayas.no" style="color:#fe8a24;">feedback@yayas.no</a>
                 </p>
                 <p style="color:#888;font-size:12px;margin-top:8px;">— ${reservation.restaurant_name || ''}</p>
               </div>
