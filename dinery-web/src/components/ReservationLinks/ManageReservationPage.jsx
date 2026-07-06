@@ -481,34 +481,34 @@ export default function ManageReservationPage() {
           ...tableUpdate,
           updated_at: new Date(),
         });
-
-      if (reservation.customer_email) {
-        try {
-          const fn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
-          const firstName = reservation.customer_name?.split(' ')[0] || 'there';
-          const tableName = assignment.isCombination ? assignment.combination.name : assignment.table.name;
-          await fn({
-            to: reservation.customer_email,
-            isReservation: true, 
-            subject: `Reservation Confirmed – ${reservation.restaurant_name}`,
-            html: `
-              <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-                <h2 style="color:#fe8a24;">Reservation Updated ✅</h2>
-                <p>Hi ${firstName},</p>
-                <p>Your reservation at <strong>${reservation.restaurant_name}</strong> has been successfully updated.</p>
-                <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                  <tr><td style="padding:8px 0;color:#888;">Date</td><td style="font-weight:bold;">${resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</td></tr>
-                  <tr><td style="padding:8px 0;color:#888;">Time</td><td style="font-weight:bold;">${resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</td></tr>
-                  <tr><td style="padding:8px 0;color:#888;">Guests</td><td style="font-weight:bold;">${guests}</td></tr>
-                  <tr><td style="padding:8px 0;color:#888;">Table</td><td style="font-weight:bold;">${tableName}</td></tr>
-                </table>
-                <p style="color:#888;font-size:12px;">Your reservation has been confirmed with the new details above.</p>
-                <p style="color:#888;font-size:12px;margin-top:24px;">— ${reservation.restaurant_name}</p>
-              </div>
-            `,
-          }).catch(e => console.warn('Email failed:', e));
-        } catch (e) { }
-      }
+        if (reservation.customer_email) {
+          try {
+            const fn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
+            const firstName = reservation.customer_name?.split(' ')[0] || 'there';
+            const tableName = assignment.isCombination ? assignment.combination.name : assignment.table.name;
+            await fn({
+              to: reservation.customer_email,
+              subject: `Reservation Confirmed – ${reservation.restaurant_name}`,
+              html: `
+                <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+                  <h2 style="color:#fe8a24;">Reservation Updated ✅</h2>
+                  <p>Hi ${firstName},</p>
+                  <p>Your reservation at <strong>${reservation.restaurant_name}</strong> has been successfully updated.</p>
+                  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                    <tr><td style="padding:8px 0;color:#888;">Date</td><td style="font-weight:bold;">${resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">Time</td><td style="font-weight:bold;">${resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">Guests</td><td style="font-weight:bold;">${guests}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">Table</td><td style="font-weight:bold;">${tableName}</td></tr>
+                  </table>
+                  <p style="color:#888;font-size:12px;">Your reservation has been confirmed with the new details above.</p>
+                  <p style="color:#888;font-size:12px;margin-top:24px;">— ${reservation.restaurant_name}</p>
+                </div>
+              `,
+            });
+          } catch (emailErr) {
+            console.error('❌ Modification confirmation email failed:', emailErr?.message || emailErr);
+          }
+        }
 
       setSuccessMsg('Your reservation has been successfully updated and confirmed!');
       setMode('success');
@@ -555,7 +555,6 @@ const handleCancelRequest = async () => {
       );
     }
 
-    // 3. Send cancellation confirmation email
     if (reservation?.customer_email) {
       try {
         const fn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
@@ -563,7 +562,6 @@ const handleCancelRequest = async () => {
         const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
         await fn({
           to: reservation.customer_email,
-          isReservation: true, 
           subject: `Reservation Cancelled – ${reservation.restaurant_name}`,
           html: `
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
@@ -580,10 +578,11 @@ const handleCancelRequest = async () => {
               <p style="color:#888;font-size:12px;margin-top:16px;">— ${reservation.restaurant_name}</p>
             </div>
           `,
-        }).catch(e => console.warn('Cancellation email failed:', e));
-      } catch (e) { console.warn('Email error:', e); }
+        });
+      } catch (emailErr) {
+        console.error('❌ Cancellation email failed:', emailErr?.message || emailErr);
+      }
     }
-
     setSuccessMsg('Your reservation has been cancelled. A confirmation email has been sent.');
     setMode('success');
   } catch (e) {
