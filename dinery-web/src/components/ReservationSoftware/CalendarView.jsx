@@ -636,10 +636,13 @@ const CalendarView = ({
     );
   };
 
-  const TimeChangeConfirmModal = ({ pending, onClose }) => {
+  const TimeChangeConfirmModal = ({ pending, onClose, settings, setLocalReservations, reservations }) => {
+    const { isDarkMode } = useTheme();
+    const db = firestore;
     const [confirming, setConfirming] = useState(false);
 
     const handleConfirm = async () => {
+      if (confirming) return;
       setConfirming(true);
       const { reservation, newDate, newFromTime, duration, tableUpdate } = pending;
 
@@ -2377,6 +2380,9 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
         <TimeChangeConfirmModal
           pending={pendingTimeChange}
           onClose={() => setPendingTimeChange(null)}
+          settings={settings}
+          setLocalReservations={setLocalReservations}
+          reservations={reservations}
         />
       )}
     </div>
