@@ -466,22 +466,28 @@ export default function ManageReservationPage() {
             : null,
         ].filter(Boolean).join(' · ');
 
-        await updateDoc(doc(db, 'reservations', reservationId), {
-          reservation_date: resDate,
-          time: resDate.toISOString(),
-          number_of_guests: guests,
-          duration_minutes: diningDur,
-          status: 'confirmed',
-          change_request: null,
-          cancel_reason: null,
-          requested_date: null,
-          requested_time: null,
-          modification_summary: modSummary || null,
-          modified_at: new Date(),
-          ...tableUpdate,
-          updated_at: new Date(),
-        });
-        if (reservation.customer_email) {
+      await updateDoc(doc(db, 'reservations', reservationId), {
+                reservation_date: resDate,
+                time: resDate.toISOString(),
+                number_of_guests: guests,
+                duration_minutes: diningDur,
+                status: 'confirmed',
+                change_request: null,
+                cancel_reason: null,
+                requested_date: null,
+                requested_time: null,
+                modification_summary: modSummary || null,
+                modified_at: new Date(),
+                ...tableUpdate,
+                updated_at: new Date(),
+              });
+
+              const freshSnap = await getDoc(doc(db, 'reservations', reservationId));
+              if (freshSnap.exists()) {
+                setReservation({ id: freshSnap.id, ...freshSnap.data() });
+              }
+
+            if (reservation.customer_email) {
           try {
             const fn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
             const firstName = reservation.customer_name?.split(' ')[0] || 'there';
@@ -523,7 +529,6 @@ const handleCancelRequest = async () => {
   try {
     const col = reservation?.restaurant_collection || 'restaurants';
 
-    // 1. Cancel the reservation immediately
     await updateDoc(doc(db, 'reservations', reservationId), {
       status: 'cancelled',
       cancel_reason: request || 'Cancelled by customer',
@@ -531,6 +536,11 @@ const handleCancelRequest = async () => {
       updated_at: new Date(),
     });
 
+      const freshSnap = await getDoc(doc(db, 'reservations', reservationId));
+      if (freshSnap.exists()) {
+        setReservation({ id: freshSnap.id, ...freshSnap.data() });
+      }
+    // 2. Free up the assigned table(s)
     // 2. Free up the assigned table(s)
     const tableIds = Array.isArray(reservation?.table_ids) && reservation.table_ids.length
       ? reservation.table_ids
@@ -685,47 +695,6 @@ const handleCancelRequest = async () => {
           </div>
           <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Manage Your<br />Reservation</h1>
           <p className="text-white/40 text-sm">Modify or cancel your booking</p>
-        </div>
-
-        {/* Booking Summary Card */}
-        <div className="relative mb-6 group">
-          <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
-            <div className="h-1 w-full bg-gradient-to-r from-[#fe8a24] to-[#fe8a24]/40" />
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-1">Reservation ID</p>
-                  <p className="text-white/60 text-xs font-mono">{reservation.id?.slice(0, 12)}...</p>
-                </div>
-                <StatusBadge status={reservation.status} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <InfoRow icon={FiCalendar} label="Date" value={formattedDate} />
-                <InfoRow icon={FiClock} label="Time" value={formattedTime} />
-                <InfoRow icon={FiUsers} label="Guests" value={`${reservation.number_of_guests} guest${reservation.number_of_guests > 1 ? 's' : ''}`} />
-                <InfoRow icon={FiMapPin} label="Restaurant" value={reservation.restaurant_name} />
-              </div>
-
-              <div className="pt-4 border-t border-white/10">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
-                    <FiUser className="w-3.5 h-3.5 text-white/40" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white/40 text-xs">Customer</p>
-                    <p className="text-white/80 text-sm font-medium">{reservation.customer_name}</p>
-                  </div>
-                  {reservation.customer_email && (
-                    <div className="text-right">
-                      <p className="text-white/30 text-xs">{reservation.customer_email}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Action Buttons */}
@@ -1114,7 +1083,7 @@ const handleCancelRequest = async () => {
           </div>
         )}
 
-        {/* Success State */}
+{/* Success State */}
         {mode === 'success' && (
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-8 text-center">
             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg"
@@ -1127,22 +1096,58 @@ const handleCancelRequest = async () => {
             <p className="text-white/50 text-base mb-6">{successMsg}</p>
 
             {!successMsg.includes('cancel') && (
-              <button
-                onClick={async () => {
-                  // Refresh reservation data so the view reflects the new date/time/guests
-                  const snap = await getDoc(doc(db, 'reservations', reservationId));
-                  if (snap.exists()) setReservation({ id: snap.id, ...snap.data() });
-                  setMode('view');
-                  setModStep(1);
-                  setSelectedDate(null);
-                  setSelectedTime('');
-                  setSlotAvail(null);
-                }}
-                className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: accent }}
-              >
-                Make Another Change
-              </button>
+              <>
+              {/* ── New booking details (styled to match Confirm Changes "New Booking" card) ── */}
+              <div className="p-4 rounded-xl mb-6 text-left"
+                style={{ backgroundColor: `${accent}10`, border: `1px solid ${accent}30` }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: accent }}>
+                  New Booking
+                </p>
+                <div className="space-y-2 text-white/90 text-sm font-medium">
+                  <div className="flex items-center gap-2">
+                    <FiCalendar className="w-3.5 h-3.5" style={{ color: accent }} />
+                    {formattedDate}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FiClock className="w-3.5 h-3.5" style={{ color: accent }} />
+                    {formattedTime}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FiUsers className="w-3.5 h-3.5" style={{ color: accent }} />
+                    {reservation.number_of_guests} guest{reservation.number_of_guests > 1 ? 's' : ''}
+                  </div>
+                  {(reservation.combination_name || reservation.table_name) && (
+                    <div className="flex items-center gap-2">
+                      🪑 {reservation.combination_name || (Array.isArray(reservation.table_names) && reservation.table_names.length > 1 ? reservation.table_names.join(' + ') : reservation.table_name)}
+                      <span className="text-[10px] text-white/35 font-normal">(auto-assigned)</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <FiCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  <p className="text-xs text-emerald-300 font-medium">
+                    Table confirmed — {formattedTime} on {formattedDate}
+                  </p>
+                </div>
+              </div>
+                <button
+                  onClick={async () => {
+                    // Refresh reservation data so the view reflects the new date/time/guests
+                    const snap = await getDoc(doc(db, 'reservations', reservationId));
+                    if (snap.exists()) setReservation({ id: snap.id, ...snap.data() });
+                    setMode('view');
+                    setModStep(1);
+                    setSelectedDate(null);
+                    setSelectedTime('');
+                    setSlotAvail(null);
+                  }}
+                  className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: accent }}
+                >
+                  Make Another Change
+                </button>
+              </>
             )}
           </div>
         )}

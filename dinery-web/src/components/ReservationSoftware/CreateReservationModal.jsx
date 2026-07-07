@@ -2120,7 +2120,24 @@ const CreateReservationModal = ({
 
                   <div>
                     <label className={labelCls}><FiUsers className="inline w-3 h-3 mr-1"/>Guests *</label>
-                    <input type="number" value={guests} onChange={e=>setGuests(parseInt(e.target.value)||1)}
+                    <input
+                      type="number"
+                      value={guests}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setGuests('');
+                          return;
+                        }
+                        const parsed = parseInt(val, 10);
+                        if (!isNaN(parsed)) setGuests(parsed);
+                      }}
+                      onBlur={e => {
+                        const parsed = parseInt(e.target.value, 10);
+                        if (e.target.value === '' || isNaN(parsed) || parsed < 1) {
+                          setGuests(1);
+                        }
+                      }}
                       min="1" max={maxGuests} className={inputCls}/>
                   </div>
 
