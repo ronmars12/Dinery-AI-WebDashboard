@@ -697,6 +697,48 @@ const handleCancelRequest = async () => {
           <p className="text-white/40 text-sm">Modify or cancel your booking</p>
         </div>
 
+        {mode === 'view' && (
+        <div className="relative mb-6 group">
+          <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden">
+            <div className="h-1 w-full bg-gradient-to-r from-[#fe8a24] to-[#fe8a24]/40" />
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-1">Reservation ID</p>
+                  <p className="text-white/60 text-xs font-mono">{reservation.id?.slice(0, 12)}...</p>
+                </div>
+                <StatusBadge status={reservation.status} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <InfoRow icon={FiCalendar} label="Date" value={formattedDate} />
+                <InfoRow icon={FiClock} label="Time" value={formattedTime} />
+                <InfoRow icon={FiUsers} label="Guests" value={`${reservation.number_of_guests} guest${reservation.number_of_guests > 1 ? 's' : ''}`} />
+                <InfoRow icon={FiMapPin} label="Restaurant" value={reservation.restaurant_name} />
+              </div>
+
+              <div className="pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center">
+                    <FiUser className="w-3.5 h-3.5 text-white/40" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white/40 text-xs">Customer</p>
+                    <p className="text-white/80 text-sm font-medium">{reservation.customer_name}</p>
+                  </div>
+                  {reservation.customer_email && (
+                    <div className="text-right">
+                      <p className="text-white/30 text-xs">{reservation.customer_email}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
         {/* Action Buttons */}
         {mode === 'view' && !['cancelled', 'completed'].includes(reservation.status) && (
           <div className="grid gap-3">
