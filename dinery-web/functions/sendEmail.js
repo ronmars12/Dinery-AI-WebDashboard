@@ -4,25 +4,32 @@ const { defineSecret } = require("firebase-functions/params");
 
 const resendApiKey = defineSecret("RESEND_API_KEY");
 
+// Centralized allow-list so sendEmail and testEmail always stay in sync
+const ALLOWED_ORIGINS = [
+  // Local development
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  // Firebase hosting
+  "https://dinery-9c261.web.app",
+  "https://dinery-9c261.firebaseapp.com",
+  // Netlify hosting
+  "https://dinery-ai.netlify.app",
+  "https://dineryai.netlify.app",
+  "https://www.dineryai.netlify.app",
+  // Custom domain(s)
+  "https://dashboard.dinery.ai",
+  "https://dinery.ai",
+  "https://booking.dinery.ai", 
+  "https://www.dinery.ai",
+];
+
 const sendEmail = onCall(
   {
     secrets: [resendApiKey],
     enforceAppCheck: false,
-    cors: [
-      // Local development
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:3000",
-      // Firebase hosting
-      "https://dinery-9c261.web.app",
-      "https://dinery-9c261.firebaseapp.com",
-      // Netlify hosting - ADD BOTH VARIATIONS
-      "https://dinery-ai.netlify.app",
-      "https://dineryai.netlify.app",
-      // Add any other domains you use
-      "https://www.dineryai.netlify.app"
-    ],
-    region: "asia-southeast1", // ← UNCOMMENTED - matches your deployment
+    cors: ALLOWED_ORIGINS,
+    region: "asia-southeast1", // ← matches your deployment
     timeoutSeconds: 60,
   },
   async (request) => {
@@ -30,11 +37,11 @@ const sendEmail = onCall(
     console.log("📧 To:", request.data?.to);
     console.log("📧 Subject:", request.data?.subject);
     console.log("📍 Request origin:", request.rawRequest?.headers?.origin || 'unknown');
-    
+
     // 🔓 Allow public reservation emails (no auth required)
-    const isReservationEmail = request.data?.isReservation === true || 
+    const isReservationEmail = request.data?.isReservation === true ||
                                request.data?.subject?.includes('Reservation');
-    
+
     if (!request.auth && !isReservationEmail) {
       throw new HttpsError("unauthenticated", "Must be signed in for non-reservation emails.");
     }
@@ -53,9 +60,9 @@ const sendEmail = onCall(
       console.log("  To:", to);
       console.log("  Subject:", subject);
       console.log("  HTML length:", html?.length || 0);
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         id: "simulated-" + Date.now(),
         message: "Email simulated - configure RESEND_API_KEY for actual emails"
       };
@@ -65,7 +72,7 @@ const sendEmail = onCall(
       console.log("🔄 Attempting to send email via Resend...");
       console.log(`📤 From: ${from ?? "Dinery AI <bookings@mail.dinery.ai>"}`);
       console.log(`📤 To: ${Array.isArray(to) ? to.join(', ') : to}`);
-      
+
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -85,10 +92,10 @@ const sendEmail = onCall(
       if (!response.ok) {
         const error = await response.json();
         console.error("❌ Resend API error:", error);
-        
+
         // Don't throw error - allow reservation to complete
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: error.message,
           message: "Email sending failed but reservation confirmed"
         };
@@ -96,18 +103,18 @@ const sendEmail = onCall(
 
       const result = await response.json();
       console.log(`✅ Email sent successfully! ID: ${result.id}`);
-      return { 
-        success: true, 
-        id: result.id, 
-        message: "Email sent successfully" 
+      return {
+        success: true,
+        id: result.id,
+        message: "Email sent successfully"
       };
-      
+
     } catch (err) {
       console.error("❌ Unexpected error sending email:", err);
-      
+
       // Return success anyway to not block user creation
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: err.message,
         message: "Email sending failed but reservation confirmed"
       };
@@ -118,24 +125,16 @@ const sendEmail = onCall(
 // ── Optional: Test function to verify deployment ──
 const testEmail = onCall(
   {
-    cors: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:3000",
-      "https://dinery-9c261.web.app",
-      "https://dinery-9c261.firebaseapp.com",
-      "https://dinery-ai.netlify.app",
-      "https://dineryai.netlify.app"
-    ],
+    cors: ALLOWED_ORIGINS,
     region: "asia-southeast1",
   },
   async (request) => {
     console.log("✅ Test function called successfully!");
     console.log("📍 Origin:", request.rawRequest?.headers?.origin || 'unknown');
     console.log("🔐 Auth:", request.auth ? 'Authenticated' : 'Not authenticated');
-    
-    return { 
-      status: "ok", 
+
+    return {
+      status: "ok",
       message: "Email function is reachable!",
       timestamp: new Date().toISOString(),
       region: "asia-southeast1"

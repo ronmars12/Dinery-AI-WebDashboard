@@ -72,10 +72,29 @@ function RefreshButton({ onClick, refreshing }) {
   );
 }
 
+// Turns { offerDurationValue: 3, offerDurationUnit: "weeks" } into "3 weeks" — used
+// client-side for the test/preview email, mirroring the same helper in
+// functions/sendThankYouEmails.js.
+function formatOfferDuration(value, unit) {
+  const n = parseInt(value, 10);
+  if (!n) return "";
+  const labels = { days: n === 1 ? "day" : "days", weeks: n === 1 ? "week" : "weeks", months: n === 1 ? "month" : "months" };
+  return `${n} ${labels[unit] || unit || "days"}`;
+}
+
+function pct(numerator, denominator) {
+  if (!denominator) return "0%";
+  return `${Math.round((numerator / denominator) * 100)}%`;
+}
+
 // ─── Overview ─────────────────────────────────────────────────────────────────
 
 function CRMOverview({ restaurantId }) {
-  const [stats, setStats] = useState({ emailsSent: 0, feedbackCount: 0, avgOverall: "0.0", avgFood: "0.0", avgService: "0.0", avgAtmosphere: "0.0", offerReservations: 0, positiveCount: 0, responseRate: 0 });
+  const [stats, setStats] = useState({
+    emailsSent: 0, feedbackCount: 0, avgOverall: "0.0", avgFood: "0.0", avgService: "0.0", avgAtmosphere: "0.0",
+    positiveCount: 0, responseRate: 0,
+    offersSent: 0, offerClicks: 0, offerReservationsCreated: 0, offersRedeemed: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -93,7 +112,17 @@ function CRMOverview({ restaurantId }) {
       const count = feedbacks.length;
       const avgField = (field) => count > 0 ? (feedbacks.reduce((s, f) => s + (f[field] || 0), 0) / count).toFixed(1) : "0.0";
       const positive = feedbacks.filter((f) => (((f.foodRating || 0) + (f.serviceRating || 0) + (f.atmosphereRating || 0) + (f.overallRating || 0)) / 4) >= 4.5).length;
-      setStats({ emailsSent: logData.emailsSent || 0, feedbackCount: count, avgOverall: avgField("overallRating"), avgFood: avgField("foodRating"), avgService: avgField("serviceRating"), avgAtmosphere: avgField("atmosphereRating"), offerReservations: logData.offerReservations || 0, positiveCount: positive, responseRate: logData.emailsSent > 0 ? Math.round((count / logData.emailsSent) * 100) : 0 });
+      setStats({
+        emailsSent: logData.emailsSent || 0,
+        feedbackCount: count,
+        avgOverall: avgField("overallRating"), avgFood: avgField("foodRating"), avgService: avgField("serviceRating"), avgAtmosphere: avgField("atmosphereRating"),
+        positiveCount: positive,
+        responseRate: logData.emailsSent > 0 ? Math.round((count / logData.emailsSent) * 100) : 0,
+        offersSent: logData.offersSent || 0,
+        offerClicks: logData.offerClicks || 0,
+        offerReservationsCreated: logData.offerReservationsCreated || 0,
+        offersRedeemed: logData.offersRedeemed || 0,
+      });
       setRecentFeedback(feedbacks.slice(0, 5));
       setLastUpdated(new Date());
     } catch (e) { console.error("CRM Overview load error:", e); }
@@ -112,11 +141,20 @@ function CRMOverview({ restaurantId }) {
       </div>
       <div className="mb-2">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Email Activity</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <MetricCard label="Emails Sent" value={stats.emailsSent} color="orange" />
           <MetricCard label="Survey Responses" value={stats.feedbackCount} color="blue" />
           <MetricCard label="Response Rate" value={`${stats.responseRate}%`} color="green" />
-          <MetricCard label="Offer Reservations" value={stats.offerReservations} sub="via campaign links" color="purple" />
+        </div>
+      </div>
+      <div className="mb-2">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Offer Performance</p>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          <MetricCard label="Offers Sent" value={stats.offersSent} color="orange" />
+          <MetricCard label="Link Clicks" value={stats.offerClicks} sub={pct(stats.offerClicks, stats.offersSent) + " click rate"} color="blue" />
+          <MetricCard label="Reservations Created" value={stats.offerReservationsCreated} sub={pct(stats.offerReservationsCreated, stats.offerClicks) + " of clicks booked"} color="purple" />
+          <MetricCard label="Offers Redeemed" value={stats.offersRedeemed} sub="visit completed" color="green" />
+          <MetricCard label="Redemption Rate" value={pct(stats.offersRedeemed, stats.offersSent)} sub="of offers sent" color="green" />
         </div>
       </div>
       <div className="mb-2">
@@ -247,8 +285,11 @@ const DEFAULT_SETTINGS = {
   enabled: false, sendHour: "10",
   thankYouMessage: "Thank you for visiting {{restaurant_name}}.\n\nWe hope you had a wonderful experience and look forward to welcoming you again soon.",
   offerEnabled: false, offerTitle: "Welcome Back Offer",
-  offerDescription: "We would love to welcome you back. Use the offer below when making your next reservation and receive 10% off all starters, main courses, and desserts.",
-  offerCode: "WELCOME10", surveyEnabled: true,
+  offerDescription: "We would love to welcome you back. If you visit us again within the next {{offer_duration}}, use the offer below and receive 10% off all starters, main courses, and desserts.",
+  offerCode: "WELCOME10",
+  offerDurationValue: "3", offerDurationUnit: "weeks",
+  offerConditions: "",
+  surveyEnabled: true,
   surveyQuestions: { food: true, service: true, atmosphere: true, overall: true, comments: true },
   reviewThreshold: "4.5", googleReviewUrl: "", tripAdvisorUrl: "",
 };
@@ -309,17 +350,22 @@ function EmailAutomation({ restaurantId }) {
         .replace(/{{party_size}}/g, "2")
         .replace(/\n/g, "<br/>");
 
+      const durationText = formatOfferDuration(settings.offerDurationValue, settings.offerDurationUnit);
+      const offerDescriptionFilled = (settings.offerDescription || "").replace(/{{\s*offer_duration\s*}}/g, durationText);
+      const offerConditions = (settings.offerConditions || "").trim();
+
       const offerHtml = settings.offerEnabled ? `
         <div style="margin-top:20px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:10px;">
           <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${settings.offerTitle || "Welcome Back Offer"}</p>
-          <p style="margin:0 0 12px;font-size:13px;color:#555;">${(settings.offerDescription || "").replace(/\n/g, "<br/>")}</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#555;">${offerDescriptionFilled.replace(/\n/g, "<br/>")}</p>
           <p style="margin:0 0 12px;font-size:13px;color:#555;">Offer code: <strong style="font-family:monospace;background:#fff;border:1px solid #fe8a24;padding:2px 8px;border-radius:4px;">${settings.offerCode}</strong></p>
-          <a href="https://dineryai.netlify.app/reserve/" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Your Next Visit</a>
+          <a href="https://dashboard.dinery.ai/reserve/" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Your Next Visit</a>
+          ${offerConditions ? `<p style="margin:12px 0 0;font-size:11px;color:#999;line-height:1.5;">${offerConditions.replace(/\n/g, "<br/>")}</p>` : ""}
         </div>` : "";
 
       const surveyHtml = settings.surveyEnabled ? `
         <div style="margin-top:20px;text-align:center;">
-          <a href="https://dineryai.netlify.app/feedback/PREVIEW" style="display:inline-block;background:#1e293b;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Share Your Feedback</a>
+          <a href="https://dashboard.dinery.ai/feedback/PREVIEW" style="display:inline-block;background:#1e293b;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Share Your Feedback</a>
           <p style="margin:10px 0 0;font-size:12px;color:#999;">It only takes a minute.</p>
         </div>` : "";
 
@@ -498,9 +544,39 @@ function EmailAutomation({ restaurantId }) {
             {settings.offerEnabled ? (
               <div className="space-y-4">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Offer Title</label><input type="text" value={settings.offerTitle} onChange={(e) => set("offerTitle", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" /></div>
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Offer Description</label><textarea value={settings.offerDescription} onChange={(e) => set("offerDescription", e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" /></div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Offer Valid For</label>
+                  <div className="flex gap-2">
+                    <input type="number" min="1" value={settings.offerDurationValue} onChange={(e) => set("offerDurationValue", e.target.value)} className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+                    <select value={settings.offerDurationUnit} onChange={(e) => set("offerDurationUnit", e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
+                      <option value="days">Days</option>
+                      <option value="weeks">Weeks</option>
+                      <option value="months">Months</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">How long the offer is valid for. Use the <span className="font-mono bg-gray-100 px-1 rounded">{"{{offer_duration}}"}</span> tag in the description below to mention it, e.g. "valid for the next {"{{offer_duration}}"}".</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Offer Description</label>
+                  <textarea value={settings.offerDescription} onChange={(e) => set("offerDescription", e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {["{{offer_duration}}"].map((tag) => (
+                      <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("offerDescription", settings.offerDescription + " " + tag)}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Offer Code</label><input type="text" value={settings.offerCode} onChange={(e) => set("offerCode", e.target.value.toUpperCase())} placeholder="e.g. WELCOME10" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" /></div>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4"><p className="text-xs text-[#fe8a24] font-semibold mb-1">How the offer link works</p><p className="text-xs text-gray-600">When a guest clicks "Book Your Next Visit", the offer code is automatically attached to their new reservation. Staff will see it in the reservation notes field.</p></div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Offer Conditions <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <textarea value={settings.offerConditions} onChange={(e) => set("offerConditions", e.target.value)} rows={2} placeholder="e.g. Valid Tuesday–Thursday only. Minimum spend $50. Cannot be combined with other offers." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+                  <p className="text-xs text-gray-400 mt-1">Shown in small print at the bottom of the offer box in the email, below the button.</p>
+                </div>
+
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4"><p className="text-xs text-[#fe8a24] font-semibold mb-1">How the offer link works</p><p className="text-xs text-gray-600">When a guest clicks "Book Your Next Visit", the click is logged, then they land on the reservation page with the offer code attached. When they complete that booking, it's automatically credited back to this campaign — so you can see clicks, bookings, and redemptions all in the Overview tab.</p></div>
               </div>
             ) : <p className="text-sm text-gray-400">Enable to configure a return visit offer for your guests.</p>}
           </SectionCard>
@@ -583,10 +659,11 @@ function EmailAutomation({ restaurantId }) {
                 <p className="font-semibold text-gray-600 mb-1">What this sends</p>
                 <ul className="space-y-0.5 list-disc list-inside">
                   <li>Your thank you message with placeholder guest/reservation data</li>
-                  {settings.offerEnabled && <li>Return visit offer — title, description, and code <span className="font-mono">{settings.offerCode}</span></li>}
+                  {settings.offerEnabled && <li>Return visit offer — title, description (with duration filled in), code <span className="font-mono">{settings.offerCode}</span>{settings.offerConditions ? ", and your conditions text" : ""}</li>}
                   {settings.surveyEnabled && <li>Feedback survey button — links to <span className="font-mono">/feedback/PREVIEW</span> (shows not-found since it is a preview, not a real reservation)</li>}
                   <li>Orange warning banner at top marking it as a test</li>
                 </ul>
+                <p className="mt-2">Note: the preview's offer button links directly to the reservation page (not through click tracking), so sending a test won't affect your Offer Performance stats.</p>
               </div>
             </div>
           </div>
@@ -632,7 +709,7 @@ function EmailAutomation({ restaurantId }) {
                         )}
                         {!item.ok && !item.indexLink && item.label === "Firestore index for email log" && (
                           <a href={`https://console.firebase.google.com/project/dinery-9c261/firestore/indexes`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-red-600 border border-red-300 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             Open Firestore Indexes
                           </a>
                         )}

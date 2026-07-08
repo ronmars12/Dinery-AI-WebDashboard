@@ -5,6 +5,13 @@
 // "yesterday" whose from_time matches the restaurant's configured send hour,
 // checks status is confirmed/completed, and sends the thank you email via Resend.
 // Prevents duplicate sends with a `thankYouEmailSent` flag on the reservation doc.
+//
+// Offer links route through the `trackOfferClick` HTTP function (see
+// functions/trackOfferClick.js) so clicks can be counted before redirecting
+// the guest to the real reservation page. Each send carries a campaignId
+// (the reservationId, since one offer email is sent per reservation) so the
+// resulting booking — and its eventual "completed" status — can be
+// attributed back to this campaign for ROI reporting.
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
@@ -14,6 +21,12 @@ const { initializeApp, getApps } = require("firebase-admin/app");
 if (!getApps().length) initializeApp();
 
 const resendApiKey = defineSecret("RESEND_API_KEY");
+
+// Base URL for guest-facing links in the email (offer / survey)
+const BASE_URL = "https://dashboard.dinery.ai";
+// HTTP endpoint that logs an offer-link click, then redirects to BASE_URL/reserve/...
+// Update this if the trackOfferClick function is deployed under a different project/region.
+const TRACK_CLICK_URL = "https://asia-southeast1-dinery-9c261.cloudfunctions.net/trackOfferClick";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -28,6 +41,18 @@ function endOfDay(d) {
   return x;
 }
 
+// Turns { offerDurationValue: 3, offerDurationUnit: "weeks" } into "3 weeks"
+function formatOfferDuration(value, unit) {
+  const n = parseInt(value, 10);
+  if (!n) return "";
+  const labels = {
+    days: n === 1 ? "day" : "days",
+    weeks: n === 1 ? "week" : "weeks",
+    months: n === 1 ? "month" : "months",
+  };
+  return `${n} ${labels[unit] || unit || "days"}`;
+}
+
 // Fills {{tags}} in the thank you message with reservation data
 function fillTemplate(template, data) {
   return (template || "")
@@ -39,14 +64,22 @@ function fillTemplate(template, data) {
     .replace(/{{\s*party_size\s*}}/g, String(data.partySize || ""));
 }
 
-function buildOfferSection(settings, offerLink) {
+// Fills {{offer_duration}} in the offer description
+function fillOfferTemplate(template, durationText) {
+  return (template || "").replace(/{{\s*offer_duration\s*}}/g, durationText || "");
+}
+
+function buildOfferSection(settings, offerLink, durationText) {
   if (!settings.offerEnabled) return "";
+  const description = fillOfferTemplate(settings.offerDescription, durationText);
+  const conditions = (settings.offerConditions || "").trim();
   return `
     <div style="margin-top:20px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:10px;">
       <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${settings.offerTitle || "Welcome Back Offer"}</p>
-      <p style="margin:0 0 12px;font-size:13px;color:#555;">${(settings.offerDescription || "").replace(/\n/g, "<br/>")}</p>
+      <p style="margin:0 0 12px;font-size:13px;color:#555;">${description.replace(/\n/g, "<br/>")}</p>
       <p style="margin:0 0 12px;font-size:13px;color:#555;">Offer code: <strong style="font-family:monospace;background:#fff;border:1px solid #fe8a24;padding:2px 8px;border-radius:4px;">${settings.offerCode || ""}</strong></p>
       <a href="${offerLink}" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Your Next Visit</a>
+      ${conditions ? `<p style="margin:12px 0 0;font-size:11px;color:#999;line-height:1.5;">${conditions.replace(/\n/g, "<br/>")}</p>` : ""}
     </div>
   `;
 }
@@ -84,6 +117,16 @@ async function sendViaResend(apiKey, { to, subject, html }) {
   }
   const result = await response.json();
   return { success: true, id: result.id };
+}
+
+// Increments a numeric field on crm_stats/{restaurantId} inside a transaction
+async function incrementStat(db, restaurantId, field, by = 1) {
+  const statsRef = db.collection("crm_stats").doc(restaurantId);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(statsRef);
+    const current = snap.exists ? snap.data()[field] || 0 : 0;
+    tx.set(statsRef, { [field]: current + by }, { merge: true });
+  });
 }
 
 // ── Main scheduled function ───────────────────────────────────────────────
@@ -176,16 +219,27 @@ const sendThankYouEmails = onSchedule(
 
           const thankYouHtml = fillTemplate(settings.thankYouMessage, templateData).replace(/\n/g, "<br/>");
 
-          // Offer link: carries restaurant + offer code + originating reservation
-          const offerLink = `https://dineryai.netlify.app/reserve/${restaurantId}?offer=${encodeURIComponent(settings.offerCode || "")}`;
+          // Campaign ID — one offer email per reservation, so the reservationId
+          // doubles as a unique campaign identifier for attribution.
+          const campaignId = reservationId;
+          const durationText = formatOfferDuration(settings.offerDurationValue, settings.offerDurationUnit);
+
+          // Offer link routes through the click-tracking redirect function
+          const offerLink = settings.offerEnabled
+            ? `${TRACK_CLICK_URL}?restaurantId=${encodeURIComponent(restaurantId)}` +
+              `&offer=${encodeURIComponent(settings.offerCode || "")}` +
+              `&campaignId=${encodeURIComponent(campaignId)}` +
+              `&reservationId=${encodeURIComponent(reservationId)}`
+            : "";
+
           // Survey link: guest-facing feedback page
-          const surveyLink = `https://dineryai.netlify.app/feedback/${reservationId}`;
+          const surveyLink = `${BASE_URL}/feedback/${reservationId}`;
 
           const html = `
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1e293b;">
               <h2 style="color:#fe8a24;margin-bottom:4px;">Thank you for visiting!</h2>
               <p style="font-size:14px;line-height:1.6;">${thankYouHtml}</p>
-              ${buildOfferSection(settings, offerLink)}
+              ${buildOfferSection(settings, offerLink, durationText)}
               ${settings.surveyEnabled ? buildSurveySection(surveyLink) : ""}
               <p style="color:#aaa;font-size:11px;margin-top:28px;">You're receiving this because you recently dined with us.</p>
             </div>
@@ -202,12 +256,12 @@ const sendThankYouEmails = onSchedule(
             await resDoc.ref.update({ thankYouEmailSent: true, thankYouEmailSentAt: Timestamp.now() });
 
             // Increment crm_stats.emailsSent counter
-            const statsRef = db.collection("crm_stats").doc(restaurantId);
-            await db.runTransaction(async (tx) => {
-              const statsSnap = await tx.get(statsRef);
-              const current = statsSnap.exists ? statsSnap.data().emailsSent || 0 : 0;
-              tx.set(statsRef, { emailsSent: current + 1 }, { merge: true });
-            });
+            await incrementStat(db, restaurantId, "emailsSent");
+
+            // Track offer sends separately so redemption rate = offersRedeemed / offersSent
+            if (settings.offerEnabled) {
+              await incrementStat(db, restaurantId, "offersSent");
+            }
           } else {
             console.error(`❌ Failed to send to ${email}:`, result.error);
           }

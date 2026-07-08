@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  setDoc,
   updateDoc,
   query,
   where,
@@ -579,7 +580,10 @@ export default function PublicReservationPage() {
   const { restaurantId } = useParams();
   const db = firestore;
   const [searchParams] = useSearchParams();
-  const offerCode = searchParams.get('offer') || '';
+  const urlOfferCode = searchParams.get('offer') || '';
+  const urlCampaignId = searchParams.get('campaignId') || '';
+  const [offerCodeInput, setOfferCodeInput] = useState('');
+  const [offerCodeSource, setOfferCodeSource] = useState(null); 
   const [config, setConfig]                     = useState(null);
   const [restaurantData, setRestaurantData]     = useState(null);
   const [restaurantTables, setRestaurantTables] = useState([]);
@@ -635,6 +639,13 @@ export default function PublicReservationPage() {
 
     return () => unsubscribe();
   }, [db, restaurantData?.firestoreId]);
+
+  useEffect(() => {
+    if (urlOfferCode) {
+      setOfferCodeInput(urlOfferCode);
+      setOfferCodeSource('auto');
+    }
+  }, [urlOfferCode]);
 
   useEffect(() => {
     const load = async () => {
@@ -1239,10 +1250,12 @@ export default function PublicReservationPage() {
         reservation_date:                     resDate,
         time:                                 resDate.toISOString(),
         duration_minutes:                     diningDuration,
-        special_requests: offerCode
-        ? `${form.notes ? form.notes + '\n\n' : ''}Offer Applied: ${offerCode}`
-        : (form.notes || ''),
-        offer_code_applied: offerCode || null,
+        special_requests: settings?.enableOfferCode && offerCodeInput
+          ? `${form.notes ? form.notes + '\n\n' : ''}Offer Applied: ${offerCodeInput}`
+          : (form.notes || ''),
+        offer_code_applied: (settings?.enableOfferCode && offerCodeInput) ? offerCodeInput : null,
+        offer_campaign_id: (settings?.enableOfferCode && offerCodeInput && offerCodeSource === 'auto') ? urlCampaignId || null : null,
+        offer_source: (settings?.enableOfferCode && offerCodeInput) ? offerCodeSource : null,
         customer_birthday:                    form.birthday || null,
         status:                               'confirmed',
 
@@ -1290,15 +1303,14 @@ export default function PublicReservationPage() {
       const createdId = newReservation.id;
       setJustCreatedId(createdId);
             
-      if (offerCode) {
+      if (settings?.enableOfferCode && offerCodeInput) {
         try {
           const statsRef = doc(db, 'crm_stats', restaurantData.firestoreId);
           const statsSnap = await getDoc(statsRef);
-          const current = statsSnap.exists() ? (statsSnap.data().offerReservations || 0) : 0;
-          await setDoc(statsRef, { offerReservations: current + 1 }, { merge: true });
+          const current = statsSnap.exists() ? (statsSnap.data().offerReservationsCreated || 0) : 0;
+          await setDoc(statsRef, { offerReservationsCreated: current + 1 }, { merge: true });
         } catch (e) { console.warn('offer stat increment failed', e); }
       }
-
      // Send confirmation email
       try {
         const functions = getFunctions(undefined, 'asia-southeast1');  // ← ADD THE REGION HERE
@@ -1860,6 +1872,31 @@ export default function PublicReservationPage() {
                                   </>
                                 );
                               })()}
+                            </div>
+                          </div>
+                          )}
+
+                        {settings?.enableOfferCode && (
+                          <div>
+                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
+                              {settings.offerCodeFieldLabel || 'Have an offer code?'}
+                            </label>
+                            <div className="relative">
+                              <input
+                                value={offerCodeInput}
+                                onChange={e => {
+                                  setOfferCodeInput(e.target.value.toUpperCase());
+                                  setOfferCodeSource(e.target.value ? 'manual' : null);
+                                }}
+                                placeholder="e.g. WELCOME10"
+                                className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-white/25 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all"
+                              />
+                              {offerCodeSource === 'auto' && offerCodeInput === urlOfferCode && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold px-2 py-1 rounded-full text-white"
+                                  style={{ backgroundColor: accent }}>
+                                  Applied
+                                </span>
+                              )}
                             </div>
                           </div>
                         )}

@@ -877,6 +877,9 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
       { minGuests: 6,  maxGuests: 8,  duration: 135 },
       { minGuests: 9,  maxGuests: 99, duration: 165 },
     ],
+    // ── Offer / Campaign Code ──
+    enableOfferCode: false,
+    offerCodeFieldLabel: 'Have an offer code?',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -1523,7 +1526,7 @@ const renderGeneralTab = () => (
         />
       </div>
       
-      <div className="py-3">
+<div className="py-3">
         <p className="text-sm font-medium text-gray-800 mb-1">Restaurant Page URL</p>
         <p className="text-xs text-gray-500 mb-2">Link shown on success page to return to your website</p>
         <input
@@ -1534,6 +1537,35 @@ const renderGeneralTab = () => (
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
         />
       </div>
+    </div>
+
+    <div className="mt-6 pt-4 border-t border-gray-200">
+      <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+        🎟️ Offer / Campaign Code
+      </p>
+      <p className="text-xs text-gray-400 mb-3">
+        One unified code field for every marketing channel — CRM thank-you emails, Facebook,
+        Instagram, Google Ads, flyers/QR codes, or the Dinery App. Links can pre-fill it
+        automatically; guests can also type a code in manually.
+      </p>
+      <SettingToggle
+        label="Enable Offer Code Field"
+        description="Show an offer code field on the public reservation page"
+        settingKey="enableOfferCode"
+      />
+      {settings.enableOfferCode && (
+        <div className="py-3">
+          <p className="text-sm font-medium text-gray-800 mb-1">Field Label</p>
+          <p className="text-xs text-gray-500 mb-2">Shown above the offer code input</p>
+          <input
+            type="text"
+            value={settings.offerCodeFieldLabel || ''}
+            onChange={e => setSettings(prev => ({ ...prev, offerCodeFieldLabel: e.target.value }))}
+            placeholder="Have an offer code?"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
+          />
+        </div>
+      )}
     </div>
   </div>
 );  
