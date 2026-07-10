@@ -1558,7 +1558,14 @@ export default function PublicReservationPage() {
                     </button>
                   </div>
 
-                  <p className="text-white/20 text-xs mt-4">A confirmation has been sent to your email</p>
+                 <div className="mt-4 flex items-center justify-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                  <svg className="w-4 h-4 text-white/40 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-white/60 text-sm">
+                    A confirmation has been sent to your email. If you did not receive it, please check your spam folder.
+                  </p>
+                </div>
                 </div>
               </div>
             </div>

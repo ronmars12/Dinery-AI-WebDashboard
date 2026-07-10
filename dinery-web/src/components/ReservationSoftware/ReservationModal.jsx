@@ -1,6 +1,6 @@
 // src/components/reservation-software/ReservationModal.jsx
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc, deleteDoc, serverTimestamp, collection, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, serverTimestamp, collection, getDocs, getDoc, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firestore } from '../../firebase';
 import { 
@@ -476,7 +476,19 @@ const oldTableIds = reservation.table_ids?.length
       if (clearedStatuses.includes(formData.status)) {
         await clearAssignedTables();
       }
+      const justCompleted = reservation.status !== 'completed' && formData.status === 'completed';
+      const hasOfferCode = !!(reservation.offer_code_applied);
 
+      if (justCompleted && hasOfferCode && reservation.restaurant_id) {
+        try {
+          const statsRef = doc(db, 'crm_stats', reservation.restaurant_id);
+          const statsSnap = await getDoc(statsRef);
+          const current = statsSnap.exists() ? (statsSnap.data().offersRedeemed || 0) : 0;
+          await setDoc(statsRef, { offersRedeemed: current + 1 }, { merge: true });
+        } catch (e) {
+          console.warn('offersRedeemed increment failed:', e);
+        }
+      }
       // ── Determine if anything customer-facing actually changed ──
       const originalDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
       const newDate = formData.reservation_date;
