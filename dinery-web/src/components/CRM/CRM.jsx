@@ -11,7 +11,7 @@ import {
   limit,
 } from "firebase/firestore";
 import { firestore, auth } from "../../firebase";
-
+import Campaigns from "./Campaigns";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function StarRating({ value, size = "md" }) {
@@ -37,11 +37,11 @@ function Toggle({ enabled, onChange }) {
 
 function SectionCard({ title, subtitle, children, action }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-start justify-between">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden mb-6">
+      <div className="px-6 py-4 border-b border-gray-50 flex items-start justify-between">
         <div>
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-          {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+          <h3 className="text-sm font-semibold text-gray-900 tracking-tight">{title}</h3>
+          {subtitle && <p className="text-xs text-gray-400 mt-0.5 font-medium">{subtitle}</p>}
         </div>
         {action && <div className="ml-4 flex-shrink-0">{action}</div>}
       </div>
@@ -50,36 +50,74 @@ function SectionCard({ title, subtitle, children, action }) {
   );
 }
 
-function MetricCard({ label, value, sub, color = "orange" }) {
-  const colors = { orange: "text-[#fe8a24]", green: "text-green-600", blue: "text-blue-600", purple: "text-purple-600", gray: "text-gray-500" };
+function MetricCard({ label, value, sub, color = "orange", icon, trend }) {
+  const colors = { 
+    orange: "text-[#fe8a24]", 
+    green: "text-emerald-600", 
+    blue: "text-blue-600", 
+    purple: "text-purple-600", 
+    gray: "text-gray-500",
+    rose: "text-rose-500",
+    indigo: "text-indigo-600"
+  };
+  
+  const bgColors = {
+    orange: "bg-orange-50",
+    green: "bg-emerald-50",
+    blue: "bg-blue-50",
+    purple: "bg-purple-50",
+    gray: "bg-gray-50",
+    rose: "bg-rose-50",
+    indigo: "bg-indigo-50"
+  };
+  
+  const iconColors = {
+    orange: "text-orange-500",
+    green: "text-emerald-500",
+    blue: "text-blue-500",
+    purple: "text-purple-500",
+    gray: "text-gray-400",
+    rose: "text-rose-500",
+    indigo: "text-indigo-500"
+  };
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow">
-      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">{label}</p>
-      <p className={`text-3xl font-bold ${colors[color] || colors.orange}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-lg transition-all duration-200 hover:border-gray-200 group">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{label}</p>
+          <p className={`text-2xl font-bold ${colors[color] || colors.orange}`}>{value}</p>
+          {sub && <p className="text-xs text-gray-400 mt-1 font-medium">{sub}</p>}
+          {trend && (
+            <div className={`inline-flex items-center gap-1 mt-2 text-xs font-semibold ${trend > 0 ? "text-emerald-600" : "text-rose-500"}`}>
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d={trend > 0 ? "M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" : "M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"} />
+              </svg>
+              {trend > 0 ? "+" : ""}{trend}%
+            </div>
+          )}
+        </div>
+        {icon && (
+          <div className={`w-10 h-10 rounded-xl ${bgColors[color]} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-200`}>
+            <svg className={`w-5 h-5 ${iconColors[color]}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
+            </svg>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 function RefreshButton({ onClick, refreshing }) {
   return (
-    <button onClick={onClick} disabled={refreshing} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-[#fe8a24] border border-gray-200 hover:border-[#fe8a24] rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 flex-shrink-0">
-      <svg className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <button onClick={onClick} disabled={refreshing} className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-[#fe8a24] border border-gray-200 hover:border-[#fe8a24] rounded-xl px-4 py-2 transition-all duration-200 disabled:opacity-50 flex-shrink-0 hover:shadow-sm">
+      <svg className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
       </svg>
       {refreshing ? "Refreshing…" : "Refresh"}
     </button>
   );
-}
-
-// Turns { offerDurationValue: 3, offerDurationUnit: "weeks" } into "3 weeks" — used
-// client-side for the test/preview email, mirroring the same helper in
-// functions/sendThankYouEmails.js.
-function formatOfferDuration(value, unit) {
-  const n = parseInt(value, 10);
-  if (!n) return "";
-  const labels = { days: n === 1 ? "day" : "days", weeks: n === 1 ? "week" : "weeks", months: n === 1 ? "month" : "months" };
-  return `${n} ${labels[unit] || unit || "days"}`;
 }
 
 function pct(numerator, denominator) {
@@ -94,11 +132,13 @@ function CRMOverview({ restaurantId }) {
     emailsSent: 0, feedbackCount: 0, avgOverall: "0.0", avgFood: "0.0", avgService: "0.0", avgAtmosphere: "0.0",
     positiveCount: 0, responseRate: 0,
     offersSent: 0, offerClicks: 0, offerReservationsCreated: 0, offersRedeemed: 0,
+    estimatedRevenue: 0,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [recentFeedback, setRecentFeedback] = useState([]);
+  const [hoveredMetric, setHoveredMetric] = useState(null);
 
   const load = useCallback(async (isManualRefresh = false) => {
     if (!restaurantId) return;
@@ -122,6 +162,7 @@ function CRMOverview({ restaurantId }) {
         offerClicks: logData.offerClicks || 0,
         offerReservationsCreated: logData.offerReservationsCreated || 0,
         offersRedeemed: logData.offersRedeemed || 0,
+        estimatedRevenue: logData.estimatedRevenue || 0,
       });
       setRecentFeedback(feedbacks.slice(0, 5));
       setLastUpdated(new Date());
@@ -131,71 +172,288 @@ function CRMOverview({ restaurantId }) {
 
   useEffect(() => { load(false); }, [load]);
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#fe8a24]" /></div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-96">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#fe8a24] border-t-transparent mx-auto mb-4" />
+        <p className="text-sm text-gray-400 font-medium">Loading analytics…</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6 -mt-2">
-        <p className="text-xs text-gray-400">{lastUpdated ? `Last updated ${lastUpdated.toLocaleTimeString()}` : ""}</p>
-        <RefreshButton onClick={() => load(true)} refreshing={refreshing} />
-      </div>
-      <div className="mb-2">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Email Activity</p>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <MetricCard label="Emails Sent" value={stats.emailsSent} color="orange" />
-          <MetricCard label="Survey Responses" value={stats.feedbackCount} color="blue" />
-          <MetricCard label="Response Rate" value={`${stats.responseRate}%`} color="green" />
+    <div className="space-y-8">
+      {/* Header with last updated and refresh */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-gradient-to-b from-[#fe8a24] to-orange-300 rounded-full" />
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Analytics Dashboard</h2>
+            <p className="text-sm text-gray-400 font-medium">Real-time insights into your guest engagement and campaign performance</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+            <span>Live</span>
+            <span className="hidden sm:inline">· {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : ""}</span>
+          </div>
+          <RefreshButton onClick={() => load(true)} refreshing={refreshing} />
         </div>
       </div>
-      <div className="mb-2">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Offer Performance</p>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <MetricCard label="Offers Sent" value={stats.offersSent} color="orange" />
-          <MetricCard label="Link Clicks" value={stats.offerClicks} sub={pct(stats.offerClicks, stats.offersSent) + " click rate"} color="blue" />
-          <MetricCard label="Reservations Created" value={stats.offerReservationsCreated} sub={pct(stats.offerReservationsCreated, stats.offerClicks) + " of clicks booked"} color="purple" />
-          <MetricCard label="Offers Redeemed" value={stats.offersRedeemed} sub="visit completed" color="green" />
-          <MetricCard label="Redemption Rate" value={pct(stats.offersRedeemed, stats.offersSent)} sub="of offers sent" color="green" />
+
+      {/* Key Metrics Row - Email Activity */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <MetricCard 
+          label="Emails Sent" 
+          value={stats.emailsSent} 
+          color="orange" 
+          icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          sub={`Last 30 days`}
+        />
+        <MetricCard 
+          label="Survey Responses" 
+          value={stats.feedbackCount} 
+          color="blue" 
+          icon="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+        />
+        <MetricCard 
+          label="Response Rate" 
+          value={`${stats.responseRate}%`} 
+          color="green" 
+          icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          sub={`${stats.feedbackCount} of ${stats.emailsSent} responses`}
+        />
+        <MetricCard 
+          label="Avg Overall Rating" 
+          value={stats.avgOverall} 
+          color="purple" 
+          icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+          sub="out of 5 stars"
+        />
+      </div>
+
+      {/* Offer Performance Section */}
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-indigo-400 rounded-full" />
+          <div>
+            <h3 className="text-sm font-bold text-gray-700 tracking-tight">Offer Performance</h3>
+            <p className="text-xs text-gray-400 font-medium">Track how your return visit offers are performing</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <MetricCard 
+            label="Offers Sent" 
+            value={stats.offersSent} 
+            color="orange" 
+            icon="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+          />
+          <MetricCard 
+            label="Link Clicks" 
+            value={stats.offerClicks} 
+            color="blue" 
+            icon="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+            sub={pct(stats.offerClicks, stats.offersSent) + " click-through rate"}
+          />
+          <MetricCard 
+            label="Reservations Booked" 
+            value={stats.offerReservationsCreated} 
+            color="purple" 
+            icon="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            sub={pct(stats.offerReservationsCreated, stats.offerClicks) + " conversion from clicks"}
+          />
+          <MetricCard 
+            label="Redeemed Visits" 
+            value={stats.offersRedeemed} 
+            color="green" 
+            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            sub="completed visits"
+          />
+          <MetricCard 
+            label="Redemption Rate" 
+            value={pct(stats.offersRedeemed, stats.offersSent)} 
+            color="rose" 
+            icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+            sub="of total offers sent"
+          />
         </div>
       </div>
-      <div className="mb-2">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Average Ratings</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <MetricCard label="Overall" value={stats.avgOverall} sub="out of 5" color="orange" />
-          <MetricCard label="Food Quality" value={stats.avgFood} sub="out of 5" color="orange" />
-          <MetricCard label="Service" value={stats.avgService} sub="out of 5" color="orange" />
-          <MetricCard label="Atmosphere" value={stats.avgAtmosphere} sub="out of 5" color="orange" />
+
+      {/* Revenue and Ratings Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-green-400 rounded-full" />
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 tracking-tight">Campaign Revenue</h3>
+              <p className="text-xs text-gray-400 font-medium">Estimated revenue from campaign-driven bookings</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/30 rounded-2xl border border-emerald-100 p-6 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Estimated Revenue Generated</p>
+                  <p className="text-3xl font-bold text-emerald-700 mt-2">{stats.estimatedRevenue.toLocaleString()}</p>
+                  <p className="text-xs text-emerald-500 mt-1 font-medium">from campaign reservations, after discount</p>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-4 text-xs text-emerald-600">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full" />
+                  {stats.offerReservationsCreated} bookings
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 bg-emerald-300 rounded-full" />
+                  {stats.offersRedeemed} redeemed
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-1 h-6 bg-gradient-to-b from-orange-400 to-yellow-300 rounded-full" />
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 tracking-tight">Average Ratings</h3>
+              <p className="text-xs text-gray-400 font-medium">Guest satisfaction across all categories</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <MetricCard 
+              label="Overall" 
+              value={stats.avgOverall} 
+              color="orange" 
+              sub="out of 5" 
+              icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+            />
+            <MetricCard 
+              label="Food" 
+              value={stats.avgFood} 
+              color="orange" 
+              sub="out of 5" 
+              icon="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+            <MetricCard 
+              label="Service" 
+              value={stats.avgService} 
+              color="orange" 
+              sub="out of 5" 
+              icon="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
+            />
+            <MetricCard 
+              label="Atmosphere" 
+              value={stats.avgAtmosphere} 
+              color="orange" 
+              sub="out of 5" 
+              icon="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </div>
         </div>
       </div>
-      <div className="mb-2">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Public Review Funnel</p>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <MetricCard label="Positive Submissions" value={stats.positiveCount} color="green" />
-          <MetricCard label="Google Review Prompts" value={stats.positiveCount} sub="shown to eligible guests" color="blue" />
-          <MetricCard label="TripAdvisor Prompts" value={stats.positiveCount} sub="shown to eligible guests" color="blue" />
+
+      {/* Public Review Funnel */}
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-1 h-6 bg-gradient-to-b from-indigo-400 to-purple-400 rounded-full" />
+          <div>
+            <h3 className="text-sm font-bold text-gray-700 tracking-tight">Public Review Funnel</h3>
+            <p className="text-xs text-gray-400 font-medium">Guest advocacy and public review prompts</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <MetricCard 
+            label="Positive Submissions" 
+            value={stats.positiveCount} 
+            color="green" 
+            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            sub={`${pct(stats.positiveCount, stats.feedbackCount)} of total responses`}
+          />
+          <MetricCard 
+            label="Google Review Prompts" 
+            value={stats.positiveCount} 
+            color="blue" 
+            icon="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+            sub="shown to eligible guests"
+          />
+          <MetricCard 
+            label="TripAdvisor Prompts" 
+            value={stats.positiveCount} 
+            color="purple" 
+            icon="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+            sub="shown to eligible guests"
+          />
         </div>
       </div>
-      <SectionCard title="Recent Feedback" subtitle="Latest 5 guest submissions">
+
+      {/* Recent Feedback Section */}
+      <SectionCard 
+        title="Recent Guest Feedback" 
+        subtitle="Latest submissions from your guests" 
+        action={
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 font-medium">{recentFeedback.length} new</span>
+            <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </div>
+        }
+      >
         {recentFeedback.length === 0 ? (
-          <div className="text-center py-10">
-            <svg className="mx-auto h-10 w-10 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-            <p className="text-sm text-gray-400">No feedback collected yet.</p>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-500">No feedback collected yet</p>
+            <p className="text-xs text-gray-400 mt-1">Guest responses will appear here once they submit the survey</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {recentFeedback.map((fb) => (
-              <div key={fb.id} className="py-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-800">{fb.email || "Guest"}</span>
-                  <span className="text-xs text-gray-400">{fb.createdAt?.toDate ? fb.createdAt.toDate().toLocaleDateString() : "—"}</span>
+          <div className="space-y-4">
+            {recentFeedback.map((fb, index) => {
+              const avg = (((fb.foodRating || 0) + (fb.serviceRating || 0) + (fb.atmosphereRating || 0) + (fb.overallRating || 0)) / 4);
+              const isPositive = avg >= 4;
+              const submittedAt = fb.createdAt?.toDate ? fb.createdAt.toDate() : null;
+              
+              return (
+                <div key={fb.id} className={`group relative bg-gradient-to-r from-gray-50/50 to-transparent hover:from-orange-50/30 transition-all duration-200 rounded-xl p-4 border border-gray-50 hover:border-orange-100 ${index > 0 ? "border-t" : ""}`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPositive ? "bg-emerald-100" : "bg-gray-100"}`}>
+                        <span className={`text-xs font-bold ${isPositive ? "text-emerald-600" : "text-gray-500"}`}>
+                          {(fb.email || "G").charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-gray-800">{fb.email || "Anonymous Guest"}</p>
+                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${isPositive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                            {isPositive ? "★" : ""} {avg.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {[["Food", fb.foodRating], ["Service", fb.serviceRating], ["Atmosphere", fb.atmosphereRating], ["Overall", fb.overallRating]].map(([label, val]) => val !== null && val !== undefined && (
+                            <span key={label} className="flex items-center gap-1 text-xs text-gray-500">
+                              <span className="font-medium">{label}</span> <StarRating value={val} />
+                            </span>
+                          ))}
+                        </div>
+                        {fb.comments && (
+                          <p className="text-sm text-gray-600 italic mt-2 bg-white rounded-xl px-3 py-2 border border-gray-100">"{fb.comments}"</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 ml-4">
+                      <span className="text-xs text-gray-400 font-medium">
+                        {submittedAt ? submittedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "—"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-4 text-xs text-gray-500 mb-1">
-                  {[["Food", fb.foodRating], ["Service", fb.serviceRating], ["Atmosphere", fb.atmosphereRating], ["Overall", fb.overallRating]].map(([label, val]) => (
-                    <span key={label} className="flex items-center gap-1">{label} <StarRating value={val} /></span>
-                  ))}
-                </div>
-                {fb.comments && <p className="text-sm text-gray-600 italic mt-1 bg-gray-50 rounded-lg px-3 py-2">"{fb.comments}"</p>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </SectionCard>
@@ -233,22 +491,26 @@ function EmailLog({ restaurantId }) {
   if (loading) return <div className="flex items-center justify-center h-32"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fe8a24]" /></div>;
 
   if (emails.length === 0) return (
-    <div className="text-center py-10">
-      <svg className="mx-auto h-10 w-10 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-      <p className="text-sm text-gray-400">No thank you emails sent yet.</p>
-      <p className="text-xs text-gray-300 mt-1">Emails appear here after the scheduled function runs.</p>
+    <div className="text-center py-12">
+      <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg className="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <p className="text-sm font-medium text-gray-500">No thank you emails sent yet</p>
+      <p className="text-xs text-gray-400 mt-1">Emails appear here after the scheduled function runs</p>
     </div>
   );
 
   return (
     <div>
-      <div className="flex justify-end mb-3"><RefreshButton onClick={() => load(true)} refreshing={refreshing} /></div>
+      <div className="flex justify-end mb-4"><RefreshButton onClick={() => load(true)} refreshing={refreshing} /></div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
               {["Guest","Email","Visit date","Sent at","Status"].map((h) => (
-                <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide pb-3 pr-4">{h}</th>
+                <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider pb-3 pr-4">{h}</th>
               ))}
             </tr>
           </thead>
@@ -257,13 +519,13 @@ function EmailLog({ restaurantId }) {
               const visitDate = r.reservation_date?.toDate?.() || (r.reservation_date ? new Date(r.reservation_date) : null);
               const sentAt = r.thankYouEmailSentAt?.toDate?.() || null;
               return (
-                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3 pr-4 font-medium text-gray-800 whitespace-nowrap">{r.customer_name || "—"}</td>
                   <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{r.customer_email || "—"}</td>
                   <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{visitDate ? visitDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
                   <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{sentAt ? sentAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
                   <td className="py-3">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                       Sent
                     </span>
@@ -274,7 +536,7 @@ function EmailLog({ restaurantId }) {
           </tbody>
         </table>
       </div>
-      {emails.length === 50 && <p className="text-xs text-gray-400 text-center mt-4">Showing 50 most recent.</p>}
+      {emails.length === 50 && <p className="text-xs text-gray-400 text-center mt-4">Showing 50 most recent entries</p>}
     </div>
   );
 }
@@ -284,17 +546,15 @@ function EmailLog({ restaurantId }) {
 const DEFAULT_SETTINGS = {
   enabled: false, sendHour: "10",
   thankYouMessage: "Thank you for visiting {{restaurant_name}}.\n\nWe hope you had a wonderful experience and look forward to welcoming you again soon.",
-  offerEnabled: false, offerTitle: "Welcome Back Offer",
-  offerDescription: "We would love to welcome you back. If you visit us again within the next {{offer_duration}}, use the offer below and receive 10% off all starters, main courses, and desserts.",
-  offerCode: "WELCOME10",
-  offerDurationValue: "3", offerDurationUnit: "weeks",
-  offerConditions: "",
+  offerEnabled: false,
+  selectedOfferId: "",
+  avgRevenuePerGuest: "",
   surveyEnabled: true,
   surveyQuestions: { food: true, service: true, atmosphere: true, overall: true, comments: true },
   reviewThreshold: "4.5", googleReviewUrl: "", tripAdvisorUrl: "",
 };
 
-function EmailAutomation({ restaurantId }) {
+function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -307,6 +567,39 @@ function EmailAutomation({ restaurantId }) {
   const [testResult, setTestResult] = useState(null); // {ok, message}
   const [checklist, setChecklist] = useState(null);   // built when panel opens
   const [checklistLoading, setChecklistLoading] = useState(false);
+
+  // ── Offers list (from the Offers tab) ────────────────────────────────────
+  const [restaurantOffers, setRestaurantOffers] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    setLoadingOffers(true);
+    getDocs(collection(firestore, collectionName, restaurantId, "offer"))
+      .then((snap) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const active = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((o) => {
+            if (o.is_active === false) return false;
+            const start = o.start_date ? new Date(o.start_date) : null;
+            const end = o.end_date ? new Date(o.end_date) : null;
+            if (end) {
+              const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+              if (endDay < today) return false; // expired
+            }
+            if (start) {
+              const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+              if (startDay > today) return false; // not started yet
+            }
+            return true;
+          });
+        setRestaurantOffers(active);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingOffers(false));
+  }, [restaurantId, collectionName]);
 
   useEffect(() => {
     if (!restaurantId) return;
@@ -335,7 +628,6 @@ function EmailAutomation({ restaurantId }) {
     setTestSending(true);
     setTestResult(null);
     try {
-      // Use getFunctions from firebase/functions — same pattern as PublicReservationPage
       const { getFunctions, httpsCallable } = await import("firebase/functions");
       const functions = getFunctions(undefined, "asia-southeast1");
       const sendEmailFn = httpsCallable(functions, "sendEmail");
@@ -350,29 +642,33 @@ function EmailAutomation({ restaurantId }) {
         .replace(/{{party_size}}/g, "2")
         .replace(/\n/g, "<br/>");
 
-      const durationText = formatOfferDuration(settings.offerDurationValue, settings.offerDurationUnit);
-      const offerDescriptionFilled = (settings.offerDescription || "").replace(/{{\s*offer_duration\s*}}/g, durationText);
-      const offerConditions = (settings.offerConditions || "").trim();
-
-      const offerHtml = settings.offerEnabled ? `
+      const selectedOfferForTest = restaurantOffers.find((o) => o.id === settings.selectedOfferId);
+      const testOfferLink = selectedOfferForTest
+        ? `https://dashboard.dinery.ai/reserve/${encodeURIComponent(restaurantId)}?offer=${encodeURIComponent(selectedOfferForTest.offer_id)}&offerId=${encodeURIComponent(selectedOfferForTest.id)}&source=preview`
+        : "https://dashboard.dinery.ai/reserve/";
+      const offerHtml = settings.offerEnabled && selectedOfferForTest ? `
         <div style="margin-top:20px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:10px;">
-          <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${settings.offerTitle || "Welcome Back Offer"}</p>
-          <p style="margin:0 0 12px;font-size:13px;color:#555;">${offerDescriptionFilled.replace(/\n/g, "<br/>")}</p>
-          <p style="margin:0 0 12px;font-size:13px;color:#555;">Offer code: <strong style="font-family:monospace;background:#fff;border:1px solid #fe8a24;padding:2px 8px;border-radius:4px;">${settings.offerCode}</strong></p>
-          <a href="https://dashboard.dinery.ai/reserve/" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Your Next Visit</a>
-          ${offerConditions ? `<p style="margin:12px 0 0;font-size:11px;color:#999;line-height:1.5;">${offerConditions.replace(/\n/g, "<br/>")}</p>` : ""}
+          <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${selectedOfferForTest.offer_name || "Welcome Back Offer"}</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#555;">${(selectedOfferForTest.description || "").replace(/\n/g, "<br/>")}</p>
+          ${selectedOfferForTest.discount_percent ? `<p style="margin:0 0 12px;font-size:13px;color:#555;">Discount: <strong>${selectedOfferForTest.discount_percent}% off</strong></p>` : ""}
+          <p style="margin:0 0 12px;font-size:13px;color:#555;">Offer code: <strong style="font-family:monospace;background:#fff;border:1px solid #fe8a24;padding:2px 8px;border-radius:4px;">${selectedOfferForTest.offer_id}</strong></p>
+          <a href="${testOfferLink}" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Your Next Visit</a>
         </div>` : "";
 
       const surveyHtml = settings.surveyEnabled ? `
-        <div style="margin-top:20px;text-align:center;">
-          <a href="https://dashboard.dinery.ai/feedback/PREVIEW" style="display:inline-block;background:#1e293b;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Share Your Feedback</a>
-          <p style="margin:10px 0 0;font-size:12px;color:#999;">It only takes a minute.</p>
+        <div style="margin-top:24px;padding:20px;background:#fffbf5;border:1px solid #fde3c0;border-radius:12px;text-align:center;">
+          <a href="https://dashboard.dinery.ai/feedback/PREVIEW" style="text-decoration:none;display:block;">
+            <p style="margin:0 0 10px;font-size:14px;font-weight:bold;color:#1e293b;">⭐ Rate Your Experience</p>
+            <p style="margin:0 0 10px;font-size:28px;letter-spacing:4px;line-height:1;">⭐⭐⭐⭐⭐</p>
+            <p style="margin:0;font-size:13px;color:#666;line-height:1.5;">It only takes 10 seconds, but it will help us a lot. ❤️</p>
+            <p style="margin:6px 0 0;font-size:12px;color:#fe8a24;font-weight:bold;">Click the stars to rate your visit →</p>
+          </a>
         </div>` : "";
 
       const payload = {
         to: testEmail.trim(),
         subject: `[TEST PREVIEW] Thank you for visiting ${restaurantName}!`,
-        isReservation: true, // bypasses the auth check in sendEmail.js
+        isReservation: true,
         html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1e293b;">
           <div style="background:#fff3e8;border:2px solid #fe8a24;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#c05a00;font-weight:600;">
             ⚠️ TEST PREVIEW — this is what your guests will receive. Links are placeholders.
@@ -391,7 +687,6 @@ function EmailAutomation({ restaurantId }) {
 
       console.log("📧 sendEmail response:", data);
 
-      // Your sendEmail.js returns { success, id, message, error } — check it explicitly
       if (data?.success === false) {
         setTestResult({
           ok: false,
@@ -410,7 +705,6 @@ function EmailAutomation({ restaurantId }) {
       }
     } catch (e) {
       console.error("sendTestEmail error:", e);
-      // httpsCallable throws for network errors, auth errors, and function-level HttpsError
       const msg = e?.message || "Unknown error";
       const isAuth = msg.toLowerCase().includes("unauthenticated");
       setTestResult({
@@ -458,7 +752,6 @@ function EmailAutomation({ restaurantId }) {
         await getDocs(query(collection(firestore, "reservations"), where("restaurant_id", "==", restaurantId), where("thankYouEmailSent", "==", true), orderBy("thankYouEmailSentAt", "desc"), limit(1)));
       } catch (indexErr) {
         indexOk = false;
-        // Log the full error — Firebase embeds the index creation URL in the error message
         console.error("🔴 Firestore index missing — create it here:", indexErr.message || indexErr);
         const urlMatch = (indexErr.message || "").match(/https:\/\/console\.firebase\.google\.com[^\s"']*/);
         if (urlMatch) indexLink = urlMatch[0];
@@ -540,45 +833,55 @@ function EmailAutomation({ restaurantId }) {
               ))}
             </div>
           </SectionCard>
-          <SectionCard title="Return Visit Offer" subtitle="Show a promotional offer to encourage guests to book again." action={<Toggle enabled={settings.offerEnabled} onChange={(v) => set("offerEnabled", v)} />}>
+          <SectionCard title="Return Visit Offer" subtitle="Attach one of your existing offers to the thank-you email." action={<Toggle enabled={settings.offerEnabled} onChange={(v) => set("offerEnabled", v)} />}>
             {settings.offerEnabled ? (
-              <div className="space-y-4">
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Offer Title</label><input type="text" value={settings.offerTitle} onChange={(e) => set("offerTitle", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" /></div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Offer Valid For</label>
-                  <div className="flex gap-2">
-                    <input type="number" min="1" value={settings.offerDurationValue} onChange={(e) => set("offerDurationValue", e.target.value)} className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
-                    <select value={settings.offerDurationUnit} onChange={(e) => set("offerDurationUnit", e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
-                      <option value="days">Days</option>
-                      <option value="weeks">Weeks</option>
-                      <option value="months">Months</option>
+              loadingOffers ? (
+                <p className="text-sm text-gray-400">Loading your offers…</p>
+              ) : restaurantOffers.length === 0 ? (
+                <p className="text-sm text-gray-400">You don't have any offers yet. Create one in the Offers tab first.</p>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Offer</label>
+                    <select value={settings.selectedOfferId} onChange={(e) => set("selectedOfferId", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
+                      <option value="">— Select an offer —</option>
+                      {restaurantOffers.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.offer_id}: {o.offer_name}{o.discount_percent ? ` (${o.discount_percent}% off)` : ""}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">How long the offer is valid for. Use the <span className="font-mono bg-gray-100 px-1 rounded">{"{{offer_duration}}"}</span> tag in the description below to mention it, e.g. "valid for the next {"{{offer_duration}}"}".</p>
+                  {settings.selectedOfferId && (() => {
+                    const selected = restaurantOffers.find((o) => o.id === settings.selectedOfferId);
+                    if (!selected) return null;
+                    return (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-xs text-gray-600">
+                        <p className="font-semibold text-[#fe8a24] mb-1">{selected.offer_name} — code {selected.offer_id}</p>
+                        <p>{selected.description}</p>
+                        <p className="mt-2 text-gray-500">
+                          Usage: {selected.usage_limit_type === "unlimited" ? "Unlimited" : selected.usage_limit_type === "max_uses" ? `Max ${selected.max_uses} total uses` : "One use per guest"}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4"><p className="text-xs text-[#fe8a24] font-semibold mb-1">How the offer link works</p><p className="text-xs text-gray-600">When a guest clicks "Book Your Next Visit", the click is logged, then they land on the reservation page with the offer code attached. When they complete that booking, it's automatically credited back to this campaign — so you can see clicks, bookings, and redemptions all in the Overview tab.</p></div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Offer Description</label>
-                  <textarea value={settings.offerDescription} onChange={(e) => set("offerDescription", e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {["{{offer_duration}}"].map((tag) => (
-                      <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("offerDescription", settings.offerDescription + " " + tag)}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-
-                <div><label className="block text-sm font-medium text-gray-700 mb-1">Offer Code</label><input type="text" value={settings.offerCode} onChange={(e) => set("offerCode", e.target.value.toUpperCase())} placeholder="e.g. WELCOME10" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" /></div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Offer Conditions <span className="text-gray-400 font-normal">(optional)</span></label>
-                  <textarea value={settings.offerConditions} onChange={(e) => set("offerConditions", e.target.value)} rows={2} placeholder="e.g. Valid Tuesday–Thursday only. Minimum spend $50. Cannot be combined with other offers." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
-                  <p className="text-xs text-gray-400 mt-1">Shown in small print at the bottom of the offer box in the email, below the button.</p>
-                </div>
-
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4"><p className="text-xs text-[#fe8a24] font-semibold mb-1">How the offer link works</p><p className="text-xs text-gray-600">When a guest clicks "Book Your Next Visit", the click is logged, then they land on the reservation page with the offer code attached. When they complete that booking, it's automatically credited back to this campaign — so you can see clicks, bookings, and redemptions all in the Overview tab.</p></div>
-              </div>
-            ) : <p className="text-sm text-gray-400">Enable to configure a return visit offer for your guests.</p>}
+              )
+            ) : <p className="text-sm text-gray-400">Enable to attach a return visit offer to this email.</p>}
+          </SectionCard>
+          <SectionCard title="Campaign Revenue Tracking" subtitle="Used to estimate revenue generated by guests who book using a campaign offer.">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Average Revenue per Guest</label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={settings.avgRevenuePerGuest}
+              onChange={(e) => set("avgRevenuePerGuest", e.target.value)}
+              placeholder="e.g. 450"
+              className="w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]"
+            />
+            <p className="text-xs text-gray-400 mt-2">Average amount one guest typically spends during a visit. No currency symbol — just a number.</p>
           </SectionCard>
           <SectionCard title="Feedback Survey" subtitle="Collect star ratings and written comments from guests after their visit." action={<Toggle enabled={settings.surveyEnabled} onChange={(v) => set("surveyEnabled", v)} />}>
             {settings.surveyEnabled ? (
@@ -659,7 +962,7 @@ function EmailAutomation({ restaurantId }) {
                 <p className="font-semibold text-gray-600 mb-1">What this sends</p>
                 <ul className="space-y-0.5 list-disc list-inside">
                   <li>Your thank you message with placeholder guest/reservation data</li>
-                  {settings.offerEnabled && <li>Return visit offer — title, description (with duration filled in), code <span className="font-mono">{settings.offerCode}</span>{settings.offerConditions ? ", and your conditions text" : ""}</li>}
+                  {settings.offerEnabled && settings.selectedOfferId && <li>Return visit offer — <span className="font-mono">{restaurantOffers.find((o) => o.id === settings.selectedOfferId)?.offer_id || "the selected offer"}</span></li>}
                   {settings.surveyEnabled && <li>Feedback survey button — links to <span className="font-mono">/feedback/PREVIEW</span> (shows not-found since it is a preview, not a real reservation)</li>}
                   <li>Orange warning banner at top marking it as a test</li>
                 </ul>
@@ -709,7 +1012,7 @@ function EmailAutomation({ restaurantId }) {
                         )}
                         {!item.ok && !item.indexLink && item.label === "Firestore index for email log" && (
                           <a href={`https://console.firebase.google.com/project/dinery-9c261/firestore/indexes`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-red-600 border border-red-300 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             Open Firestore Indexes
                           </a>
                         )}
@@ -911,7 +1214,7 @@ function exportToCSV(feedbacks) {
 
 function RatingBar({ label, value, max = 5 }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
-  const color = value >= 4 ? "bg-green-500" : value >= 3 ? "bg-yellow-400" : "bg-red-400";
+  const color = value >= 4 ? "bg-emerald-500" : value >= 3 ? "bg-amber-400" : "bg-rose-400";
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-gray-500 w-20 flex-shrink-0">{label}</span>
@@ -1003,11 +1306,11 @@ function GuestFeedback({ restaurantId }) {
 
       {/* Summary metric cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <MetricCard label="Total Responses" value={feedbacks.length} color="orange" />
-        <MetricCard label="Avg Food" value={avgOf("foodRating")} sub="out of 5" />
-        <MetricCard label="Avg Service" value={avgOf("serviceRating")} sub="out of 5" />
-        <MetricCard label="Avg Atmosphere" value={avgOf("atmosphereRating")} sub="out of 5" />
-        <MetricCard label="Avg Overall" value={avgOf("overallRating")} sub="out of 5" color="green" />
+        <MetricCard label="Total Responses" value={feedbacks.length} color="orange" icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <MetricCard label="Avg Food" value={avgOf("foodRating")} color="orange" sub="out of 5" icon="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        <MetricCard label="Avg Service" value={avgOf("serviceRating")} color="blue" sub="out of 5" icon="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+        <MetricCard label="Avg Atmosphere" value={avgOf("atmosphereRating")} color="purple" sub="out of 5" icon="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        <MetricCard label="Avg Overall" value={avgOf("overallRating")} color="green" sub="out of 5" icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
       </div>
 
       {/* View switcher */}
@@ -1021,7 +1324,7 @@ function GuestFeedback({ restaurantId }) {
       {activeView === "summary" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Rating bars */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Average by category</h3>
             <div className="space-y-3">
               <RatingBar label="Food" value={parseFloat(avgOf("foodRating")) || 0} />
@@ -1031,7 +1334,7 @@ function GuestFeedback({ restaurantId }) {
             </div>
           </div>
           {/* Distribution */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
             <h3 className="text-sm font-semibold text-gray-900 mb-4">Rating distribution</h3>
             <div className="space-y-2">
               {distribution.map(({ star, count }) => (
@@ -1045,9 +1348,9 @@ function GuestFeedback({ restaurantId }) {
               ))}
             </div>
             <div className="mt-4 pt-4 border-t border-gray-100 flex gap-4 text-xs text-gray-500">
-              <span className="text-green-600 font-semibold">{distribution.filter(d => d.star >= 4).reduce((s, d) => s + d.count, 0)} positive</span>
-              <span className="text-yellow-600 font-semibold">{distribution.filter(d => d.star === 3).reduce((s, d) => s + d.count, 0)} neutral</span>
-              <span className="text-red-500 font-semibold">{distribution.filter(d => d.star <= 2).reduce((s, d) => s + d.count, 0)} negative</span>
+              <span className="text-emerald-600 font-semibold">{distribution.filter(d => d.star >= 4).reduce((s, d) => s + d.count, 0)} positive</span>
+              <span className="text-amber-600 font-semibold">{distribution.filter(d => d.star === 3).reduce((s, d) => s + d.count, 0)} neutral</span>
+              <span className="text-rose-500 font-semibold">{distribution.filter(d => d.star <= 2).reduce((s, d) => s + d.count, 0)} negative</span>
             </div>
           </div>
         </div>
@@ -1089,12 +1392,14 @@ function GuestFeedback({ restaurantId }) {
 
       {/* Empty state for list view */}
       {activeView === "list" && filtered.length === 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
-          <svg className="mx-auto h-12 w-12 text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center shadow-sm">
+          <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+          </div>
           {feedbacks.length === 0 ? (
             <>
-              <p className="text-gray-500 text-sm font-medium mb-1">No feedback yet</p>
-              <p className="text-gray-400 text-xs">Once guests submit the survey, their responses appear here.</p>
+              <p className="text-gray-500 text-base font-semibold mb-1">No feedback yet</p>
+              <p className="text-gray-400 text-sm">Once guests submit the survey, their responses appear here.</p>
               <p className="text-gray-300 text-xs mt-2">To test, visit <span className="font-mono">/feedback/&lt;reservationId&gt;</span> directly in your browser.</p>
             </>
           ) : (
@@ -1113,14 +1418,15 @@ function GuestFeedback({ restaurantId }) {
             return (
               <div
                 key={fb.id}
-                className="bg-white rounded-xl border border-gray-200 p-5 hover:border-[#fe8a24]/40 hover:shadow-sm transition-all cursor-pointer"
+                className="bg-white rounded-xl border border-gray-100 p-5 hover:border-[#fe8a24]/30 hover:shadow-md transition-all duration-200 cursor-pointer group"
                 onClick={() => setSelectedFeedback(fb)}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Avatar initial */}
-                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-bold text-[#fe8a24]">{(fb.email || "G").charAt(0).toUpperCase()}</span>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPositive ? "bg-emerald-100" : "bg-gray-100"}`}>
+                      <span className={`text-sm font-bold ${isPositive ? "text-emerald-600" : "text-gray-500"}`}>
+                        {(fb.email || "G").charAt(0).toUpperCase()}
+                      </span>
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-gray-800 truncate">{fb.email || "Anonymous Guest"}</p>
@@ -1128,22 +1434,21 @@ function GuestFeedback({ restaurantId }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isPositive ? "bg-green-100 text-green-700" : parseFloat(avg) >= 3 ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${isPositive ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : parseFloat(avg) >= 3 ? "bg-amber-50 text-amber-700 border border-amber-100" : "bg-rose-50 text-rose-700 border border-rose-100"}`}>
                       {avg} ★
                     </span>
-                    <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    <svg className="w-4 h-4 text-gray-300 group-hover:text-[#fe8a24] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </div>
                 </div>
-                {/* Compact inline ratings */}
                 <div className="flex flex-wrap gap-3 mb-2">
                   {[["Food", fb.foodRating], ["Service", fb.serviceRating], ["Atmosphere", fb.atmosphereRating], ["Overall", fb.overallRating]].map(([label, val]) => val !== null && val !== undefined && (
-                    <span key={label} className="flex items-center gap-1 text-xs text-gray-500">
-                      {label} <StarRating value={val} />
+                    <span key={label} className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <span className="font-medium">{label}</span> <StarRating value={val} />
                     </span>
                   ))}
                 </div>
                 {fb.comments && (
-                  <p className="text-sm text-gray-500 italic line-clamp-2 mt-1">"{fb.comments}"</p>
+                  <p className="text-sm text-gray-500 italic line-clamp-2 mt-1 bg-gray-50/50 rounded-lg px-4 py-2 border border-gray-50">"{fb.comments}"</p>
                 )}
               </div>
             );
@@ -1164,6 +1469,7 @@ function GuestFeedback({ restaurantId }) {
 const NAV_TABS = [
   { key: "overview", label: "Overview", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
   { key: "email-settings", label: "Email Automation", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
+  { key: "campaigns", label: "Campaigns", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
   { key: "feedback", label: "Guest Feedback", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg> },
 ];
 
@@ -1227,25 +1533,25 @@ export default function CRM() {
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200 flex-shrink-0">
+      <div className="bg-white border-b border-gray-100 flex-shrink-0">
         <div className="px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-[#fe8a24]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            <div className="w-9 h-9 bg-gradient-to-br from-[#fe8a24] to-orange-400 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
             </div>
-            <div><h1 className="text-lg font-bold text-gray-900 leading-tight">CRM</h1><p className="text-xs text-gray-400">Customer Relationship Management</p></div>
+            <div><h1 className="text-lg font-bold text-gray-900 leading-tight">CRM</h1><p className="text-xs text-gray-400 font-medium">Customer Relationship Management</p></div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {restaurants.length > 1 && !isStaff ? (
               <div className="relative">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg></div>
-                <select value={selectedRestaurant.id} onChange={(e) => handleRestaurantChange(e.target.value)} className="pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#fe8a24] appearance-none cursor-pointer hover:border-[#fe8a24] transition-colors">
+                <select value={selectedRestaurant.id} onChange={(e) => handleRestaurantChange(e.target.value)} className="pl-9 pr-8 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#fe8a24] appearance-none cursor-pointer hover:border-[#fe8a24] transition-colors">
                   {restaurants.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
                 <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none"><svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-orange-100/50 border border-orange-200 rounded-xl px-4 py-2">
                 <svg className="w-4 h-4 text-[#fe8a24]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                 <span className="text-sm font-semibold text-[#fe8a24]">{selectedRestaurant.name}</span>
               </div>
@@ -1262,12 +1568,12 @@ export default function CRM() {
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          {activeTab === "overview" && <div className="mb-6"><h2 className="text-2xl font-bold text-gray-900">CRM Overview</h2><p className="text-sm text-gray-500 mt-1">Performance summary for your guest engagement automation.</p></div>}
           {activeTab === "overview" && <CRMOverview restaurantId={selectedRestaurant.id} />}
-          {activeTab === "email-settings" && <EmailAutomation restaurantId={selectedRestaurant.id} />}
+          {activeTab === "email-settings" && <EmailAutomation restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
+          {activeTab === "campaigns" && <Campaigns restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
           {activeTab === "feedback" && <GuestFeedback restaurantId={selectedRestaurant.id} />}
         </div>
-      </div>
+      </div>    
     </div>
   );
 }

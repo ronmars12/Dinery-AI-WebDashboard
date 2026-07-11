@@ -9,6 +9,8 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
     start_date: offer.start_date,
     end_date: offer.end_date,
     is_active: offer.is_active,
+    usage_limit_type: offer.usage_limit_type || 'one_per_guest',
+    max_uses: offer.max_uses || '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -240,6 +242,8 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
         start_date: formData.start_date,
         end_date: formData.end_date,
         is_active: formData.is_active,
+        usage_limit_type: formData.usage_limit_type,
+        max_uses: formData.usage_limit_type === 'max_uses' ? Number(formData.max_uses) : null,
       });
 
       setIsEditing(false);
@@ -408,6 +412,28 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Usage Limit</label>
+                  <select
+                    name="usage_limit_type" value={formData.usage_limit_type}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    disabled={loading}
+                  >
+                    <option value="one_per_guest">One use per guest</option>
+                    <option value="unlimited">Unlimited uses</option>
+                    <option value="max_uses">Limited total uses</option>
+                  </select>
+                  {formData.usage_limit_type === 'max_uses' && (
+                    <input
+                      name="max_uses" type="number" min="1" value={formData.max_uses}
+                      onChange={handleInputChange}
+                      className="mt-2 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                      disabled={loading}
+                    />
+                  )}
+                </div>
+
                 <div className="flex items-center space-x-3 pt-2">
                   <div className="flex items-center h-5">
                     <input
@@ -481,6 +507,14 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
                     </p>
                   </div>
                 )}
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Usage Limit</p>
+                  <p className="text-gray-900 font-medium">
+                    {offer.usage_limit_type === 'unlimited' ? 'Unlimited' :
+                     offer.usage_limit_type === 'max_uses' ? `${offer.times_redeemed || 0} / ${offer.max_uses} used` :
+                     'One use per guest'}
+                  </p>
+                </div>
               </div>
             </div>
           )}

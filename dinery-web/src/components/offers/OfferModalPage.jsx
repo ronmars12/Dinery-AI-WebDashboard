@@ -12,7 +12,8 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [usageLimitType, setUsageLimitType] = useState('one_per_guest');
+  const [maxUses, setMaxUses] = useState('');
   // ---- Language / i18n ----
   const [lang, setLang] = useState(localStorage.getItem('app_lang') || 'en');
   const i18n = {
@@ -282,6 +283,9 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
         offer_id: offerId,
         discount_percent: Number(discountPercent),
         created_at: new Date().toISOString(),
+        usage_limit_type: usageLimitType,
+        max_uses: usageLimitType === 'max_uses' ? Number(maxUses) : null,
+        times_redeemed: 0,
       };
       
       const collectionName = userRole === 'tester' ? 'TestRestaurant' : 'restaurants';
@@ -389,38 +393,80 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
                   {val}%
                 </option>
               ))}
-            </select>
+          </select>
           </div>
-            {/* Date Range */}
-            <div className="grid grid-cols-2 gap-4">
+{/* Date Range */}
+            <div className="space-y-3">
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('startDate')}
+                </label>
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              {/* Connector line between the two fields */}
+              <div className="flex items-center pl-4 -my-1">
+                <div className="w-px h-4 bg-gray-200 ml-[7px]" />
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  {t('endDate')}
+                </label>
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors disabled:bg-gray-50 disabled:text-gray-400"
+                    required
+                    disabled={!startDate || loading}
+                  />
+                </div>
+                {!startDate && (
+                  <p className="text-xs text-gray-400 mt-1">Select a start date first</p>
+                )}
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('startDate')}
-              </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Usage Limit</label>
+              <select
+                value={usageLimitType}
+                onChange={(e) => setUsageLimitType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                required
                 disabled={loading}
-              />
+              >
+                <option value="one_per_guest">One use per guest (default)</option>
+                <option value="unlimited">Unlimited uses</option>
+                <option value="max_uses">Limited total uses</option>
+              </select>
+              {usageLimitType === 'max_uses' && (
+                <input
+                  type="number" min="1" value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
+                  placeholder="e.g. 50"
+                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                  required disabled={loading}
+                />
+              )}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('endDate')}
-              </label>
-              <input
-                type="date"
-                value={endDate}
-                min={startDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
-                required
-                disabled={!startDate || loading}  // Disable until start date is selected
-              />
-            </div>
-          </div>
 
 
             {/* Active Checkbox */}

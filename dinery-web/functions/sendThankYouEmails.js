@@ -41,18 +41,6 @@ function endOfDay(d) {
   return x;
 }
 
-// Turns { offerDurationValue: 3, offerDurationUnit: "weeks" } into "3 weeks"
-function formatOfferDuration(value, unit) {
-  const n = parseInt(value, 10);
-  if (!n) return "";
-  const labels = {
-    days: n === 1 ? "day" : "days",
-    weeks: n === 1 ? "week" : "weeks",
-    months: n === 1 ? "month" : "months",
-  };
-  return `${n} ${labels[unit] || unit || "days"}`;
-}
-
 // Fills {{tags}} in the thank you message with reservation data
 function fillTemplate(template, data) {
   return (template || "")
@@ -64,31 +52,28 @@ function fillTemplate(template, data) {
     .replace(/{{\s*party_size\s*}}/g, String(data.partySize || ""));
 }
 
-// Fills {{offer_duration}} in the offer description
-function fillOfferTemplate(template, durationText) {
-  return (template || "").replace(/{{\s*offer_duration\s*}}/g, durationText || "");
-}
-
-function buildOfferSection(settings, offerLink, durationText) {
-  if (!settings.offerEnabled) return "";
-  const description = fillOfferTemplate(settings.offerDescription, durationText);
-  const conditions = (settings.offerConditions || "").trim();
+// Builds the offer HTML block from a real Offer document (from the Offers tab)
+function buildOfferSection(offer, offerLink) {
+  if (!offer) return "";
   return `
     <div style="margin-top:20px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:10px;">
-      <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${settings.offerTitle || "Welcome Back Offer"}</p>
-      <p style="margin:0 0 12px;font-size:13px;color:#555;">${description.replace(/\n/g, "<br/>")}</p>
-      <p style="margin:0 0 12px;font-size:13px;color:#555;">Offer code: <strong style="font-family:monospace;background:#fff;border:1px solid #fe8a24;padding:2px 8px;border-radius:4px;">${settings.offerCode || ""}</strong></p>
+      <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${offer.offer_name || "Welcome Back Offer"}</p>
+      <p style="margin:0 0 12px;font-size:13px;color:#555;">${(offer.description || "").replace(/\n/g, "<br/>")}</p>
+      ${offer.discount_percent ? `<p style="margin:0 0 12px;font-size:13px;color:#555;">Discount: <strong>${offer.discount_percent}% off</strong></p>` : ""}
+      <p style="margin:0 0 12px;font-size:13px;color:#555;">Offer code: <strong style="font-family:monospace;background:#fff;border:1px solid #fe8a24;padding:2px 8px;border-radius:4px;">${offer.offer_id}</strong></p>
       <a href="${offerLink}" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Your Next Visit</a>
-      ${conditions ? `<p style="margin:12px 0 0;font-size:11px;color:#999;line-height:1.5;">${conditions.replace(/\n/g, "<br/>")}</p>` : ""}
     </div>
   `;
 }
-
 function buildSurveySection(surveyLink) {
   return `
-    <div style="margin-top:20px;text-align:center;">
-      <a href="${surveyLink}" style="display:inline-block;background:#1e293b;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;">Share Your Feedback</a>
-      <p style="margin:10px 0 0;font-size:12px;color:#999;">It only takes a minute and helps us improve.</p>
+    <div style="margin-top:24px;padding:20px;background:#fffbf5;border:1px solid #fde3c0;border-radius:12px;text-align:center;">
+      <a href="${surveyLink}" style="text-decoration:none;display:block;">
+        <p style="margin:0 0 10px;font-size:14px;font-weight:bold;color:#1e293b;">⭐ Rate Your Experience</p>
+        <p style="margin:0 0 10px;font-size:28px;letter-spacing:4px;line-height:1;">⭐⭐⭐⭐⭐</p>
+        <p style="margin:0;font-size:13px;color:#666;line-height:1.5;">It only takes 10 seconds, but it will help us a lot. ❤️</p>
+        <p style="margin:6px 0 0;font-size:12px;color:#fe8a24;font-weight:bold;">Click the stars to rate your visit →</p>
+      </a>
     </div>
   `;
 }
@@ -169,17 +154,18 @@ const sendThankYouEmails = onSchedule(
       const restaurantId = settingsDoc.id;
       const settings = settingsDoc.data();
 
-      try {
-        // 2. Get restaurant name (try both collections)
+    try {
+        // 2. Get restaurant name + collection (try both collections)
         let restaurantName = "the restaurant";
+        let restaurantCollection = "restaurants";
         let restaurantDoc = await db.collection("restaurants").doc(restaurantId).get();
         if (!restaurantDoc.exists) {
           restaurantDoc = await db.collection("TestRestaurant").doc(restaurantId).get();
+          restaurantCollection = "TestRestaurant";
         }
         if (restaurantDoc.exists) {
           restaurantName = restaurantDoc.data().name || restaurantName;
         }
-
         // 3. Find yesterday's reservations for this restaurant
         const resSnap = await db
           .collection("reservations")
@@ -218,18 +204,38 @@ const sendThankYouEmails = onSchedule(
           };
 
           const thankYouHtml = fillTemplate(settings.thankYouMessage, templateData).replace(/\n/g, "<br/>");
-
-          // Campaign ID — one offer email per reservation, so the reservationId
-          // doubles as a unique campaign identifier for attribution.
           const campaignId = reservationId;
-          const durationText = formatOfferDuration(settings.offerDurationValue, settings.offerDurationUnit);
+
+          let selectedOffer = null;
+          if (settings.offerEnabled && settings.selectedOfferId) {
+            const offerDoc = await db
+              .collection(restaurantCollection)
+              .doc(restaurantId)
+              .collection("offer")
+              .doc(settings.selectedOfferId)
+              .get();
+            if (offerDoc.exists) {
+              const offerData = { id: offerDoc.id, ...offerDoc.data() };
+              const nowDate = new Date();
+              const todayOnly = new Date(nowDate.getFullYear(), nowDate.getMonth(), nowDate.getDate());
+              const startOk = !offerData.start_date || new Date(offerData.start_date) <= todayOnly;
+              const endOk = !offerData.end_date || new Date(offerData.end_date) >= todayOnly;
+              if (offerData.is_active !== false && startOk && endOk) {
+                selectedOffer = offerData;
+              } else {
+                console.log(`⚠️ Selected offer ${settings.selectedOfferId} for restaurant ${restaurantId} is no longer active — skipping offer section.`);
+              }
+            }
+          }
 
           // Offer link routes through the click-tracking redirect function
-          const offerLink = settings.offerEnabled
+          const offerLink = selectedOffer
             ? `${TRACK_CLICK_URL}?restaurantId=${encodeURIComponent(restaurantId)}` +
-              `&offer=${encodeURIComponent(settings.offerCode || "")}` +
+              `&offer=${encodeURIComponent(selectedOffer.offer_id)}` +
+              `&offerId=${encodeURIComponent(selectedOffer.id)}` +
               `&campaignId=${encodeURIComponent(campaignId)}` +
-              `&reservationId=${encodeURIComponent(reservationId)}`
+              `&reservationId=${encodeURIComponent(reservationId)}` +
+              `&source=${encodeURIComponent("crm_email")}`
             : "";
 
           // Survey link: guest-facing feedback page
@@ -239,7 +245,7 @@ const sendThankYouEmails = onSchedule(
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1e293b;">
               <h2 style="color:#fe8a24;margin-bottom:4px;">Thank you for visiting!</h2>
               <p style="font-size:14px;line-height:1.6;">${thankYouHtml}</p>
-              ${buildOfferSection(settings, offerLink, durationText)}
+              ${buildOfferSection(selectedOffer, offerLink)}
               ${settings.surveyEnabled ? buildSurveySection(surveyLink) : ""}
               <p style="color:#aaa;font-size:11px;margin-top:28px;">You're receiving this because you recently dined with us.</p>
             </div>
@@ -257,9 +263,7 @@ const sendThankYouEmails = onSchedule(
 
             // Increment crm_stats.emailsSent counter
             await incrementStat(db, restaurantId, "emailsSent");
-
-            // Track offer sends separately so redemption rate = offersRedeemed / offersSent
-            if (settings.offerEnabled) {
+            if (selectedOffer) {
               await incrementStat(db, restaurantId, "offersSent");
             }
           } else {

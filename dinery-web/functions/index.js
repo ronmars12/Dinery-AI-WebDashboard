@@ -29,6 +29,11 @@ exports.sendEmail = sendEmail;
  // ── CRM: Thank You Email Automation (scheduled) ─────────────────────────────
  const { sendThankYouEmails } = require("./sendThankYouEmails");
  exports.sendThankYouEmails = sendThankYouEmails;
+
+// ── CRM: Offer link click tracking (HTTP redirect) ────────────────────────────
+const { trackOfferClick } = require("./trackOfferClick");
+exports.trackOfferClick = trackOfferClick;
+
 // ── Staff account creation ────────────────────────────────────────────────────
 const { createStaffAccount } = require("./createStaffAccount");
 exports.createStaffAccount = createStaffAccount;

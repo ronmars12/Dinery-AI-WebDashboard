@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, getDocs, query, where, doc, getDoc, setDoc, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, setDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { firestore, auth, storage } from '../../firebase';
 import {
@@ -384,6 +384,8 @@ const [config, setConfig] = useState({
   const [configSaved, setConfigSaved] = useState(false);
   const [reservationSettings, setReservationSettings] = useState(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [offerCodeInput, setOfferCodeInput] = useState('');
+  const [crmAvgRevenue, setCrmAvgRevenue] = useState(0);
 
 
   // Resolved restaurant document ID — docId is the Firestore document ID
@@ -459,6 +461,18 @@ const [config, setConfig] = useState({
     
     loadTablesAndReservations();
   }, [restaurantId, activeRestaurant]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    getDoc(doc(db, 'crm_settings', restaurantId))
+      .then((snap) => {
+        if (snap.exists()) {
+          const v = parseFloat(snap.data().avgRevenuePerGuest);
+          setCrmAvgRevenue(isNaN(v) ? 0 : v);
+        }
+      })
+      .catch(() => {});
+  }, [restaurantId]);
 
   useEffect(() => {
     const loadReservationSettings = async () => {
@@ -785,10 +799,61 @@ const generateTimeSlotsForSelectedDate = () => {
         return;
       }
 
-      const assignedTable = eligible[0] || null;
+const assignedTable = eligible[0] || null;
+
+      // ── Validate offer code against real Offer doc + usage limits ──────────
+      let validatedOffer = null;
+      if (reservationSettings?.enableOfferCode && offerCodeInput) {
+        try {
+          const offersSnap = await getDocs(query(
+            collection(db, collectionName, restaurantId, 'offer'),
+            where('offer_id', '==', offerCodeInput)
+          ));
+          if (!offersSnap.empty) {
+            const offerDoc = offersSnap.docs[0];
+            const offerData = { id: offerDoc.id, ...offerDoc.data() };
+
+            if (offerData.usage_limit_type === 'max_uses' &&
+                (offerData.times_redeemed || 0) >= (offerData.max_uses || 0)) {
+              setToast('This offer code has reached its usage limit.');
+              setSaving(false);
+              return;
+            }
+
+            if (offerData.usage_limit_type === 'one_per_guest' && form.email) {
+              const priorUse = await getDocs(query(
+                collection(db, 'reservations'),
+                where('restaurant_id', '==', restaurantId),
+                where('offer_code_applied', '==', offerCodeInput),
+                where('customer_email', '==', form.email)
+              ));
+              if (!priorUse.empty) {
+                setToast('You have already used this offer code.');
+                setSaving(false);
+                return;
+              }
+            }
+            validatedOffer = offerData;
+          }
+        } catch (e) {
+          console.warn('Offer validation failed:', e);
+        }
+      }
+
+      // ── Estimate campaign revenue ────────────────────────────────────────
+      let estimatedRevenue = null;
+      if (validatedOffer && crmAvgRevenue > 0) {
+        const baseRevenue = guests * crmAvgRevenue;
+        const discountPct = parseFloat(validatedOffer.discount_percent) || 0;
+        estimatedRevenue = Math.round(baseRevenue * (1 - discountPct / 100));
+      }
 
       // ── 3. Save reservation ───────────────────────────────────────────────────
-      await addDoc(collection(db, 'reservations'), {
+      const newRes = await addDoc(collection(db, 'reservations'), {
+        offer_code_applied: (reservationSettings?.enableOfferCode && offerCodeInput) ? offerCodeInput : null,
+        offer_doc_id: validatedOffer?.id || null,
+        offer_source: (reservationSettings?.enableOfferCode && offerCodeInput) ? 'manual' : null,
+        estimated_revenue: estimatedRevenue,
         customer_name:    `${form.firstName} ${form.lastName}`.trim(),
         customer_email:   form.email,
         customer_phone:   `${phoneCode}${form.phone}`,
@@ -817,6 +882,28 @@ const generateTimeSlotsForSelectedDate = () => {
         coupon_confirmed: false,
         reservation_completed_points_awarded: false,
       });
+
+      if (reservationSettings?.enableOfferCode && offerCodeInput) {
+        try {
+          const statsRef = doc(db, 'crm_stats', restaurantId);
+          const statsSnap = await getDoc(statsRef);
+          const currentCount = statsSnap.exists() ? (statsSnap.data().offerReservationsCreated || 0) : 0;
+          const currentRevenue = statsSnap.exists() ? (statsSnap.data().estimatedRevenue || 0) : 0;
+          await setDoc(statsRef, {
+            offerReservationsCreated: currentCount + 1,
+            estimatedRevenue: currentRevenue + (estimatedRevenue || 0),
+          }, { merge: true });
+        } catch (e) { console.warn('offer stat increment failed', e); }
+      }
+
+      if (validatedOffer) {
+        try {
+          await updateDoc(
+            doc(db, collectionName, restaurantId, 'offer', validatedOffer.id),
+            { times_redeemed: (validatedOffer.times_redeemed || 0) + 1 }
+          );
+        } catch (e) { console.warn('offer times_redeemed increment failed', e); }
+      }
 
       // ── 4. Mark table as reserved ─────────────────────────────────────────────
       if (assignedTable) {                                // ✅ FIX 2 — was not done at all
@@ -1529,6 +1616,19 @@ const generateTimeSlotsForSelectedDate = () => {
                             <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">Notes</label>
                             <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} maxLength={360} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all resize-none" placeholder="Dietary requirements, special occasions..." />
                             <p className="text-white/30 text-xs text-right mt-1">({form.notes.length}/360)</p>
+                          </div>
+                        )}
+                        {reservationSettings?.enableOfferCode && (
+                          <div>
+                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
+                              {reservationSettings.offerCodeFieldLabel || 'Have an offer code?'}
+                            </label>
+                            <input
+                              value={offerCodeInput}
+                              onChange={e => setOfferCodeInput(e.target.value.toUpperCase())}
+                              placeholder="e.g. WELCOME10"
+                              className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-white/30 focus:outline-none focus:border-white/50 transition-all"
+                            />
                           </div>
                         )}
                         <label className="flex items-start gap-3 cursor-pointer">

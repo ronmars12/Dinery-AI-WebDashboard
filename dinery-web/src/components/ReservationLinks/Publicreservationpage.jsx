@@ -584,6 +584,7 @@ export default function PublicReservationPage() {
   const urlCampaignId = searchParams.get('campaignId') || '';
   const [offerCodeInput, setOfferCodeInput] = useState('');
   const [offerCodeSource, setOfferCodeSource] = useState(null); 
+  const [crmAvgRevenue, setCrmAvgRevenue] = useState(0);
   const [config, setConfig]                     = useState(null);
   const [restaurantData, setRestaurantData]     = useState(null);
   const [restaurantTables, setRestaurantTables] = useState([]);
@@ -646,6 +647,18 @@ export default function PublicReservationPage() {
       setOfferCodeSource('auto');
     }
   }, [urlOfferCode]);
+
+  useEffect(() => {
+    if (!restaurantData?.firestoreId) return;
+    getDoc(doc(db, 'crm_settings', restaurantData.firestoreId))
+      .then((snap) => {
+        if (snap.exists()) {
+          const v = parseFloat(snap.data().avgRevenuePerGuest);
+          setCrmAvgRevenue(isNaN(v) ? 0 : v);
+        }
+      })
+      .catch(() => {});
+  }, [restaurantData?.firestoreId]);
 
   useEffect(() => {
     const load = async () => {
@@ -1230,7 +1243,54 @@ export default function PublicReservationPage() {
         return;
       }
 
-      const collectionName = restaurantData._collection || 'restaurants';
+const collectionName = restaurantData._collection || 'restaurants';
+
+      // ── Validate offer code against real Offer doc + usage limits ──────────
+      let validatedOffer = null;
+      if (settings?.enableOfferCode && offerCodeInput) {
+        try {
+          const offersSnap = await getDocs(query(
+            collection(db, collectionName, restaurantData.firestoreId, 'offer'),
+            where('offer_id', '==', offerCodeInput)
+          ));
+          if (!offersSnap.empty) {
+            const offerDoc = offersSnap.docs[0];
+            const offerData = { id: offerDoc.id, ...offerDoc.data() };
+
+            if (offerData.usage_limit_type === 'max_uses' &&
+                (offerData.times_redeemed || 0) >= (offerData.max_uses || 0)) {
+              setError('This offer code has reached its usage limit.');
+              setSaving(false);
+              return;
+            }
+
+            if (offerData.usage_limit_type === 'one_per_guest' && form.email) {
+              const priorUse = await getDocs(query(
+                collection(db, 'reservations'),
+                where('restaurant_id', '==', restaurantData.firestoreId),
+                where('offer_code_applied', '==', offerCodeInput),
+                where('customer_email', '==', form.email)
+              ));
+              if (!priorUse.empty) {
+                setError('You have already used this offer code.');
+                setSaving(false);
+                return;
+              }
+            }
+            validatedOffer = offerData;
+          }
+        } catch (e) {
+          console.warn('Offer validation failed:', e);
+        }
+      }
+
+      // ── Estimate campaign revenue ────────────────────────────────────────
+      let estimatedRevenue = null;
+      if (validatedOffer && crmAvgRevenue > 0) {
+        const baseRevenue = guests * crmAvgRevenue;
+        const discountPct = parseFloat(validatedOffer.discount_percent) || 0;
+        estimatedRevenue = Math.round(baseRevenue * (1 - discountPct / 100));
+      }
 
       const reservationData = {
         Booking_request:                      true,
@@ -1254,8 +1314,10 @@ export default function PublicReservationPage() {
           ? `${form.notes ? form.notes + '\n\n' : ''}Offer Applied: ${offerCodeInput}`
           : (form.notes || ''),
         offer_code_applied: (settings?.enableOfferCode && offerCodeInput) ? offerCodeInput : null,
+        offer_doc_id: validatedOffer?.id || null,
         offer_campaign_id: (settings?.enableOfferCode && offerCodeInput && offerCodeSource === 'auto') ? urlCampaignId || null : null,
-        offer_source: (settings?.enableOfferCode && offerCodeInput) ? offerCodeSource : null,
+        offer_source: (settings?.enableOfferCode && offerCodeInput) ? (searchParams.get('source') || offerCodeSource) : null,
+        estimated_revenue: estimatedRevenue,
         customer_birthday:                    form.birthday || null,
         status:                               'confirmed',
 
@@ -1307,9 +1369,22 @@ export default function PublicReservationPage() {
         try {
           const statsRef = doc(db, 'crm_stats', restaurantData.firestoreId);
           const statsSnap = await getDoc(statsRef);
-          const current = statsSnap.exists() ? (statsSnap.data().offerReservationsCreated || 0) : 0;
-          await setDoc(statsRef, { offerReservationsCreated: current + 1 }, { merge: true });
+          const currentCount = statsSnap.exists() ? (statsSnap.data().offerReservationsCreated || 0) : 0;
+          const currentRevenue = statsSnap.exists() ? (statsSnap.data().estimatedRevenue || 0) : 0;
+          await setDoc(statsRef, {
+            offerReservationsCreated: currentCount + 1,
+            estimatedRevenue: currentRevenue + (estimatedRevenue || 0),
+          }, { merge: true });
         } catch (e) { console.warn('offer stat increment failed', e); }
+      }
+
+      if (validatedOffer) {
+        try {
+          await updateDoc(
+            doc(db, collectionName, restaurantData.firestoreId, 'offer', validatedOffer.id),
+            { times_redeemed: (validatedOffer.times_redeemed || 0) + 1 }
+          );
+        } catch (e) { console.warn('offer times_redeemed increment failed', e); }
       }
      // Send confirmation email
       try {
