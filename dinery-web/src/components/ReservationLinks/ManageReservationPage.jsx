@@ -14,7 +14,425 @@ import {
   FiAlertCircle, FiInfo, FiUser, FiMail, FiPhone, FiBookOpen,
 } from 'react-icons/fi';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    // Page titles
+    manageReservation: 'Manage Your Reservation',
+    modifyOrCancel: 'Modify or cancel your booking',
+    reservationNotFound: 'Reservation Not Found',
+    invalidLinkMsg: 'This link may be invalid, expired, or the reservation has been removed.',
+    // Status labels
+    confirmed: 'Confirmed',
+    pending: 'Pending',
+    cancelled: 'Cancelled',
+    completed: 'Completed',
+    // Info rows
+    reservationId: 'Reservation ID',
+    date: 'Date',
+    time: 'Time',
+    guests: 'Guests',
+    guest: 'guest',
+    guestsPlural: 'guests',
+    restaurant: 'Restaurant',
+    customer: 'Customer',
+    // Action buttons
+    modifyReservation: 'Modify Reservation',
+    changeDateTimeParty: 'Change date, time, or party size',
+    cancelReservation: 'Cancel Reservation',
+    cancelBooking: 'Cancel your booking',
+    // Modify flow
+    modifyDetails: 'Modify Details',
+    partySize: 'Party Size',
+    selectDate: 'Select Date',
+    selectTime: 'Select Time',
+    noTimeSlots: 'No time slots available',
+    restaurantClosed: 'Restaurant Closed on {day}',
+    reviewChanges: 'Review Changes →',
+    confirmChanges: 'Confirm Changes',
+    currentBooking: 'Current Booking',
+    changesTo: 'Changes To',
+    newBooking: 'New Booking',
+    autoAssigned: '(auto-assigned)',
+    checkingAvailability: 'Checking availability...',
+    tableAvailable: '✓ Table available — {time} on {date}',
+    slotUnavailable: 'Slot just became unavailable — go back and pick another time.',
+    popularSlot: 'This time slot is popular — your table will be assigned from available tables only.',
+    guestCountChanged: 'ℹ️ Guest count changed — a new table will be assigned automatically based on availability.',
+    updateImmediately: 'Your reservation will be updated immediately. A confirmation email will be sent to you.',
+    confirming: 'Confirming...',
+    confirmModification: 'Confirm Modification',
+    // Cancel flow
+    cancelReservationTitle: 'Cancel Reservation',
+    cancelRequestSent: 'Your cancellation request will be sent to the restaurant for confirmation.',
+    reasonOptional: 'Reason for cancellation (optional)',
+    keepReservation: 'Keep Reservation',
+    requestCancel: 'Request Cancel',
+    sending: 'Sending...',
+    // Success
+    requestSent: 'Request Sent!',
+    reservationUpdated: 'Reservation Updated!',
+    reservationUpdatedMsg: 'Your reservation has been successfully updated and confirmed!',
+    reservationCancelledMsg: 'Your reservation has been cancelled. A confirmation email has been sent.',
+    tableConfirmed: 'Table confirmed — {time} on {date}',
+    makeAnotherChange: 'Make Another Change',
+    // Status messages
+    thisReservationIs: 'This reservation is {status}',
+    cannotModifyOnline: 'It can no longer be modified online',
+    // Days
+    sunday: 'Sunday',
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+    // Email
+    reservationUpdatedEmail: 'Reservation Updated ✅',
+    reservationUpdatedEmailBody: 'Your reservation at {restaurant} has been successfully updated.',
+    reservationCancelledEmail: 'Reservation Cancelled',
+    reservationCancelledEmailBody: 'Your reservation at {restaurant} has been cancelled.',
+    reason: 'Reason',
+    hopeToSeeAgain: 'We hope to see you again soon.',
+    // Table assignment
+    tableFitsGuests: '"{name}" table fits {guests} guests',
+    combinedTables: 'Combined tables accommodate {guests} guests',
+    comboFitsGuests: '{name} fits {guests} guests',
+    noTableForGuests: 'No table for {guests} guests {maxInfo}',
+    maxAvailable: '(max: {max})',
+    // Manage
+    manageLabel: 'MANAGE',
+    // Modification summary
+    dateChange: 'Date: {old} → {new}',
+    timeChange: 'Time: {old} → {new}',
+    guestsChange: 'Guests: {old} → {new}',
+    // Remove
+    remove: 'Remove',
+    // Loading
+    loading: 'Loading...',
+  },
+  fi: {
+    manageReservation: 'Hallitse varaustasi',
+    modifyOrCancel: 'Muokkaa tai peruuta varauksesi',
+    reservationNotFound: 'Varausta ei löytynyt',
+    invalidLinkMsg: 'Tämä linkki voi olla virheellinen, vanhentunut tai varaus on poistettu.',
+    confirmed: 'Vahvistettu',
+    pending: 'Odottaa',
+    cancelled: 'Peruttu',
+    completed: 'Valmis',
+    reservationId: 'Varauksen tunnus',
+    date: 'Päivä',
+    time: 'Aika',
+    guests: 'Vieraat',
+    guest: 'vieras',
+    guestsPlural: 'vierasta',
+    restaurant: 'Ravintola',
+    customer: 'Asiakas',
+    modifyReservation: 'Muokkaa varausta',
+    changeDateTimeParty: 'Vaihda päivämäärää, aikaa tai seurueen kokoa',
+    cancelReservation: 'Peru varaus',
+    cancelBooking: 'Peru varauksesi',
+    modifyDetails: 'Muokkaa tietoja',
+    partySize: 'Seurueen koko',
+    selectDate: 'Valitse päivä',
+    selectTime: 'Valitse aika',
+    noTimeSlots: 'Ei vapaita aikavälejä',
+    restaurantClosed: 'Ravintola suljettu {day}',
+    reviewChanges: 'Tarkista muutokset →',
+    confirmChanges: 'Vahvista muutokset',
+    currentBooking: 'Nykyinen varaus',
+    changesTo: 'Muutokset',
+    newBooking: 'Uusi varaus',
+    autoAssigned: '(automaattinen)',
+    checkingAvailability: 'Tarkistetaan saatavuutta...',
+    tableAvailable: '✓ Pöytä saatavilla — {time} {date}',
+    slotUnavailable: 'Aikaväli juuri varattu — palaa takaisin ja valitse toinen aika.',
+    popularSlot: 'Tämä aikaväli on suosittu — pöytäsi varataan saatavilla olevista pöydistä.',
+    guestCountChanged: 'ℹ️ Vierasmäärä muuttui — uusi pöytä varataan automaattisesti saatavuuden mukaan.',
+    updateImmediately: 'Varauksesi päivitetään välittömästi. Vahvistusviesti lähetetään sähköpostiisi.',
+    confirming: 'Vahvistetaan...',
+    confirmModification: 'Vahvista muutos',
+    cancelReservationTitle: 'Peru varaus',
+    cancelRequestSent: 'Peruutusesi lähetetään ravintolalle vahvistettavaksi.',
+    reasonOptional: 'Syy peruutukselle (valinnainen)',
+    keepReservation: 'Pidä varaus',
+    requestCancel: 'Pyydä peruutusta',
+    sending: 'Lähetetään...',
+    requestSent: 'Pyyntö lähetetty!',
+    reservationUpdated: 'Varaus päivitetty!',
+    reservationUpdatedMsg: 'Varauksesi on päivitetty ja vahvistettu onnistuneesti!',
+    reservationCancelledMsg: 'Varauksesi on peruttu. Vahvistusviesti on lähetetty sähköpostiisi.',
+    tableConfirmed: 'Pöytä vahvistettu — {time} {date}',
+    makeAnotherChange: 'Tee toinen muutos',
+    thisReservationIs: 'Tämä varaus on {status}',
+    cannotModifyOnline: 'Sitä ei voi enää muokata verkossa',
+    sunday: 'Sunnuntai',
+    monday: 'Maanantai',
+    tuesday: 'Tiistai',
+    wednesday: 'Keskiviikko',
+    thursday: 'Torstai',
+    friday: 'Perjantai',
+    saturday: 'Lauantai',
+    reservationUpdatedEmail: 'Varaus päivitetty ✅',
+    reservationUpdatedEmailBody: 'Varauksesi ravintolaan {restaurant} on päivitetty onnistuneesti.',
+    reservationCancelledEmail: 'Varaus peruttu',
+    reservationCancelledEmailBody: 'Varauksesi ravintolaan {restaurant} on peruttu.',
+    reason: 'Syy',
+    hopeToSeeAgain: 'Toivottavasti näemme sinut pian uudelleen.',
+    tableFitsGuests: '"{name}" pöytä mahtuu {guests} vierasta',
+    combinedTables: 'Yhdistetyt pöydät mahtuvat {guests} vierasta',
+    comboFitsGuests: '{name} mahtuu {guests} vierasta',
+    noTableForGuests: 'Ei pöytää {guests} vieraalle {maxInfo}',
+    maxAvailable: '(max: {max})',
+    manageLabel: 'HALLINTA',
+    dateChange: 'Päivä: {old} → {new}',
+    timeChange: 'Aika: {old} → {new}',
+    guestsChange: 'Vieraat: {old} → {new}',
+    remove: 'Poista',
+    loading: 'Ladataan...',
+  },
+  no: {
+    manageReservation: 'Administrer reservasjonen din',
+    modifyOrCancel: 'Endre eller avbestill bestillingen din',
+    reservationNotFound: 'Reservasjon ikke funnet',
+    invalidLinkMsg: 'Denne lenken kan være ugyldig, utløpt eller reservasjonen er fjernet.',
+    confirmed: 'Bekreftet',
+    pending: 'Venter',
+    cancelled: 'Avbestilt',
+    completed: 'Fullført',
+    reservationId: 'Reservasjons-ID',
+    date: 'Dato',
+    time: 'Tid',
+    guests: 'Gjester',
+    guest: 'gjest',
+    guestsPlural: 'gjester',
+    restaurant: 'Restaurant',
+    customer: 'Kunde',
+    modifyReservation: 'Endre reservasjon',
+    changeDateTimeParty: 'Endre dato, tid eller antall gjester',
+    cancelReservation: 'Avbestill reservasjon',
+    cancelBooking: 'Avbestill bestillingen din',
+    modifyDetails: 'Endre detaljer',
+    partySize: 'Antall gjester',
+    selectDate: 'Velg dato',
+    selectTime: 'Velg tid',
+    noTimeSlots: 'Ingen tilgjengelige tidspor',
+    restaurantClosed: 'Restauranten stengt {day}',
+    reviewChanges: 'Gå gjennom endringer →',
+    confirmChanges: 'Bekreft endringer',
+    currentBooking: 'Nåværende bestilling',
+    changesTo: 'Endringer til',
+    newBooking: 'Ny bestilling',
+    autoAssigned: '(automatisk tildelt)',
+    checkingAvailability: 'Sjekker tilgjengelighet...',
+    tableAvailable: '✓ Bord tilgjengelig — {time} {date}',
+    slotUnavailable: 'Tidspunktet ble nettopp utilgjengelig — gå tilbake og velg et annet tidspunkt.',
+    popularSlot: 'Dette tidspunktet er populært — bordet ditt blir tildelt fra tilgjengelige bord.',
+    guestCountChanged: 'ℹ️ Antall gjester endret — et nytt bord blir automatisk tildelt basert på tilgjengelighet.',
+    updateImmediately: 'Reservasjonen din blir oppdatert umiddelbart. En bekreftelse sendes til din e-post.',
+    confirming: 'Bekrefter...',
+    confirmModification: 'Bekreft endring',
+    cancelReservationTitle: 'Avbestill reservasjon',
+    cancelRequestSent: 'Avbestillingsforespørselen din blir sendt til restauranten for bekreftelse.',
+    reasonOptional: 'Grunn for avbestilling (valgfritt)',
+    keepReservation: 'Behold reservasjon',
+    requestCancel: 'Be om avbestilling',
+    sending: 'Sender...',
+    requestSent: 'Forespørsel sendt!',
+    reservationUpdated: 'Reservasjon oppdatert!',
+    reservationUpdatedMsg: 'Reservasjonen din er oppdatert og bekreftet!',
+    reservationCancelledMsg: 'Reservasjonen din er avbestilt. En bekreftelse er sendt til din e-post.',
+    tableConfirmed: 'Bord bekreftet — {time} {date}',
+    makeAnotherChange: 'Gjør en ny endring',
+    thisReservationIs: 'Denne reservasjonen er {status}',
+    cannotModifyOnline: 'Den kan ikke lenger endres online',
+    sunday: 'Søndag',
+    monday: 'Mandag',
+    tuesday: 'Tirsdag',
+    wednesday: 'Onsdag',
+    thursday: 'Torsdag',
+    friday: 'Fredag',
+    saturday: 'Lørdag',
+    reservationUpdatedEmail: 'Reservasjon oppdatert ✅',
+    reservationUpdatedEmailBody: 'Reservasjonen din hos {restaurant} er oppdatert.',
+    reservationCancelledEmail: 'Reservasjon avbestilt',
+    reservationCancelledEmailBody: 'Reservasjonen din hos {restaurant} er avbestilt.',
+    reason: 'Grunn',
+    hopeToSeeAgain: 'Vi håper å se deg igjen snart.',
+    tableFitsGuests: '"{name}" bord passer {guests} gjester',
+    combinedTables: 'Kombinerte bord rommer {guests} gjester',
+    comboFitsGuests: '{name} passer {guests} gjester',
+    noTableForGuests: 'Ingen bord for {guests} gjester {maxInfo}',
+    maxAvailable: '(max: {max})',
+    manageLabel: 'ADMINISTRER',
+    dateChange: 'Dato: {old} → {new}',
+    timeChange: 'Tid: {old} → {new}',
+    guestsChange: 'Gjester: {old} → {new}',
+    remove: 'Fjern',
+    loading: 'Laster...',
+  },
+  sv: {
+    manageReservation: 'Hantera din bokning',
+    modifyOrCancel: 'Ändra eller avboka din bokning',
+    reservationNotFound: 'Bokning hittades inte',
+    invalidLinkMsg: 'Denna länk kan vara ogiltig, utgången eller bokningen har tagits bort.',
+    confirmed: 'Bekräftad',
+    pending: 'Väntar',
+    cancelled: 'Avbokad',
+    completed: 'Slutförd',
+    reservationId: 'Boknings-ID',
+    date: 'Datum',
+    time: 'Tid',
+    guests: 'Gäster',
+    guest: 'gäst',
+    guestsPlural: 'gäster',
+    restaurant: 'Restaurang',
+    customer: 'Kund',
+    modifyReservation: 'Ändra bokning',
+    changeDateTimeParty: 'Ändra datum, tid eller sällskapsstorlek',
+    cancelReservation: 'Avboka bokning',
+    cancelBooking: 'Avboka din bokning',
+    modifyDetails: 'Ändra detaljer',
+    partySize: 'Sällskapsstorlek',
+    selectDate: 'Välj datum',
+    selectTime: 'Välj tid',
+    noTimeSlots: 'Inga tillgängliga tider',
+    restaurantClosed: 'Restaurangen stängd {day}',
+    reviewChanges: 'Granska ändringar →',
+    confirmChanges: 'Bekräfta ändringar',
+    currentBooking: 'Nuvarande bokning',
+    changesTo: 'Ändringar till',
+    newBooking: 'Ny bokning',
+    autoAssigned: '(automatiskt tilldelad)',
+    checkingAvailability: 'Kontrollerar tillgänglighet...',
+    tableAvailable: '✓ Bord tillgängligt — {time} {date}',
+    slotUnavailable: 'Tiden blev just upptagen — gå tillbaka och välj en annan tid.',
+    popularSlot: 'Denna tid är populär — ditt bord kommer att tilldelas från tillgängliga bord.',
+    guestCountChanged: 'ℹ️ Antal gäster ändrat — ett nytt bord kommer att tilldelas automatiskt baserat på tillgänglighet.',
+    updateImmediately: 'Din bokning uppdateras omedelbart. En bekräftelse skickas till din e-post.',
+    confirming: 'Bekräftar...',
+    confirmModification: 'Bekräfta ändring',
+    cancelReservationTitle: 'Avboka bokning',
+    cancelRequestSent: 'Din avbokningsförfrågan skickas till restaurangen för bekräftelse.',
+    reasonOptional: 'Anledning till avbokning (valfritt)',
+    keepReservation: 'Behåll bokning',
+    requestCancel: 'Begär avbokning',
+    sending: 'Skickar...',
+    requestSent: 'Förfrågan skickad!',
+    reservationUpdated: 'Bokning uppdaterad!',
+    reservationUpdatedMsg: 'Din bokning har uppdaterats och bekräftats!',
+    reservationCancelledMsg: 'Din bokning har avbokats. En bekräftelse har skickats till din e-post.',
+    tableConfirmed: 'Bord bekräftat — {time} {date}',
+    makeAnotherChange: 'Gör en ny ändring',
+    thisReservationIs: 'Denna bokning är {status}',
+    cannotModifyOnline: 'Den kan inte längre ändras online',
+    sunday: 'Söndag',
+    monday: 'Måndag',
+    tuesday: 'Tisdag',
+    wednesday: 'Onsdag',
+    thursday: 'Torsdag',
+    friday: 'Fredag',
+    saturday: 'Lördag',
+    reservationUpdatedEmail: 'Bokning uppdaterad ✅',
+    reservationUpdatedEmailBody: 'Din bokning hos {restaurant} har uppdaterats.',
+    reservationCancelledEmail: 'Bokning avbokad',
+    reservationCancelledEmailBody: 'Din bokning hos {restaurant} har avbokats.',
+    reason: 'Anledning',
+    hopeToSeeAgain: 'Vi hoppas att se dig igen snart.',
+    tableFitsGuests: '"{name}" bord passar {guests} gäster',
+    combinedTables: 'Kombinerade bord rymmer {guests} gäster',
+    comboFitsGuests: '{name} passar {guests} gäster',
+    noTableForGuests: 'Inget bord för {guests} gäster {maxInfo}',
+    maxAvailable: '(max: {max})',
+    manageLabel: 'HANTERA',
+    dateChange: 'Datum: {old} → {new}',
+    timeChange: 'Tid: {old} → {new}',
+    guestsChange: 'Gäster: {old} → {new}',
+    remove: 'Ta bort',
+    loading: 'Laddar...',
+  },
+  de: {
+    manageReservation: 'Verwalten Sie Ihre Reservierung',
+    modifyOrCancel: 'Ändern oder stornieren Sie Ihre Buchung',
+    reservationNotFound: 'Reservierung nicht gefunden',
+    invalidLinkMsg: 'Dieser Link könnte ungültig sein, abgelaufen oder die Reservierung wurde entfernt.',
+    confirmed: 'Bestätigt',
+    pending: 'Ausstehend',
+    cancelled: 'Storniert',
+    completed: 'Abgeschlossen',
+    reservationId: 'Reservierungs-ID',
+    date: 'Datum',
+    time: 'Uhrzeit',
+    guests: 'Gäste',
+    guest: 'Gast',
+    guestsPlural: 'Gäste',
+    restaurant: 'Restaurant',
+    customer: 'Kunde',
+    modifyReservation: 'Reservierung ändern',
+    changeDateTimeParty: 'Datum, Uhrzeit oder Gruppengröße ändern',
+    cancelReservation: 'Reservierung stornieren',
+    cancelBooking: 'Ihre Buchung stornieren',
+    modifyDetails: 'Details ändern',
+    partySize: 'Gruppengröße',
+    selectDate: 'Datum auswählen',
+    selectTime: 'Uhrzeit auswählen',
+    noTimeSlots: 'Keine verfügbaren Zeitslots',
+    restaurantClosed: 'Restaurant geschlossen am {day}',
+    reviewChanges: 'Änderungen prüfen →',
+    confirmChanges: 'Änderungen bestätigen',
+    currentBooking: 'Aktuelle Buchung',
+    changesTo: 'Änderungen zu',
+    newBooking: 'Neue Buchung',
+    autoAssigned: '(automatisch zugewiesen)',
+    checkingAvailability: 'Prüfe Verfügbarkeit...',
+    tableAvailable: '✓ Tisch verfügbar — {time} {date}',
+    slotUnavailable: 'Zeitslot wurde gerade belegt — gehen Sie zurück und wählen Sie eine andere Uhrzeit.',
+    popularSlot: 'Dieser Zeitslot ist beliebt — Ihr Tisch wird aus verfügbaren Tischen zugewiesen.',
+    guestCountChanged: 'ℹ️ Gästezahl geändert — ein neuer Tisch wird automatisch basierend auf der Verfügbarkeit zugewiesen.',
+    updateImmediately: 'Ihre Reservierung wird sofort aktualisiert. Eine Bestätigung wird an Ihre E-Mail gesendet.',
+    confirming: 'Bestätige...',
+    confirmModification: 'Änderung bestätigen',
+    cancelReservationTitle: 'Reservierung stornieren',
+    cancelRequestSent: 'Ihre Stornierungsanfrage wird zur Bestätigung an das Restaurant gesendet.',
+    reasonOptional: 'Grund für die Stornierung (optional)',
+    keepReservation: 'Reservierung behalten',
+    requestCancel: 'Stornierung anfordern',
+    sending: 'Sende...',
+    requestSent: 'Anfrage gesendet!',
+    reservationUpdated: 'Reservierung aktualisiert!',
+    reservationUpdatedMsg: 'Ihre Reservierung wurde erfolgreich aktualisiert und bestätigt!',
+    reservationCancelledMsg: 'Ihre Reservierung wurde storniert. Eine Bestätigung wurde an Ihre E-Mail gesendet.',
+    tableConfirmed: 'Tisch bestätigt — {time} {date}',
+    makeAnotherChange: 'Weitere Änderung vornehmen',
+    thisReservationIs: 'Diese Reservierung ist {status}',
+    cannotModifyOnline: 'Sie kann nicht mehr online geändert werden',
+    sunday: 'Sonntag',
+    monday: 'Montag',
+    tuesday: 'Dienstag',
+    wednesday: 'Mittwoch',
+    thursday: 'Donnerstag',
+    friday: 'Freitag',
+    saturday: 'Samstag',
+    reservationUpdatedEmail: 'Reservierung aktualisiert ✅',
+    reservationUpdatedEmailBody: 'Ihre Reservierung bei {restaurant} wurde erfolgreich aktualisiert.',
+    reservationCancelledEmail: 'Reservierung storniert',
+    reservationCancelledEmailBody: 'Ihre Reservierung bei {restaurant} wurde storniert.',
+    reason: 'Grund',
+    hopeToSeeAgain: 'Wir hoffen, Sie bald wiederzusehen.',
+    tableFitsGuests: 'Tisch "{name}" passt für {guests} Gäste',
+    combinedTables: 'Kombinierte Tische bieten Platz für {guests} Gäste',
+    comboFitsGuests: '{name} passt für {guests} Gäste',
+    noTableForGuests: 'Kein Tisch für {guests} Gäste {maxInfo}',
+    maxAvailable: '(max: {max})',
+    manageLabel: 'VERWALTEN',
+    dateChange: 'Datum: {old} → {new}',
+    timeChange: 'Uhrzeit: {old} → {new}',
+    guestsChange: 'Gäste: {old} → {new}',
+    remove: 'Entfernen',
+    loading: 'Lade...',
+  },
+};
+
 const ALL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const getOpenDayNames = (customHours) => {
@@ -70,7 +488,7 @@ const generateTimeSlots = (openTime, closeTime, interval = 30) => {
 };
 
 // ─── Mini Calendar (Professional) ───────────────────────────────────────────
-function MiniCalendar({ selectedDate, onDateSelect, accentColor, openDayNames }) {
+function MiniCalendar({ selectedDate, onDateSelect, accentColor, openDayNames, t }) {
   const [view, setView] = useState(new Date());
   const yr = view.getFullYear(), mo = view.getMonth();
   const firstDay = new Date(yr, mo, 1).getDay();
@@ -153,12 +571,12 @@ function MiniCalendar({ selectedDate, onDateSelect, accentColor, openDayNames })
 }
 
 // ─── Status Badge ───────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
+function StatusBadge({ status, t }) {
   const config = {
-    confirmed: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', icon: FiCheckCircle, label: 'Confirmed' },
-    pending: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20', icon: FiAlertCircle, label: 'Pending' },
-    cancelled: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', icon: FiX, label: 'Cancelled' },
-    completed: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', icon: FiCheck, label: 'Completed' },
+    confirmed: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', icon: FiCheckCircle, label: t('confirmed') },
+    pending: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20', icon: FiAlertCircle, label: t('pending') },
+    cancelled: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', icon: FiX, label: t('cancelled') },
+    completed: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', icon: FiCheck, label: t('completed') },
   };
   const c = config[status] || config.pending;
   const Icon = c.icon;
@@ -171,11 +589,11 @@ function StatusBadge({ status }) {
 }
 
 // ─── Info Row ───────────────────────────────────────────────────────────────
-function InfoRow({ icon: Icon, label, value, subValue }) {
+function InfoRow({ icon: Icon, label, value, subValue, accent }) {
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 transition-all duration-200">
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#fe8a2422' }}>
-        <Icon className="w-4 h-4" style={{ color: '#fe8a24' }} />
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: accent + '22' }}>
+        <Icon className="w-4 h-4" style={{ color: accent }} />
       </div>
       <div className="flex-1">
         <p className="text-white/40 text-[11px] font-medium uppercase tracking-wider">{label}</p>
@@ -188,6 +606,24 @@ function InfoRow({ icon: Icon, label, value, subValue }) {
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function ManageReservationPage() {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const { reservationId } = useParams();
   const db = firestore;
   const [reservation, setReservation] = useState(null);
@@ -387,7 +823,7 @@ export default function ManageReservationPage() {
 
     const capInfo = getTableCapacityInfo(guests);
     if (!capInfo.fits) {
-      alert(`No table can accommodate ${guests} guests. Please reduce the guest count.`);
+      alert(t('noTableForGuests').replace('{guests}', guests).replace('{maxInfo}', capInfo.maxAvailable > 0 ? t('maxAvailable').replace('{max}', capInfo.maxAvailable) : ''));
       setModStep(1);
       return;
     }
@@ -429,7 +865,7 @@ export default function ManageReservationPage() {
 
       const assignment = autoAssignTable(guests, bookedIds);
       if (!assignment) {
-        alert('No tables available for this slot. Please choose another time.');
+        alert(t('slotUnavailable'));
         setSaving(false); return;
       }
 
@@ -454,15 +890,21 @@ export default function ManageReservationPage() {
         };
 
         const prevDate = resDate;
+        const oldDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
+        const oldTimeStr = oldDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const newTimeStr = resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const oldDateStr = oldDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const newDateStr = resDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
         const modSummary = [
-          resDate.toDateString() !== (reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date)).toDateString()
-            ? `Date: ${(reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → ${resDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+          resDate.toDateString() !== oldDate.toDateString()
+            ? t('dateChange').replace('{old}', oldDateStr).replace('{new}', newDateStr)
             : null,
-          resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) !== formattedTime
-            ? `Time: ${formattedTime} → ${resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+          newTimeStr !== oldTimeStr
+            ? t('timeChange').replace('{old}', oldTimeStr).replace('{new}', newTimeStr)
             : null,
           guests !== reservation.number_of_guests
-            ? `Guests: ${reservation.number_of_guests} → ${guests}`
+            ? t('guestsChange').replace('{old}', reservation.number_of_guests).replace('{new}', guests)
             : null,
         ].filter(Boolean).join(' · ');
 
@@ -494,19 +936,19 @@ export default function ManageReservationPage() {
             const tableName = assignment.isCombination ? assignment.combination.name : assignment.table.name;
             await fn({
               to: reservation.customer_email,
-              subject: `Reservation Confirmed – ${reservation.restaurant_name}`,
+              subject: `${t('reservationUpdatedEmail')} ${reservation.restaurant_name}`,
               html: `
                 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-                  <h2 style="color:#fe8a24;">Reservation Updated ✅</h2>
+                  <h2 style="color:#fe8a24;">${t('reservationUpdatedEmail')}</h2>
                   <p>Hi ${firstName},</p>
-                  <p>Your reservation at <strong>${reservation.restaurant_name}</strong> has been successfully updated.</p>
+                  <p>${t('reservationUpdatedEmailBody').replace('{restaurant}', reservation.restaurant_name)}</p>
                   <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                    <tr><td style="padding:8px 0;color:#888;">Date</td><td style="font-weight:bold;">${resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</td></tr>
-                    <tr><td style="padding:8px 0;color:#888;">Time</td><td style="font-weight:bold;">${resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</td></tr>
-                    <tr><td style="padding:8px 0;color:#888;">Guests</td><td style="font-weight:bold;">${guests}</td></tr>
-                    <tr><td style="padding:8px 0;color:#888;">Table</td><td style="font-weight:bold;">${tableName}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">${t('date')}</td><td style="font-weight:bold;">${resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">${t('time')}</td><td style="font-weight:bold;">${resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">${t('guests')}</td><td style="font-weight:bold;">${guests}</td></tr>
+                    <tr><td style="padding:8px 0;color:#888;">${t('table')}</td><td style="font-weight:bold;">${tableName}</td></tr>
                   </table>
-                  <p style="color:#888;font-size:12px;">Your reservation has been confirmed with the new details above.</p>
+                  <p style="color:#888;font-size:12px;">${t('updateImmediately')}</p>
                   <p style="color:#888;font-size:12px;margin-top:24px;">— ${reservation.restaurant_name}</p>
                 </div>
               `,
@@ -516,11 +958,11 @@ export default function ManageReservationPage() {
           }
         }
 
-      setSuccessMsg('Your reservation has been successfully updated and confirmed!');
+      setSuccessMsg(t('reservationUpdatedMsg'));
       setMode('success');
     } catch (e) {
       console.error(e);
-      alert('Failed to update reservation. Please try again.');
+      alert(t('saveFailed'));
     } finally { setSaving(false); }
   };
 
@@ -531,7 +973,7 @@ const handleCancelRequest = async () => {
 
     await updateDoc(doc(db, 'reservations', reservationId), {
       status: 'cancelled',
-      cancel_reason: request || 'Cancelled by customer',
+      cancel_reason: request || t('cancelledByCustomer'),
       change_request: null,
       updated_at: new Date(),
     });
@@ -540,8 +982,6 @@ const handleCancelRequest = async () => {
       if (freshSnap.exists()) {
         setReservation({ id: freshSnap.id, ...freshSnap.data() });
       }
-    // 2. Free up the assigned table(s)
-    // 2. Free up the assigned table(s)
     const tableIds = Array.isArray(reservation?.table_ids) && reservation.table_ids.length
       ? reservation.table_ids
       : reservation?.table_id ? [reservation.table_id] : [];
@@ -572,19 +1012,19 @@ const handleCancelRequest = async () => {
         const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
         await fn({
           to: reservation.customer_email,
-          subject: `Reservation Cancelled – ${reservation.restaurant_name}`,
+          subject: `${t('reservationCancelledEmail')} – ${reservation.restaurant_name}`,
           html: `
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-              <h2 style="color:#ef4444;">Reservation Cancelled</h2>
+              <h2 style="color:#ef4444;">${t('reservationCancelledEmail')}</h2>
               <p>Hi ${firstName},</p>
-              <p>Your reservation at <strong>${reservation.restaurant_name}</strong> has been cancelled.</p>
+              <p>${t('reservationCancelledEmailBody').replace('{restaurant}', reservation.restaurant_name)}</p>
               <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                <tr><td style="padding:8px 0;color:#888;">Date</td><td><strong>${resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong></td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Time</td><td><strong>${resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${reservation.number_of_guests}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#888;">${t('date')}</td><td><strong>${resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#888;">${t('time')}</td><td><strong>${resDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#888;">${t('guests')}</td><td><strong>${reservation.number_of_guests}</strong></td></tr>
               </table>
-              ${request ? `<p style="color:#888;">Reason: ${request}</p>` : ''}
-              <p style="color:#888;font-size:12px;">We hope to see you again soon.</p>
+              ${request ? `<p style="color:#888;">${t('reason')}: ${request}</p>` : ''}
+              <p style="color:#888;font-size:12px;">${t('hopeToSeeAgain')}</p>
               <p style="color:#888;font-size:12px;margin-top:16px;">— ${reservation.restaurant_name}</p>
             </div>
           `,
@@ -593,11 +1033,11 @@ const handleCancelRequest = async () => {
         console.error('❌ Cancellation email failed:', emailErr?.message || emailErr);
       }
     }
-    setSuccessMsg('Your reservation has been cancelled. A confirmation email has been sent.');
+    setSuccessMsg(t('reservationCancelledMsg'));
     setMode('success');
   } catch (e) {
     console.error(e);
-    alert('Failed to cancel reservation. Please try again.');
+    alert(t('saveFailed'));
   } finally {
     setSaving(false);
   }
@@ -651,8 +1091,8 @@ const handleCancelRequest = async () => {
         <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6">
           <span className="text-5xl">🍽️</span>
         </div>
-        <h1 className="text-2xl font-bold text-white mb-3">Reservation Not Found</h1>
-        <p className="text-white/50 text-base">This link may be invalid, expired, or the reservation has been removed.</p>
+        <h1 className="text-2xl font-bold text-white mb-3">{t('reservationNotFound')}</h1>
+        <p className="text-white/50 text-base">{t('invalidLinkMsg')}</p>
       </div>
     </div>
   );
@@ -691,10 +1131,10 @@ const handleCancelRequest = async () => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-4">
             <FiBookOpen className="w-3 h-3 text-white/50" />
-            <span className="text-white/40 text-[11px] font-mono tracking-wider">MANAGE</span>
+            <span className="text-white/40 text-[11px] font-mono tracking-wider">{t('manageLabel')}</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Manage Your<br />Reservation</h1>
-          <p className="text-white/40 text-sm">Modify or cancel your booking</p>
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">{t('manageReservation')}</h1>
+          <p className="text-white/40 text-sm">{t('modifyOrCancel')}</p>
         </div>
 
         {mode === 'view' && (
@@ -705,17 +1145,17 @@ const handleCancelRequest = async () => {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-1">Reservation ID</p>
+                  <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-1">{t('reservationId')}</p>
                   <p className="text-white/60 text-xs font-mono">{reservation.id?.slice(0, 12)}...</p>
                 </div>
-                <StatusBadge status={reservation.status} />
+                <StatusBadge status={reservation.status} t={t} />
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <InfoRow icon={FiCalendar} label="Date" value={formattedDate} />
-                <InfoRow icon={FiClock} label="Time" value={formattedTime} />
-                <InfoRow icon={FiUsers} label="Guests" value={`${reservation.number_of_guests} guest${reservation.number_of_guests > 1 ? 's' : ''}`} />
-                <InfoRow icon={FiMapPin} label="Restaurant" value={reservation.restaurant_name} />
+                <InfoRow icon={FiCalendar} label={t('date')} value={formattedDate} accent={accent} />
+                <InfoRow icon={FiClock} label={t('time')} value={formattedTime} accent={accent} />
+                <InfoRow icon={FiUsers} label={t('guests')} value={`${reservation.number_of_guests} ${reservation.number_of_guests > 1 ? t('guestsPlural') : t('guest')}`} accent={accent} />
+                <InfoRow icon={FiMapPin} label={t('restaurant')} value={reservation.restaurant_name} accent={accent} />
               </div>
 
               <div className="pt-4 border-t border-white/10">
@@ -724,7 +1164,7 @@ const handleCancelRequest = async () => {
                     <FiUser className="w-3.5 h-3.5 text-white/40" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-white/40 text-xs">Customer</p>
+                    <p className="text-white/40 text-xs">{t('customer')}</p>
                     <p className="text-white/80 text-sm font-medium">{reservation.customer_name}</p>
                   </div>
                   {reservation.customer_email && (
@@ -753,8 +1193,8 @@ const handleCancelRequest = async () => {
                     <FiEdit2 className="w-4 h-4 text-[#fe8a24]" />
                   </div>
                   <div className="text-left">
-                    <p className="text-white font-semibold">Modify Reservation</p>
-                    <p className="text-white/40 text-xs">Change date, time, or party size</p>
+                    <p className="text-white font-semibold">{t('modifyReservation')}</p>
+                    <p className="text-white/40 text-xs">{t('changeDateTimeParty')}</p>
                   </div>
                 </div>
                 <FiArrowRight className="w-4 h-4 text-white/30 group-hover:text-white/60 transition-colors" />
@@ -772,8 +1212,8 @@ const handleCancelRequest = async () => {
                         <FiTrash2 className="w-4 h-4 text-rose-400" />
                       </div>
                       <div className="text-left">
-                        <p className="text-rose-400 font-semibold">Cancel Reservation</p>
-                        <p className="text-rose-400/50 text-xs">Cancel your booking</p>
+                        <p className="text-rose-400 font-semibold">{t('cancelReservation')}</p>
+                        <p className="text-rose-400/50 text-xs">{t('cancelBooking')}</p>
                       </div>
                     </div>
                     <FiArrowRight className="w-4 h-4 text-rose-400/30 group-hover:text-rose-400/60 transition-colors" />
@@ -788,8 +1228,8 @@ const handleCancelRequest = async () => {
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
               <FiInfo className="w-6 h-6 text-white/30" />
             </div>
-            <p className="text-white/40 text-base">This reservation is {reservation.status}</p>
-            <p className="text-white/25 text-sm mt-1">It can no longer be modified online</p>
+            <p className="text-white/40 text-base">{t('thisReservationIs').replace('{status}', t(reservation.status))}</p>
+            <p className="text-white/25 text-sm mt-1">{t('cannotModifyOnline')}</p>
           </div>
         )}
 
@@ -805,13 +1245,13 @@ const handleCancelRequest = async () => {
                   >
                     <FiChevronLeft className="w-4 h-4 text-white" />
                   </button>
-                  <h3 className="text-white font-bold text-lg">Modify Details</h3>
+                  <h3 className="text-white font-bold text-lg">{t('modifyDetails')}</h3>
                 </div>
 
                 {/* Guest Count Selector */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-white/40 text-xs font-semibold uppercase tracking-wider">Party Size</p>
+                    <p className="text-white/40 text-xs font-semibold uppercase tracking-wider">{t('partySize')}</p>
                     <div className="flex items-center gap-2 bg-white/10 rounded-xl p-1">
                       <button
                         onClick={() => { const next = Math.max(1, guests - 1); setGuests(next); setSlotAvail(null); }}
@@ -847,7 +1287,7 @@ const handleCancelRequest = async () => {
                     {effectiveMax > 8 && (
                       <button
                         onClick={() => {
-                          const v = parseInt(window.prompt(`Enter number of guests (max ${effectiveMax}):`)) || guests;
+                          const v = parseInt(window.prompt(t('enterGuestsPrompt').replace('{max}', effectiveMax))) || guests;
                           if (v > 0 && v <= effectiveMax) { setGuests(v); setSlotAvail(null); }
                         }}
                         className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${guests > 8 ? 'text-white shadow-md' : 'bg-white/5 text-white/50 hover:bg-white/10'
@@ -866,17 +1306,17 @@ const handleCancelRequest = async () => {
                         <FiCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                         <p className="text-xs text-emerald-300 font-medium">
                           {capInfo.type === 'combo'
-                            ? `${capInfo.name} fits ${guests} guests`
+                            ? t('comboFitsGuests').replace('{name}', capInfo.name).replace('{guests}', guests)
                             : capInfo.type === 'multi'
-                              ? `Combined tables accommodate ${guests} guests`
-                              : `"${capInfo.name}" table fits ${guests} guests`}
+                              ? t('combinedTables').replace('{guests}', guests)
+                              : t('tableFitsGuests').replace('{name}', capInfo.name).replace('{guests}', guests)}
                         </p>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
                         <FiX className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
                         <p className="text-xs text-rose-300 font-medium">
-                          No table for {guests} guests {capInfo.maxAvailable > 0 ? `(max: ${capInfo.maxAvailable})` : ''}
+                          {t('noTableForGuests').replace('{guests}', guests).replace('{maxInfo}', capInfo.maxAvailable > 0 ? t('maxAvailable').replace('{max}', capInfo.maxAvailable) : '')}
                         </p>
                       </div>
                     );
@@ -885,12 +1325,13 @@ const handleCancelRequest = async () => {
 
                 {/* Calendar */}
                 <div className="mb-6">
-                  <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3">Select Date</p>
+                  <p className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-3">{t('selectDate')}</p>
                   <MiniCalendar
                     selectedDate={selectedDate}
                     onDateSelect={d => { setSelectedDate(d); setSelectedTime(''); setSlotAvail(null); }}
                     accentColor={accent}
                     openDayNames={openDayNames}
+                    t={t}
                   />
                 </div>
 
@@ -899,16 +1340,16 @@ const handleCancelRequest = async () => {
                   <div className="mb-6">
                     {!isOpen ? (
                       <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-center">
-                        <p className="text-rose-300 text-sm font-medium">Restaurant Closed on {selectedDate.toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                        <p className="text-rose-300 text-sm font-medium">{t('restaurantClosed').replace('{day}', selectedDate.toLocaleDateString('en-US', { weekday: 'long' }))}</p>
                       </div>
                     ) : timeSlots.length === 0 ? (
                       <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
-                        <p className="text-white/50 text-sm">No time slots available</p>
+                        <p className="text-white/50 text-sm">{t('noTimeSlots')}</p>
                       </div>
                     ) : (
                       <>
                         <div className="flex items-center justify-between mb-3">
-                          <p className="text-white/40 text-xs font-semibold uppercase tracking-wider">Select Time</p>
+                          <p className="text-white/40 text-xs font-semibold uppercase tracking-wider">{t('selectTime')}</p>
                           <p className="text-white/25 text-xs">{effOpen} – {effClose}</p>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -943,7 +1384,7 @@ const handleCancelRequest = async () => {
                     className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
                     style={{ backgroundColor: accent }}
                   >
-                    Review Changes →
+                    {t('reviewChanges')}
                   </button>
                 )}
               </>
@@ -953,17 +1394,17 @@ const handleCancelRequest = async () => {
                   <button onClick={() => setModStep(1)} className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
                     <FiChevronLeft className="w-4 h-4 text-white" />
                   </button>
-                  <h3 className="text-white font-bold text-lg">Confirm Changes</h3>
+                  <h3 className="text-white font-bold text-lg">{t('confirmChanges')}</h3>
                 </div>
 
                 <div className="space-y-4 mb-6">
                   {/* Current booking */}
                   <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">Current Booking</p>
+                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-3">{t('currentBooking')}</p>
                     <div className="space-y-2 text-white/70 text-sm">
                       <div className="flex items-center gap-2"><FiCalendar className="w-3.5 h-3.5" /> {formattedDate}</div>
                       <div className="flex items-center gap-2"><FiClock className="w-3.5 h-3.5" /> {formattedTime}</div>
-                      <div className="flex items-center gap-2"><FiUsers className="w-3.5 h-3.5" /> {reservation.number_of_guests} guests</div>
+                      <div className="flex items-center gap-2"><FiUsers className="w-3.5 h-3.5" /> {reservation.number_of_guests} {reservation.number_of_guests > 1 ? t('guestsPlural') : t('guest')}</div>
                       {(reservation.combination_name || reservation.table_name) && (
                         <div className="flex items-center gap-2">
                           🪑 {reservation.combination_name || (Array.isArray(reservation.table_names) && reservation.table_names.length > 1 ? reservation.table_names.join(' + ') : reservation.table_name)}
@@ -974,13 +1415,13 @@ const handleCancelRequest = async () => {
 
                   <div className="flex justify-center">
                     <div className="text-white/20 text-xs flex items-center gap-2">
-                      <div className="w-8 h-px bg-white/20" /> Changes To <div className="w-8 h-px bg-white/20" />
+                      <div className="w-8 h-px bg-white/20" /> {t('changesTo')} <div className="w-8 h-px bg-white/20" />
                     </div>
                   </div>
 
                   {/* New booking */}
                   <div className="p-4 rounded-xl" style={{ backgroundColor: `${accent}10`, border: `1px solid ${accent}30` }}>
-                    <p className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: accent }}>New Booking</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: accent }}>{t('newBooking')}</p>
                     <div className="space-y-2 text-white/90 text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <FiCalendar className="w-3.5 h-3.5" style={{ color: accent }} />
@@ -992,7 +1433,7 @@ const handleCancelRequest = async () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <FiUsers className="w-3.5 h-3.5" style={{ color: accent }} />
-                        {guests} guests
+                        {guests} {guests > 1 ? t('guestsPlural') : t('guest')}
                         {guests !== reservation.number_of_guests && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full font-bold ml-1"
                             style={{ backgroundColor: accent + '30', color: accent }}>
@@ -1007,26 +1448,25 @@ const handleCancelRequest = async () => {
                         return (
                           <div className="mt-2 space-y-2">
                             <div className="flex items-center gap-2">🪑 {capInfo.name}
-                              <span className="text-[10px] text-white/35 font-normal">(auto-assigned)</span>
+                              <span className="text-[10px] text-white/35 font-normal">{t('autoAssigned')}</span>
                             </div>
-                            {/* Live availability status — same engine as PublicReservationPage */}
                             {slotOk === null ? (
                               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
                                 <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin flex-shrink-0"/>
-                                <p className="text-xs text-white/40">Checking availability...</p>
+                                <p className="text-xs text-white/40">{t('checkingAvailability')}</p>
                               </div>
                             ) : slotOk ? (
                               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                                 <FiCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"/>
                                 <p className="text-xs text-emerald-300 font-medium">
-                                  ✓ Table available — {getTimeLabel(selectedTime)} on {selectedDate?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                  {t('tableAvailable').replace('{time}', getTimeLabel(selectedTime)).replace('{date}', selectedDate?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))}
                                 </p>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
                                 <FiX className="w-3.5 h-3.5 text-rose-400 flex-shrink-0"/>
                                 <p className="text-xs text-rose-300 font-medium">
-                                  Slot just became unavailable — go back and pick another time.
+                                  {t('slotUnavailable')}
                                 </p>
                               </div>
                             )}
@@ -1035,7 +1475,7 @@ const handleCancelRequest = async () => {
                       })()}
                     </div>
                   </div>
-                  {/* Slot busyness indicator — no customer details exposed */}
+                  {/* Slot busyness indicator */}
                   {(() => {
                     if (!selectedDate || !selectedTime || !slotAvail) return null;
                     const diningDur  = settings?.defaultReservationDuration || 120;
@@ -1053,23 +1493,21 @@ const handleCancelRequest = async () => {
                     if (!conflictCount) return null;
                     return (
                       <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-                        <p className="text-white/40 text-xs">
-                          This time slot is popular — your table will be assigned from available tables only.
-                        </p>
+                        <p className="text-white/40 text-xs">{t('popularSlot')}</p>
                       </div>
                     );
                   })()}
                   {guests !== reservation.number_of_guests && (
                     <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3">
                       <p className="text-blue-300 text-xs font-semibold">
-                        ℹ️ Guest count changed — a new table will be assigned automatically based on availability.
+                        {t('guestCountChanged')}
                       </p>
                     </div>
                   )}
                 </div>
 
                 <p className="text-white/30 text-xs text-center mb-5">
-                  Your reservation will be updated immediately. A confirmation email will be sent to you.
+                  {t('updateImmediately')}
                 </p>
 
                   <button
@@ -1081,12 +1519,12 @@ const handleCancelRequest = async () => {
                   {saving ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Submitting...
+                      {t('confirming')}
                     </>
                   ) : (
                     <>
                       <FiCheck className="w-4 h-4" />
-                      Confirm Modification
+                      {t('confirmModification')}
                     </>
                   )}
                 </button>
@@ -1098,13 +1536,13 @@ const handleCancelRequest = async () => {
         {/* Cancel Confirmation */}
         {mode === 'cancel_confirm' && (
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-rose-500/20 p-6">
-            <h3 className="text-white font-bold text-lg mb-2">Cancel Reservation</h3>
-            <p className="text-white/50 text-sm mb-5">Your cancellation request will be sent to the restaurant for confirmation.</p>
+            <h3 className="text-white font-bold text-lg mb-2">{t('cancelReservationTitle')}</h3>
+            <p className="text-white/50 text-sm mb-5">{t('cancelRequestSent')}</p>
             <textarea
               value={request}
               onChange={e => setRequest(e.target.value)}
               rows={3}
-              placeholder="Reason for cancellation (optional)"
+              placeholder={t('reasonOptional')}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-white/30 transition-all resize-none mb-5"
             />
             <div className="flex gap-3">
@@ -1112,14 +1550,14 @@ const handleCancelRequest = async () => {
                 onClick={() => setMode('view')}
                 className="flex-1 py-3 rounded-xl text-sm font-medium text-white/60 bg-white/10 hover:bg-white/15 transition-all"
               >
-                Keep Reservation
+                {t('keepReservation')}
               </button>
               <button
                 onClick={handleCancelRequest}
                 disabled={saving}
                 className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-rose-500 hover:bg-rose-600 transition-all disabled:opacity-50"
               >
-                {saving ? 'Sending...' : 'Request Cancel'}
+                {saving ? t('sending') : t('requestCancel')}
               </button>
             </div>
           </div>
@@ -1133,17 +1571,17 @@ const handleCancelRequest = async () => {
               <FiCheck className="w-10 h-10 text-white" strokeWidth={2.5} />
             </div>
             <h3 className="text-white font-bold text-2xl mb-2">
-              {successMsg.includes('cancel') ? 'Request Sent!' : 'Reservation Updated!'}
+              {successMsg.includes('cancel') ? t('requestSent') : t('reservationUpdated')}
             </h3>
             <p className="text-white/50 text-base mb-6">{successMsg}</p>
 
             {!successMsg.includes('cancel') && (
               <>
-              {/* ── New booking details (styled to match Confirm Changes "New Booking" card) ── */}
+              {/* ── New booking details ── */}
               <div className="p-4 rounded-xl mb-6 text-left"
                 style={{ backgroundColor: `${accent}10`, border: `1px solid ${accent}30` }}>
                 <p className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: accent }}>
-                  New Booking
+                  {t('newBooking')}
                 </p>
                 <div className="space-y-2 text-white/90 text-sm font-medium">
                   <div className="flex items-center gap-2">
@@ -1156,12 +1594,12 @@ const handleCancelRequest = async () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <FiUsers className="w-3.5 h-3.5" style={{ color: accent }} />
-                    {reservation.number_of_guests} guest{reservation.number_of_guests > 1 ? 's' : ''}
+                    {reservation.number_of_guests} {reservation.number_of_guests > 1 ? t('guestsPlural') : t('guest')}
                   </div>
                   {(reservation.combination_name || reservation.table_name) && (
                     <div className="flex items-center gap-2">
                       🪑 {reservation.combination_name || (Array.isArray(reservation.table_names) && reservation.table_names.length > 1 ? reservation.table_names.join(' + ') : reservation.table_name)}
-                      <span className="text-[10px] text-white/35 font-normal">(auto-assigned)</span>
+                      <span className="text-[10px] text-white/35 font-normal">{t('autoAssigned')}</span>
                     </div>
                   )}
                 </div>
@@ -1169,13 +1607,12 @@ const handleCancelRequest = async () => {
                 <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <FiCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                   <p className="text-xs text-emerald-300 font-medium">
-                    Table confirmed — {formattedTime} on {formattedDate}
+                    {t('tableConfirmed').replace('{time}', formattedTime).replace('{date}', formattedDate)}
                   </p>
                 </div>
               </div>
                 <button
                   onClick={async () => {
-                    // Refresh reservation data so the view reflects the new date/time/guests
                     const snap = await getDoc(doc(db, 'reservations', reservationId));
                     if (snap.exists()) setReservation({ id: snap.id, ...snap.data() });
                     setMode('view');
@@ -1187,7 +1624,7 @@ const handleCancelRequest = async () => {
                   className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
                   style={{ backgroundColor: accent }}
                 >
-                  Make Another Change
+                  {t('makeAnotherChange')}
                 </button>
               </>
             )}

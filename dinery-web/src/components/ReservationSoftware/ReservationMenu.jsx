@@ -17,6 +17,370 @@ import {
 const db   = getFirestore();
 const auth = getAuth();
 
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    menuManagement: 'Menu Management',
+    categories: 'Categories',
+    allItems: 'All Items',
+    addCategory: 'Add Category',
+    editCategory: 'Edit Category',
+    addItem: 'Add Item',
+    editItem: 'Edit Item',
+    addMenuItem: 'Add Menu Item',
+    editMenuItem: 'Edit Menu Item',
+    fillDetails: 'Fill in details for each language',
+    language: 'Language:',
+    category: 'Category',
+    subcategory: 'Subcategory',
+    none: '— None —',
+    select: '— Select —',
+    price: 'Price',
+    active: 'Active',
+    hidden: 'Hidden',
+    minGuests: 'Min Guests',
+    maxGuests: 'Max Guests',
+    alwaysShow: '0 = always show',
+    showWhenAtLeast: 'Show when party is at least this size',
+    showWhenAtMost: 'Show when party is at most this size',
+    itemName: 'Item Name',
+    description: 'Description',
+    allergens: 'Allergens',
+    selectAllergens: 'Select all allergens present in this item.',
+    selectedAllergens: 'Selected allergens:',
+    attributes: 'Attributes',
+    tagItem: 'Tag this item with dietary and service attributes.',
+    selectedAttributes: 'Selected attributes:',
+    saveItem: 'Save Item',
+    saveCategory: 'Save',
+    saving: 'Saving…',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    deleting: 'Deleting…',
+    categoryAdded: 'Category added',
+    categoryUpdated: 'Category updated',
+    itemAdded: 'Item added',
+    itemUpdated: 'Item updated',
+    itemDeleted: 'Item deleted',
+    categoryDeleted: 'Category deleted',
+    deleteFailed: 'Delete failed',
+    saveFailed: 'Failed to save',
+    noItemsYet: 'No menu items yet',
+    addFirstItem: 'Click "Add Item" to create your first menu item',
+    addFirstItemBtn: 'Add First Item',
+    search: 'Search…',
+    total: 'total',
+    activeCount: 'active',
+    hiddenCount: 'hidden',
+    categoriesCount: 'categories',
+    confirmDelete: 'Delete {type}?',
+    confirmDeleteMsg: '"{name}" will be permanently removed.',
+    confirmDeleteCategoryMsg: ' All items in this category will also be deleted.',
+    edit: 'Edit',
+    show: 'Show',
+    hide: 'Hide',
+    subcategories: 'Subcategories',
+    addSubcategory: 'Add subcategory…',
+    addSubcategoryBtn: 'Add',
+    color: 'Color',
+    categoryActive: 'Category active',
+    categoryHidden: 'Category hidden',
+    guests: 'guests',
+    upTo: 'up to',
+    content: 'Content',
+    back: 'Back',
+    name: 'Name',
+  },
+  fi: {
+    menuManagement: 'Ruokalistan hallinta',
+    categories: 'Kategoriat',
+    allItems: 'Kaikki tuotteet',
+    addCategory: 'Lisää kategoria',
+    editCategory: 'Muokkaa kategoriaa',
+    addItem: 'Lisää tuote',
+    editItem: 'Muokkaa tuotetta',
+    addMenuItem: 'Lisää ruokalistan tuote',
+    editMenuItem: 'Muokkaa ruokalistan tuotetta',
+    fillDetails: 'Täytä tiedot jokaisella kielellä',
+    language: 'Kieli:',
+    category: 'Kategoria',
+    subcategory: 'Alakategoria',
+    none: '— Ei mitään —',
+    select: '— Valitse —',
+    price: 'Hinta',
+    active: 'Aktiivinen',
+    hidden: 'Piilotettu',
+    minGuests: 'Min. vieraat',
+    maxGuests: 'Max. vieraat',
+    alwaysShow: '0 = näytä aina',
+    showWhenAtLeast: 'Näytä kun seurue on vähintään tämän kokoinen',
+    showWhenAtMost: 'Näytä kun seurue on enintään tämän kokoinen',
+    itemName: 'Tuotteen nimi',
+    description: 'Kuvaus',
+    allergens: 'Allergeenit',
+    selectAllergens: 'Valitse kaikki tässä tuotteessa olevat allergeenit.',
+    selectedAllergens: 'Valitut allergeenit:',
+    attributes: 'Ominaisuudet',
+    tagItem: 'Merkitse tuote ruokavalio- ja palveluominaisuuksilla.',
+    selectedAttributes: 'Valitut ominaisuudet:',
+    saveItem: 'Tallenna tuote',
+    saveCategory: 'Tallenna',
+    saving: 'Tallennetaan…',
+    cancel: 'Peruuta',
+    delete: 'Poista',
+    deleting: 'Poistetaan…',
+    categoryAdded: 'Kategoria lisätty',
+    categoryUpdated: 'Kategoria päivitetty',
+    itemAdded: 'Tuote lisätty',
+    itemUpdated: 'Tuote päivitetty',
+    itemDeleted: 'Tuote poistettu',
+    categoryDeleted: 'Kategoria poistettu',
+    deleteFailed: 'Poisto epäonnistui',
+    saveFailed: 'Tallennus epäonnistui',
+    noItemsYet: 'Ei vielä ruokalistan tuotteita',
+    addFirstItem: 'Napsauta "Lisää tuote" luodaksesi ensimmäisen tuotteen',
+    addFirstItemBtn: 'Lisää ensimmäinen tuote',
+    search: 'Hae…',
+    total: 'yhteensä',
+    activeCount: 'aktiivista',
+    hiddenCount: 'piilotettua',
+    categoriesCount: 'kategoriaa',
+    confirmDelete: 'Poista {type}?',
+    confirmDeleteMsg: '"{name}" poistetaan pysyvästi.',
+    confirmDeleteCategoryMsg: ' Kaikki tämän kategorian tuotteet poistetaan myös.',
+    edit: 'Muokkaa',
+    show: 'Näytä',
+    hide: 'Piilota',
+    subcategories: 'Alakategoriat',
+    addSubcategory: 'Lisää alakategoria…',
+    addSubcategoryBtn: 'Lisää',
+    color: 'Väri',
+    categoryActive: 'Kategoria aktiivinen',
+    categoryHidden: 'Kategoria piilotettu',
+    guests: 'vierasta',
+    upTo: 'enintään',
+    content: 'Sisältö',
+    back: 'Takaisin',
+    name: 'Nimi',
+  },
+  no: {
+    menuManagement: 'Menystyring',
+    categories: 'Kategorier',
+    allItems: 'Alle varer',
+    addCategory: 'Legg til kategori',
+    editCategory: 'Rediger kategori',
+    addItem: 'Legg til vare',
+    editItem: 'Rediger vare',
+    addMenuItem: 'Legg til menyvare',
+    editMenuItem: 'Rediger menyvare',
+    fillDetails: 'Fyll inn detaljer for hvert språk',
+    language: 'Språk:',
+    category: 'Kategori',
+    subcategory: 'Underkategori',
+    none: '— Ingen —',
+    select: '— Velg —',
+    price: 'Pris',
+    active: 'Aktiv',
+    hidden: 'Skjult',
+    minGuests: 'Min. gjester',
+    maxGuests: 'Maks. gjester',
+    alwaysShow: '0 = vis alltid',
+    showWhenAtLeast: 'Vis når selskapet er minst denne størrelsen',
+    showWhenAtMost: 'Vis når selskapet er maks denne størrelsen',
+    itemName: 'Varenavn',
+    description: 'Beskrivelse',
+    allergens: 'Allergener',
+    selectAllergens: 'Velg alle allergener som finnes i denne varen.',
+    selectedAllergens: 'Valgte allergener:',
+    attributes: 'Egenskaper',
+    tagItem: 'Merk varen med diett- og serviceegenskaper.',
+    selectedAttributes: 'Valgte egenskaper:',
+    saveItem: 'Lagre vare',
+    saveCategory: 'Lagre',
+    saving: 'Lagrer…',
+    cancel: 'Avbryt',
+    delete: 'Slett',
+    deleting: 'Sletter…',
+    categoryAdded: 'Kategori lagt til',
+    categoryUpdated: 'Kategori oppdatert',
+    itemAdded: 'Vare lagt til',
+    itemUpdated: 'Vare oppdatert',
+    itemDeleted: 'Vare slettet',
+    categoryDeleted: 'Kategori slettet',
+    deleteFailed: 'Sletting mislyktes',
+    saveFailed: 'Lagring mislyktes',
+    noItemsYet: 'Ingen menyvarer ennå',
+    addFirstItem: 'Klikk "Legg til vare" for å opprette din første menyvare',
+    addFirstItemBtn: 'Legg til første vare',
+    search: 'Søk…',
+    total: 'totalt',
+    activeCount: 'aktive',
+    hiddenCount: 'skjulte',
+    categoriesCount: 'kategorier',
+    confirmDelete: 'Slett {type}?',
+    confirmDeleteMsg: '"{name}" vil bli permanent fjernet.',
+    confirmDeleteCategoryMsg: ' Alle varer i denne kategorien vil også bli slettet.',
+    edit: 'Rediger',
+    show: 'Vis',
+    hide: 'Skjul',
+    subcategories: 'Underkategorier',
+    addSubcategory: 'Legg til underkategori…',
+    addSubcategoryBtn: 'Legg til',
+    color: 'Farge',
+    categoryActive: 'Kategori aktiv',
+    categoryHidden: 'Kategori skjult',
+    guests: 'gjester',
+    upTo: 'opp til',
+    content: 'Innhold',
+    back: 'Tilbake',
+    name: 'Navn',
+  },
+  sv: {
+    menuManagement: 'Menuhantering',
+    categories: 'Kategorier',
+    allItems: 'Alla artiklar',
+    addCategory: 'Lägg till kategori',
+    editCategory: 'Redigera kategori',
+    addItem: 'Lägg till artikel',
+    editItem: 'Redigera artikel',
+    addMenuItem: 'Lägg till menyartikel',
+    editMenuItem: 'Redigera menyartikel',
+    fillDetails: 'Fyll i detaljer för varje språk',
+    language: 'Språk:',
+    category: 'Kategori',
+    subcategory: 'Underkategori',
+    none: '— Ingen —',
+    select: '— Välj —',
+    price: 'Pris',
+    active: 'Aktiv',
+    hidden: 'Dold',
+    minGuests: 'Min. gäster',
+    maxGuests: 'Max. gäster',
+    alwaysShow: '0 = visa alltid',
+    showWhenAtLeast: 'Visa när sällskapet är minst denna storlek',
+    showWhenAtMost: 'Visa när sällskapet är max denna storlek',
+    itemName: 'Artikelnamn',
+    description: 'Beskrivning',
+    allergens: 'Allergener',
+    selectAllergens: 'Välj alla allergener som finns i denna artikel.',
+    selectedAllergens: 'Valda allergener:',
+    attributes: 'Egenskaper',
+    tagItem: 'Märk artikeln med diet- och serviceegenskaper.',
+    selectedAttributes: 'Valda egenskaper:',
+    saveItem: 'Spara artikel',
+    saveCategory: 'Spara',
+    saving: 'Sparar…',
+    cancel: 'Avbryt',
+    delete: 'Ta bort',
+    deleting: 'Tar bort…',
+    categoryAdded: 'Kategori tillagd',
+    categoryUpdated: 'Kategori uppdaterad',
+    itemAdded: 'Artikel tillagd',
+    itemUpdated: 'Artikel uppdaterad',
+    itemDeleted: 'Artikel borttagen',
+    categoryDeleted: 'Kategori borttagen',
+    deleteFailed: 'Borttagning misslyckades',
+    saveFailed: 'Spara misslyckades',
+    noItemsYet: 'Inga menyartiklar ännu',
+    addFirstItem: 'Klicka på "Lägg till artikel" för att skapa din första menyartikel',
+    addFirstItemBtn: 'Lägg till första artikel',
+    search: 'Sök…',
+    total: 'totalt',
+    activeCount: 'aktiva',
+    hiddenCount: 'dolda',
+    categoriesCount: 'kategorier',
+    confirmDelete: 'Ta bort {type}?',
+    confirmDeleteMsg: '"{name}" kommer att tas bort permanent.',
+    confirmDeleteCategoryMsg: ' Alla artiklar i denna kategori kommer också att tas bort.',
+    edit: 'Redigera',
+    show: 'Visa',
+    hide: 'Dölj',
+    subcategories: 'Underkategorier',
+    addSubcategory: 'Lägg till underkategori…',
+    addSubcategoryBtn: 'Lägg till',
+    color: 'Färg',
+    categoryActive: 'Kategori aktiv',
+    categoryHidden: 'Kategori dold',
+    guests: 'gäster',
+    upTo: 'upp till',
+    content: 'Innehåll',
+    back: 'Tillbaka',
+    name: 'Namn',
+  },
+  de: {
+    menuManagement: 'Menüverwaltung',
+    categories: 'Kategorien',
+    allItems: 'Alle Artikel',
+    addCategory: 'Kategorie hinzufügen',
+    editCategory: 'Kategorie bearbeiten',
+    addItem: 'Artikel hinzufügen',
+    editItem: 'Artikel bearbeiten',
+    addMenuItem: 'Menüartikel hinzufügen',
+    editMenuItem: 'Menüartikel bearbeiten',
+    fillDetails: 'Details für jede Sprache ausfüllen',
+    language: 'Sprache:',
+    category: 'Kategorie',
+    subcategory: 'Unterkategorie',
+    none: '— Keine —',
+    select: '— Auswählen —',
+    price: 'Preis',
+    active: 'Aktiv',
+    hidden: 'Versteckt',
+    minGuests: 'Min. Gäste',
+    maxGuests: 'Max. Gäste',
+    alwaysShow: '0 = immer anzeigen',
+    showWhenAtLeast: 'Anzeigen wenn Gruppe mindestens diese Größe hat',
+    showWhenAtMost: 'Anzeigen wenn Gruppe maximal diese Größe hat',
+    itemName: 'Artikelname',
+    description: 'Beschreibung',
+    allergens: 'Allergene',
+    selectAllergens: 'Wählen Sie alle Allergene aus, die in diesem Artikel enthalten sind.',
+    selectedAllergens: 'Ausgewählte Allergene:',
+    attributes: 'Eigenschaften',
+    tagItem: 'Markieren Sie den Artikel mit Ernährungs- und Serviceeigenschaften.',
+    selectedAttributes: 'Ausgewählte Eigenschaften:',
+    saveItem: 'Artikel speichern',
+    saveCategory: 'Speichern',
+    saving: 'Speichere…',
+    cancel: 'Abbrechen',
+    delete: 'Löschen',
+    deleting: 'Lösche…',
+    categoryAdded: 'Kategorie hinzugefügt',
+    categoryUpdated: 'Kategorie aktualisiert',
+    itemAdded: 'Artikel hinzugefügt',
+    itemUpdated: 'Artikel aktualisiert',
+    itemDeleted: 'Artikel gelöscht',
+    categoryDeleted: 'Kategorie gelöscht',
+    deleteFailed: 'Löschen fehlgeschlagen',
+    saveFailed: 'Speichern fehlgeschlagen',
+    noItemsYet: 'Noch keine Menüartikel',
+    addFirstItem: 'Klicken Sie auf "Artikel hinzufügen", um Ihren ersten Menüartikel zu erstellen',
+    addFirstItemBtn: 'Ersten Artikel hinzufügen',
+    search: 'Suchen…',
+    total: 'gesamt',
+    activeCount: 'aktiv',
+    hiddenCount: 'versteckt',
+    categoriesCount: 'Kategorien',
+    confirmDelete: '{type} löschen?',
+    confirmDeleteMsg: '"{name}" wird dauerhaft entfernt.',
+    confirmDeleteCategoryMsg: ' Alle Artikel in dieser Kategorie werden ebenfalls gelöscht.',
+    edit: 'Bearbeiten',
+    show: 'Anzeigen',
+    hide: 'Verstecken',
+    subcategories: 'Unterkategorien',
+    addSubcategory: 'Unterkategorie hinzufügen…',
+    addSubcategoryBtn: 'Hinzufügen',
+    color: 'Farbe',
+    categoryActive: 'Kategorie aktiv',
+    categoryHidden: 'Kategorie versteckt',
+    guests: 'Gäste',
+    upTo: 'bis zu',
+    content: 'Inhalt',
+    back: 'Zurück',
+    name: 'Name',
+  },
+};
+
 // ─── Constants ──────────────────────────────────────────────────────────────
 const LANGUAGES = [
   { code: 'en', label: 'EN', flag: '🇬🇧', name: 'English'    },
@@ -105,7 +469,7 @@ const AttributeBadge = ({ id, small }) => {
 };
 
 // ─── Multilingual input ──────────────────────────────────────────────────────
-const MultiLangInput = ({ label, value, onChange, multiline, activeLang }) => {
+const MultiLangInput = ({ label, value, onChange, multiline, activeLang, t }) => {
   return (
     <div>
       {label && <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>}
@@ -118,7 +482,7 @@ const MultiLangInput = ({ label, value, onChange, multiline, activeLang }) => {
                 value={value[lang.code] || ''}
                 onChange={e => onChange({ ...value, [lang.code]: e.target.value })}
                 rows={2}
-                placeholder={`${label || 'Text'} in ${lang.name}…`}
+                placeholder={`${label || t('text')} in ${lang.name}…`}
                 className="flex-1 border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24] resize-none transition-colors"
               />
             ) : (
@@ -126,7 +490,7 @@ const MultiLangInput = ({ label, value, onChange, multiline, activeLang }) => {
                 type="text"
                 value={value[lang.code] || ''}
                 onChange={e => onChange({ ...value, [lang.code]: e.target.value })}
-                placeholder={`${label || 'Text'} in ${lang.name}…`}
+                placeholder={`${label || t('text')} in ${lang.name}…`}
                 className="flex-1 border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24] transition-colors"
               />
             )}
@@ -138,7 +502,7 @@ const MultiLangInput = ({ label, value, onChange, multiline, activeLang }) => {
 };
 
 // ─── Item Form Modal ─────────────────────────────────────────────────────────
-const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
+const ItemModal = ({ item, categories, onSave, onClose, saving, t }) => {
   const [form, setForm]         = useState(item || emptyItem());
   const [activeLang, setActiveLang] = useState('en');
   const [tab, setTab]           = useState('basic');
@@ -160,9 +524,9 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
         <div className="flex flex-wrap items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0 gap-2">
           <div className="min-w-0">
             <h3 className="text-sm sm:text-lg font-bold text-gray-900 truncate">
-              {item ? 'Edit Menu Item' : 'Add Menu Item'}
+              {item ? t('editMenuItem') : t('addMenuItem')}
             </h3>
-            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 truncate">Fill in details for each language</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 truncate">{t('fillDetails')}</p>
           </div>
           <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full text-gray-500 flex-shrink-0">
             <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -171,7 +535,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
 
         {/* Lang tabs - scrollable */}
         <div className="flex items-center gap-0.5 sm:gap-1 px-3 sm:px-6 py-1.5 sm:py-2 bg-gray-50 border-b border-gray-100 flex-shrink-0 overflow-x-auto">
-          <span className="text-[10px] sm:text-xs text-gray-400 mr-1 sm:mr-2 flex-shrink-0">Language:</span>
+          <span className="text-[10px] sm:text-xs text-gray-400 mr-1 sm:mr-2 flex-shrink-0">{t('language')}</span>
           <button onClick={() => setActiveLang('all')}
             className={`text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg font-semibold transition-all whitespace-nowrap ${activeLang === 'all' ? 'bg-[#fe8a24] text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-[#fe8a24]'}`}>
             All
@@ -186,7 +550,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
 
         {/* Tabs */}
         <div className="flex items-center gap-0 border-b border-gray-100 flex-shrink-0 px-3 sm:px-6 overflow-x-auto">
-          {[['basic','Content'],['allergens','Allergens'],['attributes','Attributes']].map(([k,l]) => (
+          {[['basic', t('content')],['allergens', t('allergens')],['attributes', t('attributes')]].map(([k,l]) => (
             <button key={k} onClick={() => setTab(k)}
               className={`px-2.5 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
                 tab === k ? 'border-[#fe8a24] text-[#fe8a24]' : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -201,21 +565,21 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
               {/* Category + Subcategory */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1">Category</label>
+                  <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1">{t('category')}</label>
                   <select value={form.category} onChange={e => set('category', e.target.value)}
                     className="w-full border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]">
-                    <option value="">— Select —</option>
+                    <option value="">{t('select')}</option>
                     {categories.map(c => (
                       <option key={c.id} value={c.id}>{c.name?.en || c.id}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1">Subcategory</label>
+                  <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1">{t('subcategory')}</label>
                   <select value={form.subcategory} onChange={e => set('subcategory', e.target.value)}
                     disabled={subcats.length === 0}
                     className="w-full border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24] disabled:bg-gray-50 disabled:text-gray-400">
-                    <option value="">— None —</option>
+                    <option value="">{t('none')}</option>
                     {subcats.map(s => (
                       <option key={s.id} value={s.id}>{s.name?.en || s.id}</option>
                     ))}
@@ -226,7 +590,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
               {/* Price + Active */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1">Price</label>
+                  <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1">{t('price')}</label>
                   <div className="flex items-center gap-2">
                     <input type="number" min="0" step="0.01" value={form.price}
                       onChange={e => set('price', e.target.value)}
@@ -241,7 +605,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
                       className={`w-10 sm:w-11 h-5 sm:h-6 rounded-full transition-colors relative ${form.active ? 'bg-green-500' : 'bg-gray-300'}`}>
                       <div className={`absolute top-0.5 w-4 sm:w-5 h-4 sm:h-5 bg-white rounded-full shadow transition-transform ${form.active ? 'translate-x-5 sm:translate-x-5' : 'translate-x-0.5'}`} />
                     </div>
-                    <span className="text-xs sm:text-sm text-gray-700">{form.active ? 'Active' : 'Hidden'}</span>
+                    <span className="text-xs sm:text-sm text-gray-700">{form.active ? t('active') : t('hidden')}</span>
                   </label>
                 </div>
               </div>
@@ -249,34 +613,34 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
               {/* Guest capacity */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1 sm:mb-2">👥 Min Guests</label>
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1 sm:mb-2">👥 {t('minGuests')}</label>
                   <input type="number" min="0" max="999" value={form.minCapacity || ''}
                     onChange={e => set('minCapacity', parseInt(e.target.value) || 0)}
-                    placeholder="0 = always show"
+                    placeholder={t('alwaysShow')}
                     className="w-full border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-[#fe8a24] focus:ring-2 focus:ring-[#fe8a24]/20 transition-all" />
-                  <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Show when party is at least this size</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400 mt-1">{t('showWhenAtLeast')}</p>
                 </div>
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1 sm:mb-2">👥 Max Guests</label>
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1 sm:mb-2">👥 {t('maxGuests')}</label>
                   <input type="number" min="0" max="999" value={form.maxCapacity || ''}
                     onChange={e => set('maxCapacity', parseInt(e.target.value) || 0)}
-                    placeholder="0 = always show"
+                    placeholder={t('alwaysShow')}
                     className="w-full border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base focus:outline-none focus:border-[#fe8a24] focus:ring-2 focus:ring-[#fe8a24]/20 transition-all" />
-                  <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Show when party is at most this size</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400 mt-1">{t('showWhenAtMost')}</p>
                 </div>
               </div>
 
               {/* Name */}
-              <MultiLangInput label="📛 Item Name" value={form.name} onChange={v => set('name', v)} activeLang={activeLang} />
+              <MultiLangInput label={`📛 ${t('itemName')}`} value={form.name} onChange={v => set('name', v)} activeLang={activeLang} t={t} />
 
               {/* Description */}
-              <MultiLangInput label="Description" value={form.description} onChange={v => set('description', v)} multiline activeLang={activeLang} />
+              <MultiLangInput label={t('description')} value={form.description} onChange={v => set('description', v)} multiline activeLang={activeLang} t={t} />
             </>
           )}
 
           {tab === 'allergens' && (
             <div>
-              <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">Select all allergens present in this item.</p>
+              <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">{t('selectAllergens')}</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {ALLERGENS.map(a => {
                   const active = form.allergens.includes(a.id);
@@ -294,7 +658,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
               </div>
               {form.allergens.length > 0 && (
                 <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-amber-50 rounded-xl border border-amber-200">
-                  <p className="text-[10px] sm:text-xs font-semibold text-amber-700 mb-1.5 sm:mb-2">Selected allergens:</p>
+                  <p className="text-[10px] sm:text-xs font-semibold text-amber-700 mb-1.5 sm:mb-2">{t('selectedAllergens')}</p>
                   <div className="flex flex-wrap gap-1 sm:gap-1.5">
                     {form.allergens.map(id => <AllergenBadge key={id} id={id} />)}
                   </div>
@@ -305,7 +669,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
 
           {tab === 'attributes' && (
             <div>
-              <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">Tag this item with dietary and service attributes.</p>
+              <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">{t('tagItem')}</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                 {ATTRIBUTES.map(a => {
                   const active = form.attributes.includes(a.id);
@@ -326,7 +690,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
               </div>
               {form.attributes.length > 0 && (
                 <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-[10px] sm:text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">Selected attributes:</p>
+                  <p className="text-[10px] sm:text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">{t('selectedAttributes')}</p>
                   <div className="flex flex-wrap gap-1 sm:gap-1.5">
                     {form.attributes.map(id => <AttributeBadge key={id} id={id} />)}
                   </div>
@@ -344,12 +708,12 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={onClose} className="px-3 sm:px-5 py-1.5 sm:py-2 border border-gray-200 text-gray-600 rounded-lg text-[10px] sm:text-sm hover:bg-gray-50">
-              Cancel
+              {t('cancel')}
             </button>
             <button onClick={() => onSave(form)} disabled={saving}
               className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-[10px] sm:text-sm font-semibold disabled:opacity-50 transition-colors">
               {saving ? <span className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiCheck className="w-3 h-3 sm:w-4 sm:h-4" />}
-              {saving ? 'Saving…' : 'Save Item'}
+              {saving ? t('saving') : t('saveItem')}
             </button>
           </div>
         </div>
@@ -359,7 +723,7 @@ const ItemModal = ({ item, categories, onSave, onClose, saving }) => {
 };
 
 // ─── Category Form Modal ─────────────────────────────────────────────────────
-const CategoryModal = ({ category, onSave, onClose, saving }) => {
+const CategoryModal = ({ category, onSave, onClose, saving, t }) => {
   const [form, setForm] = useState(category || emptyCategory());
   const [activeLang, setActiveLang] = useState('en');
   const [newSubName, setNewSubName] = useState('');
@@ -384,7 +748,7 @@ const CategoryModal = ({ category, onSave, onClose, saving }) => {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="text-sm sm:text-lg font-bold text-gray-900">{category ? 'Edit Category' : 'Add Category'}</h3>
+          <h3 className="text-sm sm:text-lg font-bold text-gray-900">{category ? t('editCategory') : t('addCategory')}</h3>
           <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full text-gray-500"><FiX className="w-4 h-4 sm:w-5 sm:h-5" /></button>
         </div>
 
@@ -404,7 +768,7 @@ const CategoryModal = ({ category, onSave, onClose, saving }) => {
         <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-3 sm:py-5 space-y-4 sm:space-y-5">
           {/* Color */}
           <div>
-            <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">Color</label>
+            <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">{t('color')}</label>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {COLORS.map(col => (
                 <button key={col} onClick={() => set('color', col)}
@@ -419,7 +783,7 @@ const CategoryModal = ({ category, onSave, onClose, saving }) => {
           </div>
 
           {/* Name */}
-          <MultiLangInput label="Category Name" value={form.name} onChange={v => set('name', v)} activeLang={activeLang} />
+          <MultiLangInput label={t('name')} value={form.name} onChange={v => set('name', v)} activeLang={activeLang} t={t} />
 
           {/* Active toggle */}
           <label className="flex items-center gap-2 sm:gap-3 cursor-pointer">
@@ -427,12 +791,12 @@ const CategoryModal = ({ category, onSave, onClose, saving }) => {
               className={`w-10 sm:w-11 h-5 sm:h-6 rounded-full transition-colors relative ${form.active ? 'bg-green-500' : 'bg-gray-300'}`}>
               <div className={`absolute top-0.5 w-4 sm:w-5 h-4 sm:h-5 bg-white rounded-full shadow transition-transform ${form.active ? 'translate-x-5 sm:translate-x-5' : 'translate-x-0.5'}`} />
             </div>
-            <span className="text-xs sm:text-sm text-gray-700">{form.active ? 'Category active' : 'Category hidden'}</span>
+            <span className="text-xs sm:text-sm text-gray-700">{form.active ? t('categoryActive') : t('categoryHidden')}</span>
           </label>
 
           {/* Subcategories */}
           <div>
-            <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">Subcategories</label>
+            <label className="block text-[10px] sm:text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">{t('subcategories')}</label>
             <div className="space-y-1 sm:space-y-1.5 mb-2">
               {(form.subcategories || []).map(sub => (
                 <div key={sub.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
@@ -446,22 +810,22 @@ const CategoryModal = ({ category, onSave, onClose, saving }) => {
             <div className="flex items-center gap-2">
               <input type="text" value={newSubName} onChange={e => setNewSubName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addSubcategory()}
-                placeholder="Add subcategory…"
+                placeholder={t('addSubcategory')}
                 className="flex-1 border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]" />
               <button onClick={addSubcategory} disabled={!newSubName.trim()}
                 className="px-2 sm:px-3 py-1.5 sm:py-2 bg-[#fe8a24] text-white rounded-lg text-[10px] sm:text-sm font-semibold disabled:opacity-40 hover:bg-[#ff9d47] transition-colors whitespace-nowrap">
-                Add
+                {t('addSubcategoryBtn')}
               </button>
             </div>
           </div>
         </div>
 
         <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-100 flex items-center justify-end gap-2 sm:gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-3 sm:px-5 py-1.5 sm:py-2 border border-gray-200 text-gray-600 rounded-lg text-[10px] sm:text-sm hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-3 sm:px-5 py-1.5 sm:py-2 border border-gray-200 text-gray-600 rounded-lg text-[10px] sm:text-sm hover:bg-gray-50">{t('cancel')}</button>
           <button onClick={() => onSave(form)} disabled={saving}
             className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-1.5 sm:py-2 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-[10px] sm:text-sm font-semibold disabled:opacity-50 transition-colors">
             {saving ? <span className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiCheck className="w-3 h-3 sm:w-4 sm:h-4" />}
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('saving') : t('saveCategory')}
           </button>
         </div>
       </div>
@@ -471,6 +835,24 @@ const CategoryModal = ({ category, onSave, onClose, saving }) => {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function ReservationMenu({ selectedRestaurant, onClose }) {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const [categories, setCategories]   = useState([]);
   const [menuItems,  setMenuItems]    = useState([]);
   const [loading,    setLoading]      = useState(true);
@@ -539,14 +921,14 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
         console.log('💾 Saving category to:', `${col}/${rid}/menuCategories`);
         const ref = await addDoc(collection(db, col, rid, 'menuCategories'), data);
         setCategories(p => [...p, { id: ref.id, ...data }]);
-        showToast('Category added');
+        showToast(t('categoryAdded'));
       } else {
         await updateDoc(doc(db, col, rid, 'menuCategories', catModal.id), data);
         setCategories(p => p.map(c => c.id === catModal.id ? { ...c, ...data } : c));
-        showToast('Category updated');
+        showToast(t('categoryUpdated'));
       }
       setCatModal(null);
-    } catch(e) { showToast('Failed to save category', 'error'); console.error(e); }
+    } catch(e) { showToast(t('saveFailed'), 'error'); console.error(e); }
     finally { setSaving(false); }
   };
 
@@ -561,14 +943,14 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
         console.log('💾 Saving item to:', `${col}/${rid}/menuItems`);
         const ref = await addDoc(collection(db, col, rid, 'menuItems'), data);
         setMenuItems(p => [...p, { id: ref.id, ...data }]);
-        showToast('Item added');
+        showToast(t('itemAdded'));
       } else {
         await updateDoc(doc(db, col, rid, 'menuItems', itemModal.id), data);
         setMenuItems(p => p.map(i => i.id === itemModal.id ? { ...i, ...data } : i));
-        showToast('Item updated');
+        showToast(t('itemUpdated'));
       }
       setItemModal(null);
-    } catch(e) { showToast('Failed to save item', 'error'); console.error(e); }
+    } catch(e) { showToast(t('saveFailed'), 'error'); console.error(e); }
     finally { setSaving(false); }
   };
 
@@ -580,16 +962,16 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
       if (deleteConf.type === 'item') {
         await deleteDoc(doc(db, col, rid, 'menuItems', deleteConf.id));
         setMenuItems(p => p.filter(i => i.id !== deleteConf.id));
-        showToast('Item deleted');
+        showToast(t('itemDeleted'));
       } else {
         await deleteDoc(doc(db, col, rid, 'menuCategories', deleteConf.id));
         setCategories(p => p.filter(c => c.id !== deleteConf.id));
         setMenuItems(p => p.filter(i => i.category !== deleteConf.id));
         if (selectedCat === deleteConf.id) setSelectedCat(null);
-        showToast('Category deleted');
+        showToast(t('categoryDeleted'));
       }
       setDeleteConf(null);
-    } catch(e) { showToast('Delete failed', 'error'); }
+    } catch(e) { showToast(t('deleteFailed'), 'error'); }
     finally { setSaving(false); }
   };
 
@@ -635,7 +1017,7 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
               <span className="text-white text-base sm:text-xl">🍽️</span>
             </div>
             <div className="min-w-0">
-              <h2 className="text-xs sm:text-lg font-bold text-white truncate">Menu Management</h2>
+              <h2 className="text-xs sm:text-lg font-bold text-white truncate">{t('menuManagement')}</h2>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate">{selectedRestaurant?.name}</p>
             </div>
           </div>
@@ -660,9 +1042,9 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
           {/* ── Left sidebar: Categories ── */}
           <div className="w-full sm:w-60 flex-shrink-0 border-b sm:border-b-0 sm:border-r border-gray-200 flex flex-col bg-gray-50 max-h-[200px] sm:max-h-none">
             <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-              <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider">Categories</span>
+              <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider">{t('categories')}</span>
               <button onClick={() => setCatModal('add')}
-                className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-[#fe8a24] text-white flex items-center justify-center hover:bg-[#ff9d47] transition-colors" title="Add category">
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-[#fe8a24] text-white flex items-center justify-center hover:bg-[#ff9d47] transition-colors" title={t('addCategory')}>
                 <FiPlus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
@@ -673,7 +1055,7 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                 className={`w-full text-left px-3 sm:px-4 py-1.5 sm:py-2.5 text-[10px] sm:text-sm font-semibold transition-colors flex items-center justify-between ${
                   !selectedCat ? 'bg-[#fe8a24]/10 text-[#fe8a24]' : 'text-gray-600 hover:bg-gray-100'
                 }`}>
-                <span>All Items</span>
+                <span>{t('allItems')}</span>
                 <span className="text-[8px] sm:text-xs bg-gray-200 text-gray-600 px-1 sm:px-1.5 py-0.5 rounded-full">{menuItems.length}</span>
               </button>
 
@@ -707,11 +1089,11 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                         <span className="text-[8px] sm:text-xs text-gray-400">{count}</span>
                         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
                           <button onClick={e => { e.stopPropagation(); setCatModal(cat); }}
-                            className="p-0.5 hover:text-[#fe8a24] text-gray-400 transition-colors">
+                            className="p-0.5 hover:text-[#fe8a24] text-gray-400 transition-colors" title={t('edit')}>
                             <FiEdit2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                           </button>
                           <button onClick={e => { e.stopPropagation(); setDeleteConf({ type: 'category', id: cat.id, name: cat.name?.en || 'this category' }); }}
-                            className="p-0.5 hover:text-red-500 text-gray-400 transition-colors">
+                            className="p-0.5 hover:text-red-500 text-gray-400 transition-colors" title={t('delete')}>
                             <FiTrash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                           </button>
                         </div>
@@ -757,7 +1139,7 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                     )}
                   </>
                 ) : (
-                  <span>All Items</span>
+                  <span>{t('allItems')}</span>
                 )}
                 <span className="ml-1 sm:ml-2 text-[8px] sm:text-xs font-normal text-gray-400 bg-gray-100 px-1 sm:px-2 py-0.5 rounded-full flex-shrink-0">
                   {filteredItems.length}
@@ -769,7 +1151,7 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                 <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-1.5 sm:px-3 py-1 sm:py-1.5">
                   <FiSearch className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400" />
                   <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-                    placeholder="Search…"
+                    placeholder={t('search')}
                     className="bg-transparent text-[10px] sm:text-sm text-gray-700 focus:outline-none w-16 sm:w-36 placeholder-gray-400" />
                   {searchQ && <button onClick={() => setSearchQ('')} className="text-gray-400 hover:text-gray-600"><FiX className="w-2.5 h-2.5 sm:w-3 sm:h-3" /></button>}
                 </div>
@@ -789,7 +1171,7 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                 {/* Add item */}
                 <button onClick={() => setItemModal('add')}
                   className="flex items-center gap-1 sm:gap-2 bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-2 sm:px-4 py-1 sm:py-2 rounded-lg text-[10px] sm:text-sm font-semibold transition-colors">
-                  <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">Add Item</span>
+                  <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">{t('addItem')}</span>
                 </button>
               </div>
             </div>
@@ -799,11 +1181,11 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
               {filteredItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-3 sm:mb-4 text-2xl sm:text-3xl">🍽️</div>
-                  <p className="text-xs sm:text-base text-gray-600 font-semibold">No menu items yet</p>
-                  <p className="text-[10px] sm:text-sm text-gray-400 mt-1">Click "Add Item" to create your first menu item</p>
+                  <p className="text-xs sm:text-base text-gray-600 font-semibold">{t('noItemsYet')}</p>
+                  <p className="text-[10px] sm:text-sm text-gray-400 mt-1">{t('addFirstItem')}</p>
                   <button onClick={() => setItemModal('add')}
                     className="mt-3 sm:mt-4 flex items-center gap-2 bg-[#fe8a24] text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-sm font-semibold hover:bg-[#ff9d47] transition-colors">
-                    <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" /> Add First Item
+                    <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" /> {t('addFirstItemBtn')}
                   </button>
                 </div>
               ) : viewLayout === 'list' ? (
@@ -812,10 +1194,10 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                   {/* Header row - hidden on mobile */}
                   <div className="hidden sm:grid px-4 py-2 text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider"
                     style={{ gridTemplateColumns: '1fr 80px 160px 160px auto' }}>
-                    <span>Name</span>
-                    <span>Price</span>
-                    <span>Allergens</span>
-                    <span>Attributes</span>
+                    <span>{t('name')}</span>
+                    <span>{t('price')}</span>
+                    <span>{t('allergens')}</span>
+                    <span>{t('attributes')}</span>
                     <span></span>
                   </div>
                   {filteredItems.map(item => {
@@ -840,10 +1222,10 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                           {(item.minCapacity > 0 || item.maxCapacity > 0) && (
                             <p className="text-[8px] sm:text-xs text-blue-500 mt-0.5 ml-1 sm:ml-3">
                               👥 {item.minCapacity > 0 && item.maxCapacity > 0
-                                ? `${item.minCapacity}–${item.maxCapacity} guests`
+                                ? `${item.minCapacity}–${item.maxCapacity} ${t('guests')}`
                                 : item.minCapacity > 0
-                                ? `${item.minCapacity}+ guests`
-                                : `up to ${item.maxCapacity} guests`}
+                                ? `${item.minCapacity}+ ${t('guests')}`
+                                : `${t('upTo')} ${item.maxCapacity} ${t('guests')}`}
                             </p>
                           )}
                         </div>
@@ -871,16 +1253,16 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
 
                         {/* Actions */}
                         <div className="flex items-center gap-0.5 sm:gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity justify-end sm:justify-start" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => toggleItemActive(item)} title={item.active ? 'Hide' : 'Show'}
+                          <button onClick={() => toggleItemActive(item)} title={item.active ? t('hide') : t('show')}
                             className="p-1 sm:p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
                             {item.active ? <FiEye className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <FiEyeOff className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
                           </button>
                           <button onClick={() => setItemModal(item)}
-                            className="p-1 sm:p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#fe8a24] transition-colors">
+                            className="p-1 sm:p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#fe8a24] transition-colors" title={t('edit')}>
                             <FiEdit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
                           <button onClick={() => setDeleteConf({ type: 'item', id: item.id, name: nameStr })}
-                            className="p-1 sm:p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                            className="p-1 sm:p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title={t('delete')}>
                             <FiTrash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
                         </div>
@@ -922,10 +1304,10 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
                           <div className="flex items-center gap-1 mt-1.5 sm:mt-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                             <button onClick={() => setItemModal(item)}
                               className="flex-1 text-[8px] sm:text-xs py-0.5 sm:py-1 bg-gray-100 hover:bg-[#fe8a24] hover:text-white text-gray-600 rounded-lg transition-colors font-medium">
-                              Edit
+                              {t('edit')}
                             </button>
                             <button onClick={() => setDeleteConf({ type: 'item', id: item.id, name: nameStr })}
-                              className="p-0.5 sm:p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                              className="p-0.5 sm:p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title={t('delete')}>
                               <FiTrash2 className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
@@ -940,12 +1322,12 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
             {/* Footer stats */}
             <div className="px-2 sm:px-5 py-1.5 sm:py-2 border-t border-gray-100 flex flex-wrap items-center gap-2 sm:gap-4 bg-gray-50 flex-shrink-0">
               <span className="text-[8px] sm:text-xs text-gray-400 flex-wrap">
-                <span className="font-semibold text-gray-600">{menuItems.length}</span> total ·{' '}
-                <span className="font-semibold text-green-600">{menuItems.filter(i=>i.active).length}</span> active ·{' '}
-                <span className="font-semibold text-gray-400">{menuItems.filter(i=>!i.active).length}</span> hidden
+                <span className="font-semibold text-gray-600">{menuItems.length}</span> {t('total')} ·{' '}
+                <span className="font-semibold text-green-600">{menuItems.filter(i=>i.active).length}</span> {t('activeCount')} ·{' '}
+                <span className="font-semibold text-gray-400">{menuItems.filter(i=>!i.active).length}</span> {t('hiddenCount')}
               </span>
               <span className="text-[8px] sm:text-xs text-gray-400">
-                <span className="font-semibold text-gray-600">{categories.length}</span> categories
+                <span className="font-semibold text-gray-600">{categories.length}</span> {t('categoriesCount')}
               </span>
             </div>
           </div>
@@ -970,19 +1352,21 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <FiTrash2 className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 text-center mb-1">Delete {deleteConf.type}?</h3>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 text-center mb-1">
+              {t('confirmDelete').replace('{type}', deleteConf.type === 'item' ? t('item') : t('category'))}
+            </h3>
             <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-5">
-              "{deleteConf.name}" will be permanently removed.
-              {deleteConf.type === 'category' && ' All items in this category will also be deleted.'}
+              {t('confirmDeleteMsg').replace('{name}', deleteConf.name)}
+              {deleteConf.type === 'category' && t('confirmDeleteCategoryMsg')}
             </p>
             <div className="flex gap-2 sm:gap-3">
               <button onClick={() => setDeleteConf(null)}
                 className="flex-1 py-2 sm:py-2.5 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {t('cancel')}
               </button>
               <button onClick={confirmDelete} disabled={saving}
                 className="flex-1 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs sm:text-sm font-semibold disabled:opacity-50 transition-colors">
-                {saving ? 'Deleting…' : 'Delete'}
+                {saving ? t('deleting') : t('delete')}
               </button>
             </div>
           </div>
@@ -996,6 +1380,7 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
           onSave={saveCategory}
           onClose={() => setCatModal(null)}
           saving={saving}
+          t={t}
         />
       )}
 
@@ -1007,6 +1392,7 @@ export default function ReservationMenu({ selectedRestaurant, onClose }) {
           onSave={saveItem}
           onClose={() => setItemModal(null)}
           saving={saving}
+          t={t}
         />
       )}
     </div>

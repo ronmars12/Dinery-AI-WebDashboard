@@ -10,6 +10,340 @@ import { useTheme } from '../../ThemeContext';
 
 const db = getFirestore();
 
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    floorPlan: 'Floor Plan',
+    table: 'Table',
+    selected: 'selected',
+    free: 'free',
+    reserved: 'reserved',
+    seated: 'seated',
+    internal: 'internal',
+    clear: 'Clear',
+    reset: 'Reset',
+    reservations: 'reservations',
+    res: 'res',
+    guests: 'guests',
+    clickTable: 'Click table · Right-click meal · Shift+click multi · Scroll zoom · Drag pan',
+    tapTable: 'Tap table · Hold for meal',
+    tables: 'tables',
+    searchGuest: 'Search guest…',
+    search: 'Search…',
+    filter: 'Filter',
+    time: 'Time',
+    guestsLabel: 'Guests',
+    tableLabel: 'Table',
+    clearAll: 'Clear',
+    noReservations: 'No reservations',
+    noReservationsMatch: 'No reservations match the current filters',
+    noReservationsForTable: 'No reservations for selected table(s)',
+    open: 'Open',
+    public: 'Public',
+    internalNote: 'Internal',
+    noNotes: 'No notes',
+    mealStatus: 'Meal Status',
+    clearStatus: 'Clear',
+    menuItems: 'Menu Items',
+    items: 'items',
+    total: 'Total',
+    cap: 'Cap.',
+    newReservation: 'New',
+    walkIn: 'Walk in',
+    active: 'active',
+    status: 'Status',
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    meal: 'Meal',
+    timeCol: 'TIME',
+    statusCol: 'STATUS',
+    paxCol: 'PAX',
+    firstNameCol: 'FIRST NAME',
+    lastNameCol: 'LAST NAME',
+    tableCol: 'TABLE',
+    mealCol: 'MEAL',
+    actionsCol: '',
+    online: '🌐 Online',
+    walkinTag: '🚶 Walk-in',
+    confirmed: 'Confirmed',
+    pending: 'Pending',
+    cancelled: 'Cancelled',
+    completed: 'Completed',
+    arrived: 'Arrived',
+    foodDelivered: 'Food',
+    dessert: 'Dessert',
+    billDelivered: 'Bill',
+    tableCleared: 'Cleared',
+    noShow: 'No Show',
+    showAll: 'Show all',
+    today: 'Today',
+  },
+  fi: {
+    floorPlan: 'Pohjapiirros',
+    table: 'Pöytä',
+    selected: 'valittu',
+    free: 'vapaa',
+    reserved: 'varattu',
+    seated: 'istutettu',
+    internal: 'sisäinen',
+    clear: 'Tyhjennä',
+    reset: 'Palauta',
+    reservations: 'varausta',
+    res: 'var',
+    guests: 'vierasta',
+    clickTable: 'Napsauta pöytää · Oikea klikkaus aterialle · Shift+klik valitsee useita · Rullaa zoom · Vedä siirrä',
+    tapTable: 'Napauta pöytää · Pidä aterialle',
+    tables: 'pöytää',
+    searchGuest: 'Etsi vierasta…',
+    search: 'Etsi…',
+    filter: 'Suodata',
+    time: 'Aika',
+    guestsLabel: 'Vieraat',
+    tableLabel: 'Pöytä',
+    clearAll: 'Tyhjennä',
+    noReservations: 'Ei varauksia',
+    noReservationsMatch: 'Yksikään varaus ei vastaa suodattimia',
+    noReservationsForTable: 'Ei varauksia valituille pöydille',
+    open: 'Avaa',
+    public: 'Julkinen',
+    internalNote: 'Sisäinen',
+    noNotes: 'Ei muistiinpanoja',
+    mealStatus: 'Aterian tila',
+    clearStatus: 'Tyhjennä',
+    menuItems: 'Ruokalistan tuotteet',
+    items: 'tuotetta',
+    total: 'Yhteensä',
+    cap: 'Kap.',
+    newReservation: 'Uusi',
+    walkIn: 'Kävelylle',
+    active: 'aktiivinen',
+    status: 'Tila',
+    firstName: 'Etunimi',
+    lastName: 'Sukunimi',
+    meal: 'Ateria',
+    timeCol: 'AIKA',
+    statusCol: 'TILA',
+    paxCol: 'HENK',
+    firstNameCol: 'ETUNIMI',
+    lastNameCol: 'SUKUNIMI',
+    tableCol: 'PÖYTÄ',
+    mealCol: 'ATERIA',
+    actionsCol: '',
+    online: '🌐 Verkossa',
+    walkinTag: '🚶 Kävelylle',
+    confirmed: 'Vahvistettu',
+    pending: 'Odottaa',
+    cancelled: 'Peruttu',
+    completed: 'Valmis',
+    arrived: 'Saapunut',
+    foodDelivered: 'Ruoka',
+    dessert: 'Jälkiruoka',
+    billDelivered: 'Lasku',
+    tableCleared: 'Tyhjennetty',
+    noShow: 'Ei saapunut',
+    showAll: 'Näytä kaikki',
+    today: 'Tänään',
+  },
+  no: {
+    floorPlan: 'Plantegning',
+    table: 'Bord',
+    selected: 'valgt',
+    free: 'ledig',
+    reserved: 'reservert',
+    seated: 'sittende',
+    internal: 'intern',
+    clear: 'Tøm',
+    reset: 'Tilbakestill',
+    reservations: 'reservasjoner',
+    res: 'res',
+    guests: 'gjester',
+    clickTable: 'Klikk bord · Høyreklikk for måltid · Shift+klikk multi · Rull for zoom · Dra for å panorere',
+    tapTable: 'Trykk bord · Hold for måltid',
+    tables: 'bord',
+    searchGuest: 'Søk gjest…',
+    search: 'Søk…',
+    filter: 'Filter',
+    time: 'Tid',
+    guestsLabel: 'Gjester',
+    tableLabel: 'Bord',
+    clearAll: 'Tøm',
+    noReservations: 'Ingen reservasjoner',
+    noReservationsMatch: 'Ingen reservasjoner samsvarer med filtrene',
+    noReservationsForTable: 'Ingen reservasjoner for valgte bord',
+    open: 'Åpne',
+    public: 'Offentlig',
+    internalNote: 'Intern',
+    noNotes: 'Ingen notater',
+    mealStatus: 'Måltidsstatus',
+    clearStatus: 'Tøm',
+    menuItems: 'Menyelementer',
+    items: 'elementer',
+    total: 'Totalt',
+    cap: 'Kap.',
+    newReservation: 'Ny',
+    walkIn: 'Drop-in',
+    active: 'aktiv',
+    status: 'Status',
+    firstName: 'Fornavn',
+    lastName: 'Etternavn',
+    meal: 'Måltid',
+    timeCol: 'TID',
+    statusCol: 'STATUS',
+    paxCol: 'PERS',
+    firstNameCol: 'FORNAVN',
+    lastNameCol: 'ETTERNAVN',
+    tableCol: 'BORD',
+    mealCol: 'MÅLTID',
+    actionsCol: '',
+    online: '🌐 Online',
+    walkinTag: '🚶 Drop-in',
+    confirmed: 'Bekreftet',
+    pending: 'Venter',
+    cancelled: 'Avbestilt',
+    completed: 'Fullført',
+    arrived: 'Ankommet',
+    foodDelivered: 'Mat',
+    dessert: 'Dessert',
+    billDelivered: 'Regning',
+    tableCleared: 'Ryddet',
+    noShow: 'Ikke møtt',
+    showAll: 'Vis alle',
+    today: 'I dag',
+  },
+  sv: {
+    floorPlan: 'Planlösning',
+    table: 'Bord',
+    selected: 'vald',
+    free: 'ledig',
+    reserved: 'reserverad',
+    seated: 'sittande',
+    internal: 'intern',
+    clear: 'Rensa',
+    reset: 'Återställ',
+    reservations: 'bokningar',
+    res: 'bok',
+    guests: 'gäster',
+    clickTable: 'Klicka bord · Högerklicka för måltid · Shift+klicka multi · Rulla för zoom · Dra för att panorera',
+    tapTable: 'Tryck bord · Håll för måltid',
+    tables: 'bord',
+    searchGuest: 'Sök gäst…',
+    search: 'Sök…',
+    filter: 'Filter',
+    time: 'Tid',
+    guestsLabel: 'Gäster',
+    tableLabel: 'Bord',
+    clearAll: 'Rensa',
+    noReservations: 'Inga bokningar',
+    noReservationsMatch: 'Inga bokningar matchar filtren',
+    noReservationsForTable: 'Inga bokningar för valda bord',
+    open: 'Öppna',
+    public: 'Offentlig',
+    internalNote: 'Intern',
+    noNotes: 'Inga anteckningar',
+    mealStatus: 'Måltidsstatus',
+    clearStatus: 'Rensa',
+    menuItems: 'Menyelement',
+    items: 'element',
+    total: 'Totalt',
+    cap: 'Kap.',
+    newReservation: 'Ny',
+    walkIn: 'Drop-in',
+    active: 'aktiv',
+    status: 'Status',
+    firstName: 'Förnamn',
+    lastName: 'Efternamn',
+    meal: 'Måltid',
+    timeCol: 'TID',
+    statusCol: 'STATUS',
+    paxCol: 'PERS',
+    firstNameCol: 'FÖRNAMN',
+    lastNameCol: 'EFTERNAMN',
+    tableCol: 'BORD',
+    mealCol: 'MÅLTID',
+    actionsCol: '',
+    online: '🌐 Online',
+    walkinTag: '🚶 Drop-in',
+    confirmed: 'Bekräftad',
+    pending: 'Väntar',
+    cancelled: 'Avbokad',
+    completed: 'Slutförd',
+    arrived: 'Anländ',
+    foodDelivered: 'Mat',
+    dessert: 'Efterrätt',
+    billDelivered: 'Nota',
+    tableCleared: 'Rensat',
+    noShow: 'Ej anländ',
+    showAll: 'Visa alla',
+    today: 'Idag',
+  },
+  de: {
+    floorPlan: 'Grundriss',
+    table: 'Tisch',
+    selected: 'ausgewählt',
+    free: 'frei',
+    reserved: 'reserviert',
+    seated: 'besetzt',
+    internal: 'intern',
+    clear: 'Löschen',
+    reset: 'Zurücksetzen',
+    reservations: 'Reservierungen',
+    res: 'Res.',
+    guests: 'Gäste',
+    clickTable: 'Tisch klicken · Rechtsklick für Mahlzeit · Shift+Klick für mehrere · Scrollen zum Zoomen · Ziehen zum Verschieben',
+    tapTable: 'Tisch tippen · Halten für Mahlzeit',
+    tables: 'Tische',
+    searchGuest: 'Gast suchen…',
+    search: 'Suchen…',
+    filter: 'Filter',
+    time: 'Zeit',
+    guestsLabel: 'Gäste',
+    tableLabel: 'Tisch',
+    clearAll: 'Löschen',
+    noReservations: 'Keine Reservierungen',
+    noReservationsMatch: 'Keine Reservierungen entsprechen den Filtern',
+    noReservationsForTable: 'Keine Reservierungen für ausgewählte Tische',
+    open: 'Öffnen',
+    public: 'Öffentlich',
+    internalNote: 'Intern',
+    noNotes: 'Keine Notizen',
+    mealStatus: 'Mahlzeitstatus',
+    clearStatus: 'Löschen',
+    menuItems: 'Menüpunkte',
+    items: 'Artikel',
+    total: 'Gesamt',
+    cap: 'Kap.',
+    newReservation: 'Neu',
+    walkIn: 'Laufkundschaft',
+    active: 'aktiv',
+    status: 'Status',
+    firstName: 'Vorname',
+    lastName: 'Nachname',
+    meal: 'Mahlzeit',
+    timeCol: 'ZEIT',
+    statusCol: 'STATUS',
+    paxCol: 'PERS',
+    firstNameCol: 'VORNAME',
+    lastNameCol: 'NACHNAME',
+    tableCol: 'TISCH',
+    mealCol: 'MAHLZEIT',
+    actionsCol: '',
+    online: '🌐 Online',
+    walkinTag: '🚶 Laufkundschaft',
+    confirmed: 'Bestätigt',
+    pending: 'Ausstehend',
+    cancelled: 'Storniert',
+    completed: 'Abgeschlossen',
+    arrived: 'Angekommen',
+    foodDelivered: 'Essen',
+    dessert: 'Dessert',
+    billDelivered: 'Rechnung',
+    tableCleared: 'Geräumt',
+    noShow: 'Nicht erschienen',
+    showAll: 'Alle anzeigen',
+    today: 'Heute',
+  },
+};
+
 // ─── Custom Hook: Long Press ──────────────────────────────────────────────────
 const useLongPress = (onLongPress, onClick, { delay = 500 } = {}) => {
   const [isLongPress, setIsLongPress] = useState(false);
@@ -137,13 +471,16 @@ const statusCfg = (s, isDark) => {
   return cfg[s?.toLowerCase()] || cfg.pending;
 };
 
-const MEAL_CFG = {
-  arrived:        { color: "#ef4444", icon: "🔴", label: "Arrived"        },
-  food_delivered: { color: "#3b82f6", icon: "🔵", label: "Food"           },
-  dessert:        { color: "#8b5cf6", icon: "🟣", label: "Dessert"        },
-  bill_delivered: { color: "#eab308", icon: "🟡", label: "Bill"           },
-  table_cleared:  { color: "#84cc16", icon: "🟢", label: "Cleared"        },
-  no_show:        { color: "#ffffff", icon: "⚫", label: "No Show", bg: "#374151"  },
+const MEAL_CFG = (lang) => {
+  const t = (key) => (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  return {
+    arrived:        { color: "#ef4444", icon: "🔴", label: t('arrived') },
+    food_delivered: { color: "#3b82f6", icon: "🔵", label: t('foodDelivered') },
+    dessert:        { color: "#8b5cf6", icon: "🟣", label: t('dessert') },
+    bill_delivered: { color: "#eab308", icon: "🟡", label: t('billDelivered') },
+    table_cleared:  { color: "#84cc16", icon: "🟢", label: t('tableCleared') },
+    no_show:        { color: "#ffffff", icon: "⚫", label: t('noShow'), bg: "#374151" },
+  };
 };
 
 const fmtTime = (d) => {
@@ -189,6 +526,25 @@ const NoteIndicator = ({ publicNote, internalNote, isDark }) => {
 // ─── Main Component ─────────────────────────────────────────────────────────────
 export default function ReservationTableView({ selectedRestaurant, reservations, selectedDate, onReservationClick, onNewBookingFromTable, onWalkInFromTable, onDateChange }) {
   const { isDarkMode, toggleTheme } = useTheme();
+  
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const svgRef  = useRef(null);
   const wrapRef = useRef(null);
   const isFirstRender = useRef(true);
@@ -705,12 +1061,12 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
   // Get responsive column headers
   const getColumnHeaders = () => {
     if (isMobile) {
-      return ["#", "TIME", "STA", "NAME", "TABLE", ""];
+      return ["#", t('timeCol'), "STA", t('firstNameCol'), t('tableCol'), ""];
     }
     if (isTablet) {
-      return ["#", "TIME", "STA", "NAME", "TABLE", "MEAL", ""];
+      return ["#", t('timeCol'), "STA", t('firstNameCol'), t('tableCol'), t('mealCol'), ""];
     }
-    return ["#", "TIME", "STATUS", "PAX", "FIRST NAME", "LAST NAME", "TABLE", "MEAL", ""];
+    return ["#", t('timeCol'), t('statusCol'), t('paxCol'), t('firstNameCol'), t('lastNameCol'), t('tableCol'), t('mealCol'), ""];
   };
 
   // Theme-aware styles
@@ -754,6 +1110,9 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
     },
   });
 
+  // Get MEAL_CFG with language
+  const mealCfg = MEAL_CFG(lang);
+
   if (loading) return (
     <div className="flex items-center justify-center h-full" style={{ background: 'var(--bg-primary)' }}>
       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#fe8a24]" />
@@ -792,13 +1151,13 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
         <div className="flex items-center justify-between px-3 py-2 border-b flex-shrink-0 flex-wrap gap-1"
           style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>Floor Plan</span>
+            <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>{t('floorPlan')}</span>
             <span className="text-[10px] hidden sm:inline" style={{ color: 'var(--text-muted)' }}>
               {selectedDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </span>
             {selectedTableIds.length > 0 && (
               <span className="text-[10px] bg-[#fe8a24] text-white px-2 py-0.5 rounded-full font-semibold">
-                {selectedTableIds.length === 1 ? `Table ${tables.find(t=>t.id===selectedTableIds[0])?.name||""}` : `${selectedTableIds.length} selected`}
+                {selectedTableIds.length === 1 ? `${t('table')} ${tables.find(t=>t.id===selectedTableIds[0])?.name||""}` : `${selectedTableIds.length} ${t('selected')}`}
               </span>
             )}
           </div>
@@ -814,7 +1173,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
             {/* Legend dots - hide on mobile */}
             <div className="hidden md:flex items-center gap-1">
-              {[["#22c55e","free"],["#f59e0b","reserved"],["#ef4444","seated"],["#8b5cf6","internal"]].map(([c,l])=>(
+              {[["#22c55e",t('free')],["#f59e0b",t('reserved')],["#ef4444",t('seated')],["#8b5cf6",t('internal')]].map(([c,l])=>(
                 <div key={l} className="flex items-center gap-0.5 mr-1">
                   <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: c }} />
                   <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{l}</span>
@@ -840,14 +1199,14 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >Reset</button>
+            >{t('reset')}</button>
             {selectedTableIds.length > 0 && (
               <button onClick={() => setSelectedTableIds([])}
                 className="text-[10px] px-1.5 py-0.5 rounded transition-colors ml-1"
                 style={{ color: 'var(--text-muted)' }}
                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >Clear</button>
+              >{t('clear')}</button>
             )}
           </div>
         </div>
@@ -998,7 +1357,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                     {resCount > 0 && (
                       <text x={cx} y={cy + 16} textAnchor="middle" fontSize={9} fill={isDarkMode ? "#ffffff" : "#0f172a"} opacity={0.7}
                         style={{ fontFamily: "system-ui,sans-serif", pointerEvents: "none" }}>
-                        {resCount} res
+                        {resCount} {t('res')}
                       </text>
                     )}
 
@@ -1060,11 +1419,11 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                 <div style={{ background: 'var(--bg-secondary)', padding: '8px 12px', borderBottom: '1px solid var(--border-primary)' }}
                   className="flex items-center justify-between">
                   <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>
-                    Table {popoverTable?.name}
+                    {t('table')} {popoverTable?.name}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                      {popoverTable?.maxCapacity ? `Cap. ${popoverTable.maxCapacity}` : ''}
+                      {popoverTable?.maxCapacity ? `${t('cap')} ${popoverTable.maxCapacity}` : ''}
                     </span>
                     <button onClick={() => setTablePopover(null)}
                       className="text-xs leading-none" style={{ color: 'var(--text-muted)' }}
@@ -1092,7 +1451,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
                     </svg>
-                    New
+                    {t('newReservation')}
                   </button>
                   <button
                    onClick={() => {
@@ -1109,21 +1468,21 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
                   >
-                    🚶 Walk in
+                    🚶 {t('walkIn')}
                   </button>
                 </div>
 
                 {/* Reservations list */}
                 <div style={{ maxHeight: 220, overflowY: 'auto' }}>
                   {tableRes.length === 0 ? (
-                    <div className="text-center text-[10px] py-4" style={{ color: 'var(--text-muted)' }}>No reservations today</div>
+                    <div className="text-center text-[10px] py-4" style={{ color: 'var(--text-muted)' }}>{t('noReservations')}</div>
                   ) : (
                     tableRes.map(r => {
                       const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
                       const startStr = rd.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
                       const endDate = new Date(rd.getTime() + (r.duration_minutes || 90) * 60000);
                       const endStr = endDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-                      const mCfg = MEAL_CFG[r.meal_status];
+                      const mCfg = mealCfg[r.meal_status];
                       const sCfg = statusCfg(r.status, isDarkMode);
                       return (
                         <div key={r.id}
@@ -1193,7 +1552,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
           {/* ── Meal status picker ── */}
           {mealPickerRes && (() => {
             const pickerW = isMobile ? 180 : 220;
-            const pickerH = Object.keys(MEAL_CFG).length * 44 + 80;
+            const pickerH = Object.keys(mealCfg).length * 44 + 80;
             const vw = window.innerWidth, vh = window.innerHeight;
             let px = mealPickerRes.x + 8;
             let py = mealPickerRes.y + 8;
@@ -1215,7 +1574,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                 <div style={{ background: 'var(--bg-secondary)', padding: '8px 12px', borderBottom: '1px solid var(--border-primary)' }}
                   className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Meal Status</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{t('mealStatus')}</p>
                     <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{mealPickerRes.name}</p>
                   </div>
                   <button onClick={() => setMealPickerRes(null)}
@@ -1227,7 +1586,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
                 {/* Options */}
                 <div>
-                  {Object.entries(MEAL_CFG).map(([k, v]) => {
+                  {Object.entries(mealCfg).map(([k, v]) => {
                     const currentRes = (reservations || []).find(r => r.id === mealPickerRes.resId);
                     const isActive = currentRes?.meal_status === k;
                     return (
@@ -1250,7 +1609,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                       >
                         <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: v.color }} />
                         <span className="text-sm font-medium">{v.label}</span>
-                        {isActive && <span className="ml-auto text-[10px]" style={{ color: 'var(--text-muted)' }}>✓ active</span>}
+                        {isActive && <span className="ml-auto text-[10px]" style={{ color: 'var(--text-muted)' }}>✓ {t('active')}</span>}
                       </button>
                     );
                   })}
@@ -1271,7 +1630,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                         onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                       >
                         <span className="w-3.5 h-3.5 rounded-full flex-shrink-0 bg-slate-600" />
-                        <span className="text-sm font-medium">Clear status</span>
+                        <span className="text-sm font-medium">{t('clearStatus')}</span>
                       </button>
                     ) : null;
                   })()}
@@ -1284,14 +1643,14 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
         {/* Map footer hint - hide on mobile */}
         <div className="px-3 py-1.5 flex-shrink-0 border-t flex items-center gap-3 hidden md:flex"
           style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
-          <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Click table · Right-click meal · Shift+click multi · Scroll zoom · Drag pan</span>
-          <span className="ml-auto text-[10px]" style={{ color: 'var(--text-muted)' }}>{tables.length} tables · {filteredReservations.length} reservations</span>
+          <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{t('clickTable')}</span>
+          <span className="ml-auto text-[10px]" style={{ color: 'var(--text-muted)' }}>{tables.length} {t('tables')} · {filteredReservations.length} {t('reservations')}</span>
         </div>
         {/* Mobile footer hint */}
         <div className="px-3 py-1.5 flex-shrink-0 border-t flex items-center gap-3 md:hidden"
           style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
-          <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>Tap table · Hold for meal</span>
-          <span className="ml-auto text-[9px]" style={{ color: 'var(--text-muted)' }}>{tables.length} tables</span>
+          <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>{t('tapTable')}</span>
+          <span className="ml-auto text-[9px]" style={{ color: 'var(--text-muted)' }}>{tables.length} {t('tables')}</span>
         </div>
       </div>
 
@@ -1333,7 +1692,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
             style={{ background: 'var(--bg-tertiary)', borderColor: 'var(--border-primary)' }}>
             <FiSearch className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
             <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-              placeholder={isMobile ? "Search…" : "Search guest…"}
+              placeholder={isMobile ? t('search') : t('searchGuest')}
               className="bg-transparent text-xs focus:outline-none w-full"
               style={{ color: 'var(--text-primary)', placeholderColor: 'var(--text-muted)' }}
             />
@@ -1369,7 +1728,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
             }}
           >
             <FiFilter className="w-3 h-3" />
-            {!isMobile && "Filter"}
+            {!isMobile && t('filter')}
             {(guestFilter.min || guestFilter.max || timeFilter.from || timeFilter.to || tableFilter) && (
               <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
             )}
@@ -1377,7 +1736,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
           {/* Count */}
           <span className="text-xs whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>
-            {filteredReservations.length} res
+            {filteredReservations.length} {t('res')}
           </span>
         </div>
 
@@ -1388,7 +1747,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
             {/* Time from–to */}
             <div className="flex-1 min-w-[100px] md:min-w-[140px]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Time</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{t('time')}</p>
               <div className="flex items-center gap-1 flex-wrap">
                 <input type="time" value={timeFilter.from}
                   onChange={e => setTimeFilter(p => ({ ...p, from: e.target.value }))}
@@ -1416,7 +1775,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
             {/* Guests */}
             <div className="flex-1 min-w-[80px] md:min-w-[120px]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Guests</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{t('guestsLabel')}</p>
               <div className="flex items-center gap-1">
                 <input type="number" min="1" max="99" value={guestFilter.min} placeholder="min"
                   onChange={e => setGuestFilter(p => ({ ...p, min: e.target.value }))}
@@ -1442,7 +1801,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
 
             {/* Table name */}
             <div className="flex-1 min-w-[80px] md:min-w-[120px]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>Table</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>{t('tableLabel')}</p>
               <input type="text" value={tableFilter} placeholder="e.g. VIP"
                 onChange={e => setTableFilter(e.target.value)}
                 className="border text-xs rounded px-2 py-1 focus:outline-none focus:border-[#fe8a24] w-full"
@@ -1473,7 +1832,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                 e.currentTarget.style.color = 'var(--text-secondary)';
               }}
             >
-              Clear
+              {t('clearAll')}
             </button>
           </div>
         )}
@@ -1502,16 +1861,16 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'var(--bg-card)' }}>
                 <FiUsers className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
               </div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>No reservations</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>{t('noReservations')}</p>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                {selectedTableIds.length > 0 ? "No reservations for selected table(s)" : "No reservations match the current filters"}
+                {selectedTableIds.length > 0 ? t('noReservationsForTable') : t('noReservationsMatch')}
               </p>
             </div>
           ) : (
             filteredReservations.map((res, idx) => {
               const rd   = res.reservation_date?.toDate?.() || new Date(res.reservation_date);
               const sCfg = statusCfg(res.status, isDarkMode);
-              const mCfg = MEAL_CFG[res.meal_status];
+              const mCfg = mealCfg[res.meal_status];
               const isExpanded = expandedRes === res.id;
               const nameParts = (res.customer_name || "Guest").split(" ");
               const firstName = nameParts[0];
@@ -1732,10 +2091,10 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                               </span>
                             )}
                             {res.source === "reservation_link" && (
-                              <span className="text-[10px] bg-blue-900 text-blue-300 px-2 py-0.5 rounded">🌐 Online</span>
+                              <span className="text-[10px] bg-blue-900 text-blue-300 px-2 py-0.5 rounded">{t('online')}</span>
                             )}
                             {res.is_walkin && (
-                              <span className="text-[10px] px-2 py-0.5 rounded" style={{ color: 'var(--text-secondary)', background: 'var(--bg-card)' }}>🚶 Walk-in</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded" style={{ color: 'var(--text-secondary)', background: 'var(--bg-card)' }}>{t('walkinTag')}</span>
                             )}
                           </div>
                         </div>
@@ -1748,7 +2107,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                           onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-primary-hover)'}
                           onMouseLeave={(e) => e.currentTarget.style.background = 'var(--accent-primary)'}
                         >
-                          Open →
+                          {t('open')} →
                         </button>
                       </div>
 
@@ -1762,7 +2121,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                               style={{ background: isDarkMode ? 'rgba(30,58,95,0.4)' : 'rgba(219,234,254,0.4)', borderColor: isDarkMode ? 'rgba(59,130,246,0.3)' : 'rgba(37,99,235,0.3)' }}>
                               <FiFileText className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: isDarkMode ? '#60a5fa' : '#2563eb' }} />
                               <div>
-                                <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: isDarkMode ? '#60a5fa' : '#2563eb' }}>Public</span>
+                                <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: isDarkMode ? '#60a5fa' : '#2563eb' }}>{t('public')}</span>
                                 <p className="mt-0.5" style={{ color: 'var(--text-secondary)' }}>{res.special_requests}</p>
                               </div>
                             </div>
@@ -1774,7 +2133,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                               style={{ background: isDarkMode ? 'rgba(146,64,14,0.2)' : 'rgba(251,191,36,0.1)', borderColor: isDarkMode ? 'rgba(146,64,14,0.3)' : 'rgba(217,119,6,0.3)' }}>
                               <FiLock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: isDarkMode ? '#fbbf24' : '#d97706' }} />
                               <div>
-                                <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: isDarkMode ? '#fbbf24' : '#d97706' }}>Internal</span>
+                                <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: isDarkMode ? '#fbbf24' : '#d97706' }}>{t('internalNote')}</span>
                                 <p className="mt-0.5" style={{ color: isDarkMode ? 'rgb(252,211,77,0.8)' : 'rgb(180,83,9,0.8)' }}>{res.internal_notes}</p>
                               </div>
                             </div>
@@ -1782,15 +2141,15 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                           
                           {/* No notes message */}
                           {!res.special_requests && !res.internal_notes && (
-                            <div className="text-xs italic py-1" style={{ color: 'var(--text-muted)' }}>No notes</div>
+                            <div className="text-xs italic py-1" style={{ color: 'var(--text-muted)' }}>{t('noNotes')}</div>
                           )}
                         </div>
 
                         {/* Right: Meal Status */}
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Meal Status</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>{t('mealStatus')}</p>
                           <div className="flex flex-wrap gap-1">
-                            {Object.entries(MEAL_CFG).map(([k, v]) => (
+                            {Object.entries(mealCfg).map(([k, v]) => (
                               <button key={k}
                                 onClick={(e) => { e.stopPropagation(); updateMealStatus(res.id, k); }}
                                 disabled={updatingMeal === res.id}
@@ -1816,7 +2175,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                                 onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-card)'}
                               >
-                                Clear
+                                {t('clearStatus')}
                               </button>
                             )}
                           </div>
@@ -1827,13 +2186,13 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
                       {res.selected_menu_items?.length > 0 && (
                         <div className="mt-1 pt-3 border-t" style={{ borderColor: 'var(--border-secondary)' }}>
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>🍽️ Menu Items</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>🍽️ {t('menuItems')}</span>
                             <span className="text-[9px] font-normal" style={{ color: 'var(--text-muted)' }}>
-                              ({res.selected_menu_items.reduce((s,i) => s + (i.qty || 1), 0)} items)
+                              ({res.selected_menu_items.reduce((s,i) => s + (i.qty || 1), 0)} {t('items')})
                             </span>
                             {res.selected_menu_items.some(i => i.price) && (
                               <span className="text-xs font-bold text-[#fe8a24] ml-auto">
-                                Total: {res.selected_menu_items.reduce((s, i) =>
+                                {t('total')}: {res.selected_menu_items.reduce((s, i) =>
                                   s + (parseFloat(i.price) || 0) * (i.qty || 1), 0
                                 ).toFixed(0)},-
                               </span>
@@ -1878,10 +2237,10 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
         <div className="px-3 py-2 border-t flex items-center gap-2 md:gap-4 flex-shrink-0 flex-wrap"
           style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-primary)' }}>
           <div className="flex items-center gap-2 md:gap-3 text-xs flex-wrap" style={{ color: 'var(--text-muted)' }}>
-            <span><span className="font-bold" style={{ color: 'var(--text-primary)' }}>{filteredReservations.length}</span> res</span>
+            <span><span className="font-bold" style={{ color: 'var(--text-primary)' }}>{filteredReservations.length}</span> {t('res')}</span>
             {!isMobile && (
               <>
-                <span><span className="font-bold" style={{ color: 'var(--text-primary)' }}>{filteredReservations.reduce((s,r)=>s+(r.number_of_guests||0),0)}</span> guests</span>
+                <span><span className="font-bold" style={{ color: 'var(--text-primary)' }}>{filteredReservations.reduce((s,r)=>s+(r.number_of_guests||0),0)}</span> {t('guests')}</span>
                 <span><span className="font-bold" style={{ color: '#16a34a' }}>{filteredReservations.filter(r=>r.status==="confirmed").length}</span> ✓</span>
                 <span><span className="font-bold" style={{ color: '#d97706' }}>{filteredReservations.filter(r=>r.status==="pending").length}</span> P</span>
                 <span><span className="font-bold" style={{ color: '#dc2626' }}>{filteredReservations.filter(r=>r.status==="cancelled").length}</span> C</span>
@@ -1895,7 +2254,7 @@ export default function ReservationTableView({ selectedRestaurant, reservations,
               onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--bg-tertiary)'; }}
             >
-              Show all
+              {t('showAll')}
             </button>
           )}
         </div>

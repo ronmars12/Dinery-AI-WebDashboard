@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -20,6 +19,520 @@ import {
   FiChevronLeft, FiChevronRight, FiCheck, FiEdit2
 } from 'react-icons/fi';
 
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    // Page titles
+    reserveYourTable: 'Reserve your table',
+    bookYourExperience: 'Book your perfect dining experience',
+    loadingPage: 'Loading reservation page…',
+    pageNotFound: 'Page not found',
+    invalidLink: 'This reservation link is invalid or has been removed.',
+    // Booking summary
+    yourBooking: 'Your booking',
+    guests: 'guests',
+    selectDate: 'Select a date',
+    selectTime: 'Select a time',
+    maximumCapacity: 'Maximum capacity reached',
+    upToGuests: 'Up to {max} guests',
+    limit: 'limit',
+    // Calendar
+    selectDateLabel: 'Select Date',
+    closedOnThisDay: 'Closed on this day',
+    closedForRepairs: 'Closed for repairs / holiday',
+    closed: 'Closed',
+    dimmedDatesClosed: 'Dimmed dates are closed days',
+    redDatesClosed: 'Red dates are closed for holidays / repairs',
+    // Time slots
+    selectTimeLabel: 'Select Time',
+    noTimeSlots: 'No time slots available',
+    contactUsDirectly: 'Please contact us directly to book.',
+    full: 'FULL',
+    // Form
+    continue: 'Continue →',
+    yourDetails: 'Your details',
+    firstName: 'First name',
+    lastName: 'Last name',
+    phone: 'Phone',
+    email: 'Email',
+    company: 'Company',
+    specialRequests: 'Special requests',
+    dietaryRequirements: 'Dietary requirements, accessibility needs, celebrations...',
+    birthdayOffer: 'Would you like a special offer for your birthday?',
+    optional: 'Optional — day and month only',
+    month: 'Month',
+    day: 'Day',
+    birthdayLabel: '🎉 Birthday',
+    clear: 'Clear',
+    agreeToNewsletters: 'I agree to receive newsletters in accordance with the declaration of consent.',
+    termsConditions: 'By completing the booking you agree to our Terms & Conditions',
+    makeReservation: 'Make reservation',
+    processing: 'Processing...',
+    // Step 3 - Menu
+    groupMenuSelection: 'Group Menu Selection',
+    selectGroupMenu: 'Please select your group menu to continue',
+    itemsSelected: 'items selected',
+    readyToConfirm: 'Ready to confirm',
+    // Success
+    bookingConfirmed: '{name}, your booking at {restaurant} is confirmed',
+    confirmationSent: 'A confirmation has been sent to your email.',
+    bookingSummary: 'Booking Summary',
+    partySize: 'Party size',
+    date: 'Date',
+    time: 'Time',
+    restaurant: 'Restaurant',
+    makeAnotherReservation: 'Make Another Reservation',
+    exitPage: 'Exit Page',
+    confirmationSentNote: 'A confirmation has been sent to your email. If you did not receive it, please check your spam folder.',
+    // Buttons
+    backToDateTime: 'Back to date & time',
+    backToGuestDetails: 'Back to guest details',
+    confirmReservation: 'Confirm Reservation',
+    // Errors
+    pleaseEnterFullName: 'Please enter your full name',
+    phoneRequired: 'Phone number is required',
+    emailRequired: 'Email address is required',
+    minGuestsRequired: 'Minimum {min} guests required',
+    maxGuestsAllowed: 'Maximum {max} guests allowed',
+    dataNotLoaded: 'Restaurant data not loaded. Please refresh.',
+    noTablesForParty: 'No tables available for this party size.',
+    allTablesBooked: 'All tables are booked for this time slot. Please choose a different time.',
+    timeSlotFullyBooked: 'This time slot is fully booked. Please choose a different time.',
+    offerCodeReachedLimit: 'This offer code has reached its usage limit.',
+    offerCodeAlreadyUsed: 'You have already used this offer code.',
+    duplicateReservation: 'A reservation was just created. Please check your bookings.',
+    saveFailed: 'Failed to save. Please try again.',
+    dateUnavailable: 'This date is unavailable. The restaurant is closed during this period.',
+    pleaseSelectMenuItem: 'Please select at least one menu item to continue',
+    // Offer code
+    haveOfferCode: 'Have an offer code?',
+    offerCodePlaceholder: 'e.g. WELCOME10',
+    applied: 'Applied',
+    // Menu display
+    ourMenu: 'Our Menu',
+    showingItemsFor: 'Showing items for {guests} guest{s}',
+    tapForDetails: 'Tap for details ›',
+    selected: 'Selected',
+    addToReservation: 'Add to reservation',
+    itemAdded: 'item added to reservation',
+    clearAll: 'Clear all',
+    // Restaurant contact
+    restaurantContact: 'Restaurant Contact',
+    manageReservation: 'Manage My Reservation',
+    // Email
+    reservationConfirmed: 'Reservation Confirmed –',
+    yourReservationConfirmed: 'Your reservation is confirmed! 🎉',
+    yourBookingAt: 'Your booking at',
+    hasBeenConfirmed: 'has been confirmed.',
+    notes: 'Notes',
+    preSelectedItems: 'Pre-selected items:',
+    needToMakeChanges: 'Need to make changes? You can manage your reservation here:',
+    // Holiday
+    closedDuringPeriod: 'This date is unavailable. The restaurant is closed during this period.',
+    // Loading
+    loading: 'Loading...',
+    somethingWentWrong: 'Something went wrong',
+    couldNotLoad: 'Could not load the reservation page. Please check your connection.',
+    tryAgain: 'Try again',
+  },
+  fi: {
+    reserveYourTable: 'Varaa pöytäsi',
+    bookYourExperience: 'Varaa täydellinen ruokailuelämys',
+    loadingPage: 'Ladataan varaussivua…',
+    pageNotFound: 'Sivua ei löytynyt',
+    invalidLink: 'Tämä varauslinkki on virheellinen tai se on poistettu.',
+    yourBooking: 'Varauksesi',
+    guests: 'vierasta',
+    selectDate: 'Valitse päivä',
+    selectTime: 'Valitse aika',
+    maximumCapacity: 'Maksimikapasiteetti saavutettu',
+    upToGuests: 'Enintään {max} vierasta',
+    limit: 'raja',
+    selectDateLabel: 'Valitse päivä',
+    closedOnThisDay: 'Suljettu tänä päivänä',
+    closedForRepairs: 'Suljettu korjausten / loman vuoksi',
+    closed: 'Suljettu',
+    dimmedDatesClosed: 'Harmaalla merkityt päivät ovat suljettuja',
+    redDatesClosed: 'Punaiset päivät ovat suljettuja lomien / korjausten vuoksi',
+    selectTimeLabel: 'Valitse aika',
+    noTimeSlots: 'Ei vapaita aikavälejä',
+    contactUsDirectly: 'Ota yhteyttä suoraan tehdäksesi varauksen.',
+    full: 'TÄYNNÄ',
+    continue: 'Jatka →',
+    yourDetails: 'Tietosi',
+    firstName: 'Etunimi',
+    lastName: 'Sukunimi',
+    phone: 'Puhelin',
+    email: 'Sähköposti',
+    company: 'Yritys',
+    specialRequests: 'Erityistoiveet',
+    dietaryRequirements: 'Ruokavaliovaatimukset, esteettömyystarpeet, juhlat...',
+    birthdayOffer: 'Haluatko erikoistarjouksen syntymäpäiväksesi?',
+    optional: 'Valinnainen — vain päivä ja kuukausi',
+    month: 'Kuukausi',
+    day: 'Päivä',
+    birthdayLabel: '🎉 Syntymäpäivä',
+    clear: 'Tyhjennä',
+    agreeToNewsletters: 'Hyväksyn uutiskirjeiden vastaanottamisen suostumusilmoituksen mukaisesti.',
+    termsConditions: 'Tekemällä varauksen hyväksyt Ehdot',
+    makeReservation: 'Tee varaus',
+    processing: 'Käsitellään...',
+    groupMenuSelection: 'Ryhmäruokalistan valinta',
+    selectGroupMenu: 'Valitse ryhmäruokalista jatkaaksesi',
+    itemsSelected: 'tuotetta valittu',
+    readyToConfirm: 'Valmis vahvistettavaksi',
+    bookingConfirmed: '{name}, varauksesi ravintolaan {restaurant} on vahvistettu',
+    confirmationSent: 'Vahvistus on lähetetty sähköpostiisi.',
+    bookingSummary: 'Varauksen yhteenveto',
+    partySize: 'Seurueen koko',
+    date: 'Päivä',
+    time: 'Aika',
+    restaurant: 'Ravintola',
+    makeAnotherReservation: 'Tee toinen varaus',
+    exitPage: 'Poistu sivulta',
+    confirmationSentNote: 'Vahvistus on lähetetty sähköpostiisi. Jos et saanut sitä, tarkista roskapostikansio.',
+    backToDateTime: 'Takaisin päivämäärään ja aikaan',
+    backToGuestDetails: 'Takaisin asiakastietoihin',
+    confirmReservation: 'Vahvista varaus',
+    pleaseEnterFullName: 'Syötä koko nimesi',
+    phoneRequired: 'Puhelinnumero vaaditaan',
+    emailRequired: 'Sähköpostiosoite vaaditaan',
+    minGuestsRequired: 'Vähintään {min} vierasta vaaditaan',
+    maxGuestsAllowed: 'Enintään {max} vierasta sallittu',
+    dataNotLoaded: 'Ravintolan tietoja ei ladattu. Päivitä sivu.',
+    noTablesForParty: 'Ei pöytiä tälle seurueelle.',
+    allTablesBooked: 'Kaikki pöydät ovat varattuja tälle ajalle. Valitse toinen aika.',
+    timeSlotFullyBooked: 'Tämä aikaväli on täysin varattu. Valitse toinen aika.',
+    offerCodeReachedLimit: 'Tämä tarjouskoodi on saavuttanut käyttörajansa.',
+    offerCodeAlreadyUsed: 'Olet jo käyttänyt tämän tarjouskoodin.',
+    duplicateReservation: 'Varaus juuri luotiin. Tarkista varauksesi.',
+    saveFailed: 'Tallennus epäonnistui. Yritä uudelleen.',
+    dateUnavailable: 'Tämä päivä ei ole saatavilla. Ravintola on suljettu tänä aikana.',
+    pleaseSelectMenuItem: 'Valitse vähintään yksi ruokalistan tuote jatkaaksesi',
+    haveOfferCode: 'Onko sinulla tarjouskoodi?',
+    offerCodePlaceholder: 'esim. TERVETULOA10',
+    applied: 'Käytetty',
+    ourMenu: 'Ruokalistamme',
+    showingItemsFor: 'Näytetään tuotteet {guests} vieraalle',
+    tapForDetails: 'Napauta nähdäksesi tiedot ›',
+    selected: 'Valittu',
+    addToReservation: 'Lisää varaukseen',
+    itemAdded: 'tuote lisätty varaukseen',
+    clearAll: 'Tyhjennä kaikki',
+    restaurantContact: 'Ravintolan yhteystiedot',
+    manageReservation: 'Hallitse varaustani',
+    reservationConfirmed: 'Varaus vahvistettu –',
+    yourReservationConfirmed: 'Varauksesi on vahvistettu! 🎉',
+    yourBookingAt: 'Varauksesi ravintolaan',
+    hasBeenConfirmed: 'on vahvistettu.',
+    notes: 'Muistiinpanot',
+    preSelectedItems: 'Valitut tuotteet:',
+    needToMakeChanges: 'Haluatko tehdä muutoksia? Voit hallita varaustasi täällä:',
+    closedDuringPeriod: 'Tämä päivä ei ole saatavilla. Ravintola on suljettu tänä aikana.',
+    loading: 'Ladataan...',
+    somethingWentWrong: 'Jotain meni pieleen',
+    couldNotLoad: 'Varaussivua ei voitu ladata. Tarkista yhteys.',
+    tryAgain: 'Yritä uudelleen',
+  },
+  no: {
+    reserveYourTable: 'Reserver bordet ditt',
+    bookYourExperience: 'Bestill din perfekte matopplevelse',
+    loadingPage: 'Laster bestillingsside…',
+    pageNotFound: 'Siden finnes ikke',
+    invalidLink: 'Denne bestillingslenken er ugyldig eller har blitt fjernet.',
+    yourBooking: 'Din bestilling',
+    guests: 'gjester',
+    selectDate: 'Velg dato',
+    selectTime: 'Velg tid',
+    maximumCapacity: 'Maksimal kapasitet nådd',
+    upToGuests: 'Opptil {max} gjester',
+    limit: 'grense',
+    selectDateLabel: 'Velg dato',
+    closedOnThisDay: 'Stengt på denne dagen',
+    closedForRepairs: 'Stengt for reparasjoner / ferie',
+    closed: 'Stengt',
+    dimmedDatesClosed: 'Nedtonede datoer er stengte dager',
+    redDatesClosed: 'Røde datoer er stengt for helligdager / reparasjoner',
+    selectTimeLabel: 'Velg tid',
+    noTimeSlots: 'Ingen tilgjengelige tidspor',
+    contactUsDirectly: 'Kontakt oss direkte for å booke.',
+    full: 'FULL',
+    continue: 'Fortsett →',
+    yourDetails: 'Dine opplysninger',
+    firstName: 'Fornavn',
+    lastName: 'Etternavn',
+    phone: 'Telefon',
+    email: 'E-post',
+    company: 'Bedrift',
+    specialRequests: 'Spesielle ønsker',
+    dietaryRequirements: 'Kostholdskrav, tilgjengelighetsbehov, feiringer...',
+    birthdayOffer: 'Vil du ha et spesialtilbud til bursdagen din?',
+    optional: 'Valgfritt — kun dag og måned',
+    month: 'Måned',
+    day: 'Dag',
+    birthdayLabel: '🎉 Bursdag',
+    clear: 'Tøm',
+    agreeToNewsletters: 'Jeg samtykker til å motta nyhetsbrev i samsvar med samtykkeerklæringen.',
+    termsConditions: 'Ved å gjennomføre bestillingen godtar du Vilkårene',
+    makeReservation: 'Gjør reservasjon',
+    processing: 'Behandler...',
+    groupMenuSelection: 'Gruppemenyvalg',
+    selectGroupMenu: 'Velg din gruppemeny for å fortsette',
+    itemsSelected: 'elementer valgt',
+    readyToConfirm: 'Klar til å bekrefte',
+    bookingConfirmed: '{name}, bestillingen din på {restaurant} er bekreftet',
+    confirmationSent: 'En bekreftelse er sendt til din e-post.',
+    bookingSummary: 'Bestillingssammendrag',
+    partySize: 'Selskapsstørrelse',
+    date: 'Dato',
+    time: 'Tid',
+    restaurant: 'Restaurant',
+    makeAnotherReservation: 'Gjør en ny reservasjon',
+    exitPage: 'Forlat siden',
+    confirmationSentNote: 'En bekreftelse er sendt til din e-post. Hvis du ikke mottok den, vennligst sjekk søppelpostmappen.',
+    backToDateTime: 'Tilbake til dato og tid',
+    backToGuestDetails: 'Tilbake til gjestedetaljer',
+    confirmReservation: 'Bekreft reservasjon',
+    pleaseEnterFullName: 'Vennligst skriv inn ditt fulle navn',
+    phoneRequired: 'Telefonnummer er påkrevd',
+    emailRequired: 'E-postadresse er påkrevd',
+    minGuestsRequired: 'Minimum {min} gjester kreves',
+    maxGuestsAllowed: 'Maksimum {max} gjester tillatt',
+    dataNotLoaded: 'Restaurantdata ikke lastet. Vennligst oppdater.',
+    noTablesForParty: 'Ingen bord tilgjengelig for denne gruppen.',
+    allTablesBooked: 'Alle bord er booket for dette tidspunktet. Velg et annet tidspunkt.',
+    timeSlotFullyBooked: 'Dette tidspunktet er fullbooket. Velg et annet tidspunkt.',
+    offerCodeReachedLimit: 'Denne tilbudskoden har nådd bruksgrensen.',
+    offerCodeAlreadyUsed: 'Du har allerede brukt denne tilbudskoden.',
+    duplicateReservation: 'En reservasjon ble nettopp opprettet. Vennligst sjekk dine bestillinger.',
+    saveFailed: 'Kunne ikke lagre. Vennligst prøv igjen.',
+    dateUnavailable: 'Denne datoen er utilgjengelig. Restauranten er stengt i denne perioden.',
+    pleaseSelectMenuItem: 'Vennligst velg minst ett menyelement for å fortsette',
+    haveOfferCode: 'Har du en tilbudskode?',
+    offerCodePlaceholder: 'f.eks. VELKOMMEN10',
+    applied: 'Påført',
+    ourMenu: 'Vår meny',
+    showingItemsFor: 'Viser varer for {guests} gjest{er}',
+    tapForDetails: 'Trykk for detaljer ›',
+    selected: 'Valgt',
+    addToReservation: 'Legg til i reservasjon',
+    itemAdded: 'vare lagt til i reservasjon',
+    clearAll: 'Tøm alle',
+    restaurantContact: 'Restaurantkontakt',
+    manageReservation: 'Administrer min reservasjon',
+    reservationConfirmed: 'Reservasjon bekreftet –',
+    yourReservationConfirmed: 'Din reservasjon er bekreftet! 🎉',
+    yourBookingAt: 'Bestillingen din hos',
+    hasBeenConfirmed: 'er bekreftet.',
+    notes: 'Notater',
+    preSelectedItems: 'Forhåndsvalgte varer:',
+    needToMakeChanges: 'Trenger du å gjøre endringer? Du kan administrere reservasjonen din her:',
+    closedDuringPeriod: 'Denne datoen er utilgjengelig. Restauranten er stengt i denne perioden.',
+    loading: 'Laster...',
+    somethingWentWrong: 'Noe gikk galt',
+    couldNotLoad: 'Kunne ikke laste bestillingssiden. Vennligst sjekk forbindelsen.',
+    tryAgain: 'Prøv igjen',
+  },
+  sv: {
+    reserveYourTable: 'Boka ditt bord',
+    bookYourExperience: 'Boka din perfekta matupplevelse',
+    loadingPage: 'Laddar bokningssida…',
+    pageNotFound: 'Sidan hittades inte',
+    invalidLink: 'Denna bokningslänk är ogiltig eller har tagits bort.',
+    yourBooking: 'Din bokning',
+    guests: 'gäster',
+    selectDate: 'Välj datum',
+    selectTime: 'Välj tid',
+    maximumCapacity: 'Maxkapacitet uppnådd',
+    upToGuests: 'Upp till {max} gäster',
+    limit: 'gräns',
+    selectDateLabel: 'Välj datum',
+    closedOnThisDay: 'Stängt på denna dag',
+    closedForRepairs: 'Stängt för reparationer / semester',
+    closed: 'Stängt',
+    dimmedDatesClosed: 'Nedtonade datum är stängda dagar',
+    redDatesClosed: 'Röda datum är stängda för helgdagar / reparationer',
+    selectTimeLabel: 'Välj tid',
+    noTimeSlots: 'Inga tillgängliga tider',
+    contactUsDirectly: 'Kontakta oss direkt för att boka.',
+    full: 'FULL',
+    continue: 'Fortsätt →',
+    yourDetails: 'Dina uppgifter',
+    firstName: 'Förnamn',
+    lastName: 'Efternamn',
+    phone: 'Telefon',
+    email: 'E-post',
+    company: 'Företag',
+    specialRequests: 'Speciella önskemål',
+    dietaryRequirements: 'Kostkrav, tillgänglighetsbehov, firande...',
+    birthdayOffer: 'Vill du ha ett specialerbjudande för din födelsedag?',
+    optional: 'Valfritt — endast dag och månad',
+    month: 'Månad',
+    day: 'Dag',
+    birthdayLabel: '🎉 Födelsedag',
+    clear: 'Rensa',
+    agreeToNewsletters: 'Jag samtycker till att ta emot nyhetsbrev i enlighet med samtyckesförklaringen.',
+    termsConditions: 'Genom att slutföra bokningen godkänner du Villkor',
+    makeReservation: 'Gör bokning',
+    processing: 'Bearbetar...',
+    groupMenuSelection: 'Gruppmenyval',
+    selectGroupMenu: 'Välj din gruppmeny för att fortsätta',
+    itemsSelected: 'artiklar valda',
+    readyToConfirm: 'Redo att bekräfta',
+    bookingConfirmed: '{name}, din bokning på {restaurant} är bekräftad',
+    confirmationSent: 'En bekräftelse har skickats till din e-post.',
+    bookingSummary: 'Bokningssammanfattning',
+    partySize: 'Sällskapsstorlek',
+    date: 'Datum',
+    time: 'Tid',
+    restaurant: 'Restaurang',
+    makeAnotherReservation: 'Gör en ny bokning',
+    exitPage: 'Lämna sidan',
+    confirmationSentNote: 'En bekräftelse har skickats till din e-post. Om du inte fick den, vänligen kontrollera skräpposten.',
+    backToDateTime: 'Tillbaka till datum och tid',
+    backToGuestDetails: 'Tillbaka till gästuppgifter',
+    confirmReservation: 'Bekräfta bokning',
+    pleaseEnterFullName: 'Ange ditt fullständiga namn',
+    phoneRequired: 'Telefonnummer krävs',
+    emailRequired: 'E-postadress krävs',
+    minGuestsRequired: 'Minst {min} gäster krävs',
+    maxGuestsAllowed: 'Max {max} gäster tillåtna',
+    dataNotLoaded: 'Restaurangdata ej laddad. Vänligen uppdatera.',
+    noTablesForParty: 'Inga bord tillgängliga för detta sällskap.',
+    allTablesBooked: 'Alla bord är bokade för denna tid. Välj en annan tid.',
+    timeSlotFullyBooked: 'Denna tid är fullbokad. Välj en annan tid.',
+    offerCodeReachedLimit: 'Denna erbjudandekod har nått sin användningsgräns.',
+    offerCodeAlreadyUsed: 'Du har redan använt denna erbjudandekod.',
+    duplicateReservation: 'En bokning skapades just nu. Vänligen kontrollera dina bokningar.',
+    saveFailed: 'Kunde inte spara. Vänligen försök igen.',
+    dateUnavailable: 'Detta datum är inte tillgängligt. Restaurangen är stängd under denna period.',
+    pleaseSelectMenuItem: 'Vänligen välj minst ett menyalternativ för att fortsätta',
+    haveOfferCode: 'Har du en erbjudandekod?',
+    offerCodePlaceholder: 't.ex. VÄLKOMMEN10',
+    applied: 'Tillämpad',
+    ourMenu: 'Vår meny',
+    showingItemsFor: 'Visar artiklar för {guests} gäst{er}',
+    tapForDetails: 'Tryck för detaljer ›',
+    selected: 'Vald',
+    addToReservation: 'Lägg till i bokning',
+    itemAdded: 'artikel tillagd i bokning',
+    clearAll: 'Rensa alla',
+    restaurantContact: 'Restaurangkontakt',
+    manageReservation: 'Hantera min bokning',
+    reservationConfirmed: 'Bokning bekräftad –',
+    yourReservationConfirmed: 'Din bokning är bekräftad! 🎉',
+    yourBookingAt: 'Din bokning på',
+    hasBeenConfirmed: 'har bekräftats.',
+    notes: 'Anteckningar',
+    preSelectedItems: 'Förvalda artiklar:',
+    needToMakeChanges: 'Behöver du göra ändringar? Du kan hantera din bokning här:',
+    closedDuringPeriod: 'Detta datum är inte tillgängligt. Restaurangen är stängd under denna period.',
+    loading: 'Laddar...',
+    somethingWentWrong: 'Något gick fel',
+    couldNotLoad: 'Kunde inte ladda bokningssidan. Vänligen kontrollera anslutningen.',
+    tryAgain: 'Försök igen',
+  },
+  de: {
+    reserveYourTable: 'Reservieren Sie Ihren Tisch',
+    bookYourExperience: 'Buchen Sie Ihr perfektes kulinarisches Erlebnis',
+    loadingPage: 'Lade Buchungsseite…',
+    pageNotFound: 'Seite nicht gefunden',
+    invalidLink: 'Dieser Buchungslink ist ungültig oder wurde entfernt.',
+    yourBooking: 'Ihre Buchung',
+    guests: 'Gäste',
+    selectDate: 'Wählen Sie ein Datum',
+    selectTime: 'Wählen Sie eine Uhrzeit',
+    maximumCapacity: 'Maximale Kapazität erreicht',
+    upToGuests: 'Bis zu {max} Gäste',
+    limit: 'Grenze',
+    selectDateLabel: 'Datum auswählen',
+    closedOnThisDay: 'An diesem Tag geschlossen',
+    closedForRepairs: 'Geschlossen wegen Reparaturen / Feiertag',
+    closed: 'Geschlossen',
+    dimmedDatesClosed: 'Abgedunkelte Daten sind geschlossene Tage',
+    redDatesClosed: 'Rote Daten sind wegen Feiertagen / Reparaturen geschlossen',
+    selectTimeLabel: 'Uhrzeit auswählen',
+    noTimeSlots: 'Keine verfügbaren Zeitslots',
+    contactUsDirectly: 'Bitte kontaktieren Sie uns direkt, um zu buchen.',
+    full: 'VOLL',
+    continue: 'Weiter →',
+    yourDetails: 'Ihre Details',
+    firstName: 'Vorname',
+    lastName: 'Nachname',
+    phone: 'Telefon',
+    email: 'E-Mail',
+    company: 'Firma',
+    specialRequests: 'Besondere Wünsche',
+    dietaryRequirements: 'Ernährungsanforderungen, Barrierefreiheit, Feierlichkeiten...',
+    birthdayOffer: 'Möchten Sie ein Sonderangebot für Ihren Geburtstag?',
+    optional: 'Optional — nur Tag und Monat',
+    month: 'Monat',
+    day: 'Tag',
+    birthdayLabel: '🎉 Geburtstag',
+    clear: 'Löschen',
+    agreeToNewsletters: 'Ich stimme dem Erhalt von Newslettern gemäß der Einwilligungserklärung zu.',
+    termsConditions: 'Mit Abschluss der Buchung stimmen Sie den AGB zu',
+    makeReservation: 'Reservierung vornehmen',
+    processing: 'Verarbeite...',
+    groupMenuSelection: 'Gruppenmenüauswahl',
+    selectGroupMenu: 'Bitte wählen Sie Ihr Gruppenmenü, um fortzufahren',
+    itemsSelected: 'Artikel ausgewählt',
+    readyToConfirm: 'Bereit zur Bestätigung',
+    bookingConfirmed: '{name}, Ihre Buchung bei {restaurant} ist bestätigt',
+    confirmationSent: 'Eine Bestätigung wurde an Ihre E-Mail gesendet.',
+    bookingSummary: 'Buchungsübersicht',
+    partySize: 'Gruppengröße',
+    date: 'Datum',
+    time: 'Uhrzeit',
+    restaurant: 'Restaurant',
+    makeAnotherReservation: 'Weitere Reservierung vornehmen',
+    exitPage: 'Seite verlassen',
+    confirmationSentNote: 'Eine Bestätigung wurde an Ihre E-Mail gesendet. Wenn Sie sie nicht erhalten haben, überprüfen Sie bitte Ihren Spam-Ordner.',
+    backToDateTime: 'Zurück zu Datum & Uhrzeit',
+    backToGuestDetails: 'Zurück zu Gastdetails',
+    confirmReservation: 'Reservierung bestätigen',
+    pleaseEnterFullName: 'Bitte geben Sie Ihren vollständigen Namen ein',
+    phoneRequired: 'Telefonnummer ist erforderlich',
+    emailRequired: 'E-Mail-Adresse ist erforderlich',
+    minGuestsRequired: 'Mindestens {min} Gäste erforderlich',
+    maxGuestsAllowed: 'Maximal {max} Gäste erlaubt',
+    dataNotLoaded: 'Restaurantdaten nicht geladen. Bitte aktualisieren Sie.',
+    noTablesForParty: 'Keine Tische für diese Gruppe verfügbar.',
+    allTablesBooked: 'Alle Tische sind für diese Zeit gebucht. Bitte wählen Sie eine andere Uhrzeit.',
+    timeSlotFullyBooked: 'Dieser Zeitslot ist ausgebucht. Bitte wählen Sie eine andere Uhrzeit.',
+    offerCodeReachedLimit: 'Dieser Angebotscode hat sein Nutzungslimit erreicht.',
+    offerCodeAlreadyUsed: 'Sie haben diesen Angebotscode bereits verwendet.',
+    duplicateReservation: 'Eine Reservierung wurde gerade erstellt. Bitte überprüfen Sie Ihre Buchungen.',
+    saveFailed: 'Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.',
+    dateUnavailable: 'Dieses Datum ist nicht verfügbar. Das Restaurant ist in diesem Zeitraum geschlossen.',
+    pleaseSelectMenuItem: 'Bitte wählen Sie mindestens einen Menüpunkt aus, um fortzufahren',
+    haveOfferCode: 'Haben Sie einen Angebotscode?',
+    offerCodePlaceholder: 'z.B. WILLKOMMEN10',
+    applied: 'Angewendet',
+    ourMenu: 'Unser Menü',
+    showingItemsFor: 'Zeige Artikel für {guests} Gast{en}',
+    tapForDetails: 'Tippen für Details ›',
+    selected: 'Ausgewählt',
+    addToReservation: 'Zur Reservierung hinzufügen',
+    itemAdded: 'Artikel zur Reservierung hinzugefügt',
+    clearAll: 'Alle löschen',
+    restaurantContact: 'Restaurant Kontakt',
+    manageReservation: 'Meine Reservierung verwalten',
+    reservationConfirmed: 'Reservierung bestätigt –',
+    yourReservationConfirmed: 'Ihre Reservierung ist bestätigt! 🎉',
+    yourBookingAt: 'Ihre Buchung bei',
+    hasBeenConfirmed: 'wurde bestätigt.',
+    notes: 'Notizen',
+    preSelectedItems: 'Vorausgewählte Artikel:',
+    needToMakeChanges: 'Möchten Sie Änderungen vornehmen? Sie können Ihre Reservierung hier verwalten:',
+    closedDuringPeriod: 'Dieses Datum ist nicht verfügbar. Das Restaurant ist in diesem Zeitraum geschlossen.',
+    loading: 'Lade...',
+    somethingWentWrong: 'Etwas ist schief gelaufen',
+    couldNotLoad: 'Die Buchungsseite konnte nicht geladen werden. Bitte überprüfen Sie Ihre Verbindung.',
+    tryAgain: 'Erneut versuchen',
+  },
+};
+
 const COUNTRY_CODES = [
   { code: '+1',   label: 'US' }, { code: '+44',  label: 'UK' },
   { code: '+61',  label: 'AU' }, { code: '+64',  label: 'NZ' },
@@ -30,8 +543,7 @@ const COUNTRY_CODES = [
 
 const ALL_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-// Per-tab cache using sessionStorage — isolates each browser tab so multiple
-// reservation links open at the same time never overwrite each other's data.
+// Per-tab cache using sessionStorage
 const CACHE_PREFIX = '__dinery_res_cache__';
 const restaurantCache = {
   has: (key) => {
@@ -48,7 +560,6 @@ const restaurantCache = {
   },
 };
 
-// Wraps any promise with a timeout — prevents Firestore from hanging for 30s on slow connections
 const withTimeout = (promise, ms = 8000) => {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -137,7 +648,7 @@ const resolveHoursForDate = (customHours, date, reservationSettings) => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  MiniCalendar
 // ─────────────────────────────────────────────────────────────────────────────
-function MiniCalendar({ selectedDate, onDateSelect, accentColor, openDayNames, holidays }) {
+function MiniCalendar({ selectedDate, onDateSelect, accentColor, openDayNames, holidays, t }) {
   const [view, setView] = useState(new Date());
   const yr = view.getFullYear(), mo = view.getMonth();
   const firstDay = new Date(yr, mo, 1).getDay();
@@ -198,7 +709,7 @@ function MiniCalendar({ selectedDate, onDateSelect, accentColor, openDayNames, h
               key={i}
               disabled={isDisabled}
               onClick={() => onDateSelect(td)}
-              title={isHoliday && !isPast ? 'Closed for repairs / holiday' : isClosed && !isPast ? 'Closed' : undefined}
+              title={isHoliday && !isPast ? t('closedForRepairs') : isClosed && !isPast ? t('closed') : undefined}
               className={[
                 'aspect-square flex items-center justify-center text-xs font-medium rounded-lg transition-all relative',
                 isDisabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-white/10',
@@ -240,14 +751,14 @@ function MiniCalendar({ selectedDate, onDateSelect, accentColor, openDayNames, h
           <div className="flex flex-col gap-1 mt-3">
             {hasClosed && (
               <p className="text-white/25 text-[10px] text-center">
-                Dimmed dates are closed days
+                {t('dimmedDatesClosed')}
               </p>
             )}
             {holidays && holidays.some(h => h.startDate && h.endDate && h.startDate.trim() !== '' && h.endDate.trim() !== '') && (
               <div className="flex items-center justify-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400/70 flex-shrink-0" />
                 <p className="text-red-400/60 text-[10px]">
-                  Red dates are closed for holidays / repairs
+                  {t('redDatesClosed')}
                 </p>
               </div>
             )}
@@ -281,7 +792,7 @@ const ATTRIBUTE_CFG = {
   kids:        { icon: '👶', color: '#ec4899' },
 };
 
-function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, lang, settings, onSelectionChange }) {
+function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, lang, settings, onSelectionChange, t }) {
   const [categories, setCategories] = useState([]);
   const [items,      setItems]      = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -372,16 +883,16 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
     <div className="mt-12 w-full">
       <div className="text-center mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.3em] mb-2 text-white/40">
-          {settings?.menuDisplayTitle || 'Our Menu'}
+          {settings?.menuDisplayTitle || t('ourMenu')}
         </p>
         <h2 className="text-2xl md:text-3xl font-black text-white mb-2">
-          {settings?.menuDisplayTitle || 'Our Menu'}
+          {settings?.menuDisplayTitle || t('ourMenu')}
         </h2>
         {settings?.menuDisplaySubtitle && (
           <p className="text-white/50 text-sm max-w-md mx-auto">{settings.menuDisplaySubtitle}</p>
         )}
         <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full text-xs font-semibold text-white/60 border border-white/15 bg-white/5">
-          👥 Showing items for {guests} guest{guests !== 1 ? 's' : ''}
+          👥 {t('showingItemsFor').replace('{guests}', guests).replace('{s}', guests !== 1 ? 's' : '')}
         </div>
       </div>
 
@@ -441,13 +952,13 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
                             {(item.attributes||[]).map(id => { const a = ATTRIBUTE_CFG[id]; return a ? <span key={id} className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: a.color+'22', color: a.color }}>{a.icon}</span> : null; })}
                             {(item.allergens||[]).map(id => <span key={id} className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-300 font-semibold" title={id}>{ALLERGEN_ICONS[id]||'⚠️'}</span>)}
                           </div>
-                          <p className="text-white/20 text-[10px]">Tap for details ›</p>
+                          <p className="text-white/20 text-[10px]">{t('tapForDetails')}</p>
                         </button>
                         <div className="px-4 pb-3 pt-1 flex items-center justify-between border-t border-white/10 mt-1">
                           {qty > 0 ? (
                             <>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Selected</span>
+                                <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">{t('selected')}</span>
                                 {qty > 1 && <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: accent }}>×{qty}</span>}
                               </div>
                               <div className="flex items-center gap-1.5">
@@ -461,7 +972,7 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
                               className="w-full py-1.5 rounded-lg text-xs font-bold text-white hover:opacity-90 flex items-center justify-center gap-1.5"
                               style={{ backgroundColor: accent+'cc' }}>
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4"/></svg>
-                              Add to reservation
+                              {t('addToReservation')}
                             </button>
                           )}
                         </div>
@@ -479,7 +990,7 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
         <div className="mt-6 rounded-2xl border p-4 flex items-center justify-between gap-4"
           style={{ background: accent+'15', borderColor: accent+'40' }}>
           <div>
-            <p className="text-white font-bold text-sm">{totalSelected} item{totalSelected !== 1 ? 's' : ''} added to reservation</p>
+            <p className="text-white font-bold text-sm">{totalSelected} {t('itemAdded')}</p>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               {Object.values(selectedItems).map(({ item, qty }) => (
                 <span key={item.id} className="text-[10px] px-2 py-0.5 rounded-full font-semibold text-white/80 bg-white/10">
@@ -490,7 +1001,7 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
           </div>
           <div className="text-right flex-shrink-0">
             {totalPrice > 0 && <p className="text-lg font-black" style={{ color: accent }}>{totalPrice.toFixed(0)},-</p>}
-            <button onClick={() => setSelectedItems({})} className="text-[10px] text-white/35 hover:text-white/60 transition-colors mt-0.5 block">Clear all</button>
+            <button onClick={() => setSelectedItems({})} className="text-[10px] text-white/35 hover:text-white/60 transition-colors mt-0.5 block">{t('clearAll')}</button>
           </div>
         </div>
       )}
@@ -539,7 +1050,7 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
               )}
               {(detailItem.allergens||[]).length > 0 && (
                 <div className="bg-amber-400/10 border border-amber-400/20 rounded-xl p-4">
-                  <p className="text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">⚠️ Allergens</p>
+                  <p className="text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">⚠️ {t('allergens')}</p>
                   <div className="flex flex-wrap gap-2">
                     {(detailItem.allergens||[]).map(id => (
                       <span key={id} className="text-xs px-2.5 py-1 rounded-full bg-amber-400/15 text-amber-200 font-semibold">
@@ -561,7 +1072,7 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
                     className="flex-1 py-3 rounded-xl text-sm font-black text-white hover:opacity-90 flex items-center justify-center gap-2"
                     style={{ backgroundColor: accent }}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4"/></svg>
-                    Add to reservation
+                    {t('addToReservation')}
                   </button>
                 )}
               </div>
@@ -577,6 +1088,24 @@ function PublicMenuDisplay({ restaurantId, collectionName, guests, accentColor, 
 //  MAIN PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PublicReservationPage() {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const { restaurantId } = useParams();
   const db = firestore;
   const [searchParams] = useSearchParams();
@@ -614,7 +1143,7 @@ export default function PublicReservationPage() {
   const [thankYouMessage, setThankYouMessage]   = useState('');
   const [restaurantPageUrl, setRestaurantPageUrl] = useState('');
 
-  // 🔴 REAL-TIME reservation listener
+  // ── REAL-TIME reservation listener ──
   useEffect(() => {
     if (!restaurantData?.firestoreId) return;
 
@@ -663,7 +1192,6 @@ export default function PublicReservationPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        // ── PHASE 0: Cache hit — instant render ──
         const cacheKey = restaurantId;
         if (restaurantCache.has(cacheKey)) {
           const cached = restaurantCache.get(cacheKey);
@@ -673,7 +1201,6 @@ export default function PublicReservationPage() {
           setCombinations(cached.combos);
           setLoading(false);
           setDataReady(true);
-          // Always fetch fresh settings — never use cached settings for blocked slots
           try {
             const col = cached.rd._collection || 'restaurants';
             const freshSnap = await withTimeout(
@@ -708,7 +1235,6 @@ export default function PublicReservationPage() {
         let rSnap = null;
         let collectionName = 'restaurants';
 
-        // ── PHASE 1: Parallel direct ID lookups with timeout ──
         const [directResult, testResult] = await Promise.allSettled([
           withTimeout(getDoc(doc(db, 'restaurants', restaurantId))),
           withTimeout(getDoc(doc(db, 'TestRestaurant', restaurantId))),
@@ -722,7 +1248,6 @@ export default function PublicReservationPage() {
           collectionName = 'TestRestaurant';
         }
 
-        // ── Fallback: parallel name queries ──
         if (!rSnap) {
           const [restaurantsSnap, testQuerySnap] = await Promise.allSettled([
             withTimeout(getDocs(query(collection(db, 'restaurants'), where('name', '==', restaurantId)))),
@@ -759,7 +1284,7 @@ export default function PublicReservationPage() {
           withTimeout(getDocs(collection(db, collectionName, actualDocId, 'tableCombinations'))).catch(() => null),
           withTimeout(getDoc(doc(db, collectionName, actualDocId, 'reservationSettings', 'config'))).catch(() => null),
         ]);
-        // ── Config ──
+
         let configData;
         if (cSnap && cSnap.exists()) {
           const cfg = cSnap.data();
@@ -788,10 +1313,7 @@ export default function PublicReservationPage() {
           };
         }
 
-        // ── Tables ──
         const tablesData = tablesSnap ? tablesSnap.docs.map(d => ({ id: d.id, ...d.data() })) : [];
-
-        // ── Combinations ──
         const combosData = combosSnap ? combosSnap.docs.map(d => ({ id: d.id, ...d.data() })) : [];
 
         let settingsData = null;
@@ -809,7 +1331,6 @@ export default function PublicReservationPage() {
           setRestaurantPageUrl(settingsData.restaurantPageUrl || '');
         }
 
-        // ── Commit all state at once — single render pass ──
         setRestaurantData(rd);
         setConfig(configData);
         setRestaurantTables(tablesData);
@@ -817,7 +1338,6 @@ export default function PublicReservationPage() {
         setSettings(settingsData);
         setDataReady(true);
 
-        // ── Save to cache ──
         restaurantCache.set(cacheKey, {
           rd,
           cfg: configData,
@@ -1060,7 +1580,7 @@ export default function PublicReservationPage() {
   })();
 
   const getTimeLabel = (value) => {
-    if (!value) return 'Select a time';
+    if (!value) return t('selectTime');
     const found = timeSlots.find(t => t.value === value);
     return found ? found.label : value;
   };
@@ -1092,7 +1612,7 @@ export default function PublicReservationPage() {
         return resDateCheck >= start && resDateCheck <= end;
       });
       if (isHolidayBlocked) {
-        setError('This date is unavailable. The restaurant is closed during this period.');
+        setError(t('dateUnavailable'));
         return;
       }
     }
@@ -1106,7 +1626,7 @@ export default function PublicReservationPage() {
         if (totalSelected < 1) {
           setError(
             settings?.groupMenuRequiredMessage ||
-            'Please select at least one menu item to continue'
+            t('pleaseSelectMenuItem')
           );
           return;
         }
@@ -1117,26 +1637,26 @@ export default function PublicReservationPage() {
 
     if (step === 2) {
         if (!form.firstName || !form.lastName) {
-          setError('Please enter your full name');
+          setError(t('pleaseEnterFullName'));
           return;
         }
       if (config.requirePhone && !form.phone) {
-        setError('Phone number is required');
+        setError(t('phoneRequired'));
         return;
       }
       if (config.requireEmail && !form.email) {
-        setError('Email address is required');
+        setError(t('emailRequired'));
         return;
       }
     }
 
     if (settings?.minGuestsPerReservation && guests < settings.minGuestsPerReservation) {
-      setError(`Minimum ${settings.minGuestsPerReservation} guests required`);
+      setError(t('minGuestsRequired').replace('{min}', settings.minGuestsPerReservation));
       setStep(1);
       return;
     }
     if (settings?.maxGuestsPerReservation && guests > settings.maxGuestsPerReservation) {
-      setError(`Maximum ${settings.maxGuestsPerReservation} guests allowed`);
+      setError(t('maxGuestsAllowed').replace('{max}', settings.maxGuestsPerReservation));
       setStep(1);
       return;
     }
@@ -1152,7 +1672,7 @@ export default function PublicReservationPage() {
     if (step !== 2) return;
 
     if (!restaurantData?.firestoreId) {
-      setError('Restaurant data not loaded. Please refresh.');
+      setError(t('dataNotLoaded'));
       return;
     }
 
@@ -1212,13 +1732,13 @@ export default function PublicReservationPage() {
       );
 
       if (eligibleTables.length === 0 && combinations.filter(c => guests >= c.minCapacity && guests <= c.maxCapacity).length === 0) {
-        setError('No tables available for this party size.');
+        setError(t('noTablesForParty'));
         setSaving(false);
         return;
       }
 
       if (!hasFreeTables && !hasFreeCombination) {
-        setError('All tables are booked for this time slot. Please choose a different time.');
+        setError(t('allTablesBooked'));
         setSaving(false);
         return;
       }
@@ -1226,7 +1746,7 @@ export default function PublicReservationPage() {
       const assignment = autoAssignTable(guests, bookedTableIds);
 
       if (!assignment) {
-        setError('No tables or combinations available for this party size.');
+        setError(t('noTablesForParty'));
         setSaving(false);
         return;
       }
@@ -1235,7 +1755,7 @@ export default function PublicReservationPage() {
       const allAssignedFree = assignedTableIds.every(tid => !bookedTableIds.has(tid));
 
       if (!allAssignedFree) {
-        setError('This time slot is fully booked. Please choose a different time.');
+        setError(t('timeSlotFullyBooked'));
         setSlotAvailability(prev => ({ ...prev, [selectedTime]: false }));
         setSelectedTime('');
         setStep(1);
@@ -1245,7 +1765,6 @@ export default function PublicReservationPage() {
 
 const collectionName = restaurantData._collection || 'restaurants';
 
-      // ── Validate offer code against real Offer doc + usage limits ──────────
       let validatedOffer = null;
       if (settings?.enableOfferCode && offerCodeInput) {
         try {
@@ -1259,7 +1778,7 @@ const collectionName = restaurantData._collection || 'restaurants';
 
             if (offerData.usage_limit_type === 'max_uses' &&
                 (offerData.times_redeemed || 0) >= (offerData.max_uses || 0)) {
-              setError('This offer code has reached its usage limit.');
+              setError(t('offerCodeReachedLimit'));
               setSaving(false);
               return;
             }
@@ -1272,7 +1791,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                 where('customer_email', '==', form.email)
               ));
               if (!priorUse.empty) {
-                setError('You have already used this offer code.');
+                setError(t('offerCodeAlreadyUsed'));
                 setSaving(false);
                 return;
               }
@@ -1284,7 +1803,6 @@ const collectionName = restaurantData._collection || 'restaurants';
         }
       }
 
-      // ── Estimate campaign revenue ────────────────────────────────────────
       let estimatedRevenue = null;
       if (validatedOffer && crmAvgRevenue > 0) {
         const baseRevenue = guests * crmAvgRevenue;
@@ -1356,7 +1874,7 @@ const collectionName = restaurantData._collection || 'restaurants';
       });
 
       if (recentDuplicate) {
-        setError('A reservation was just created. Please check your bookings.');
+        setError(t('duplicateReservation'));
         setSaving(false);
         return;
       }
@@ -1388,47 +1906,46 @@ const collectionName = restaurantData._collection || 'restaurants';
       }
      // Send confirmation email
       try {
-        const functions = getFunctions(undefined, 'asia-southeast1');  // ← ADD THE REGION HERE
+        const functions = getFunctions(undefined, 'asia-southeast1');
         const sendEmailFn = httpsCallable(functions, 'sendEmail');
         await sendEmailFn({
           to: form.email,
-          subject: `Reservation Confirmed – ${displayName}`,
+          subject: `${t('reservationConfirmed')} ${displayName}`,
           html: `
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-              <h2 style="color:#fe8a24;">Your reservation is confirmed! 🎉</h2>
+              <h2 style="color:#fe8a24;">${t('yourReservationConfirmed')}</h2>
               <p>Hi ${form.firstName},</p>
-              <p>Your booking at <strong>${displayName}</strong> has been confirmed.</p>
+              <p>${t('yourBookingAt')} <strong>${displayName}</strong> ${t('hasBeenConfirmed')}</p>
               <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                <tr><td style="padding:8px 0;color:#888;">Date</td><td><strong>${selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong></td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Time</td><td><strong>${getTimeLabel(selectedTime)}</strong></td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${guests}</strong></td></tr>
-                <tr><td style="padding:8px 0;color:#888;">Table</td><td><strong>${assignment.isCombination ? assignment.combination.name : assignment.table.name}</strong></td></tr>
-                ${form.notes ? `<tr><td style="padding:8px 0;color:#888;">Notes</td><td>${form.notes}</td></tr>` : ''}
+                <tr><td style="padding:8px 0;color:#888;">${t('date')}</td><td><strong>${selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#888;">${t('time')}</td><td><strong>${getTimeLabel(selectedTime)}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#888;">${t('guests')}</td><td><strong>${guests}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#888;">${t('table')}</td><td><strong>${assignment.isCombination ? assignment.combination.name : assignment.table.name}</strong></td></tr>
+                ${form.notes ? `<tr><td style="padding:8px 0;color:#888;">${t('notes')}</td><td>${form.notes}</td></tr>` : ''}
               </table>
               ${selectedMenuItems.length > 0 ? `
-                <p><strong>Pre-selected items:</strong></p>
+                <p><strong>${t('preSelectedItems')}</strong></p>
                 <ul>${selectedMenuItems.map(i => `<li>${i.name}${i.qty > 1 ? ` ×${i.qty}` : ''}</li>`).join('')}</ul>
               ` : ''}
               ${(settings?.contactEmail || settings?.contactPhone) ? `
                 <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
-                  <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 Restaurant Contact</p>
+                  <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 ${t('restaurantContact')}</p>
                   ${settings?.contactEmail ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">✉️ <a href="mailto:${settings.contactEmail}" style="color:#fe8a24;">${settings.contactEmail}</a></p>` : ''}
                   ${settings?.contactPhone ? `<p style="margin:0;font-size:13px;color:#555;">📱 <a href="tel:${settings.contactPhone}" style="color:#fe8a24;">${settings.contactPhone}</a></p>` : ''}
                 </div>
               ` : ''}
               <p style="color:#888;font-size:12px;margin-top:24px;">
-                Need to make changes? You can manage your reservation here:
+                ${t('needToMakeChanges')}
               </p>
              <a href="https://booking.dinery.ai/manage-reservation/${createdId}"
                 style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
-                Manage My Reservation
+                ${t('manageReservation')}
               </a>
             </div>
           `,
         });
         console.log('✅ Confirmation email sent successfully');
       } catch (emailError) {
-        // Silent — booking is still confirmed, email failure is non-critical
         console.error('Confirmation email failed:', emailError);
       }
 
@@ -1450,7 +1967,7 @@ const collectionName = restaurantData._collection || 'restaurants';
 
       setSaved(true);
     } catch {
-      setError('Failed to save. Please try again.');
+      setError(t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -1480,23 +1997,23 @@ const collectionName = restaurantData._collection || 'restaurants';
           <div className="lg:col-span-2 h-64 bg-white/10 rounded-3xl animate-pulse" />
           <div className="lg:col-span-3 h-64 bg-white/10 rounded-3xl animate-pulse" />
         </div>
-        <p className="text-center text-white/20 text-xs mt-8 animate-pulse">Loading reservation page…</p>
+        <p className="text-center text-white/20 text-xs mt-8 animate-pulse">{t('loadingPage')}</p>
       </div>
     </div>
   );
 
-  // ── Load error — show retry instead of blank/stuck screen ──
+  // ── Load error ──
   if (loadError) return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] flex items-center justify-center p-4">
       <div className="text-center">
         <div className="text-5xl mb-4">⚠️</div>
-        <h1 className="text-xl font-bold text-white mb-2">Something went wrong</h1>
-        <p className="text-white/40 text-sm mb-6">Could not load the reservation page. Please check your connection.</p>
+        <h1 className="text-xl font-bold text-white mb-2">{t('somethingWentWrong')}</h1>
+        <p className="text-white/40 text-sm mb-6">{t('couldNotLoad')}</p>
         <button
           onClick={() => { setLoadError(false); setLoading(true); setRetryCount(c => c + 1); }}
           className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
           style={{ backgroundColor: '#fe8a24' }}>
-          Try again
+          {t('tryAgain')}
         </button>
       </div>
     </div>
@@ -1506,13 +2023,12 @@ const collectionName = restaurantData._collection || 'restaurants';
     <div className="min-h-screen bg-[#0f0c29] flex items-center justify-center p-4">
       <div className="text-center">
         <div className="text-6xl mb-4">🍽️</div>
-        <h1 className="text-2xl font-bold text-white mb-2">Page not found</h1>
-        <p className="text-white/50 text-sm">This reservation link is invalid or has been removed.</p>
+        <h1 className="text-2xl font-bold text-white mb-2">{t('pageNotFound')}</h1>
+        <p className="text-white/50 text-sm">{t('invalidLink')}</p>
       </div>
     </div>
   );
 
-  // ── Config safety net — should never happen but prevents white screen ──
   if (!config) return null;
 
   return (
@@ -1562,9 +2078,9 @@ const collectionName = restaurantData._collection || 'restaurants';
               <p className="text-white/25 text-xs mb-3 uppercase tracking-widest">{restaurantData.Type}</p>
             )}
             <h1 className="text-4xl md:text-5xl font-black text-white mb-3 leading-tight">
-              {config.welcomeMessage || 'Reserve your table'}
+              {config.welcomeMessage || t('reserveYourTable')}
             </h1>
-            <p className="text-white/45 text-base max-w-md mx-auto">{config.subMessage || 'Book your perfect dining experience'}</p>
+            <p className="text-white/45 text-base max-w-md mx-auto">{config.subMessage || t('bookYourExperience')}</p>
           </div>
 
           {saved ? (
@@ -1573,22 +2089,22 @@ const collectionName = restaurantData._collection || 'restaurants';
                 <div className="h-1.5 w-full" style={{ background: 'linear-gradient(90deg, ' + accent + ', ' + accent + '99)' }} />
                 <div className="p-8 md:p-10">
                   <p className="font-semibold mb-1" style={{ color: accent }}>
-                    {form.firstName}, your booking at {displayName} is confirmed
+                    {t('bookingConfirmed').replace('{name}', form.firstName).replace('{restaurant}', displayName)}
                   </p>
                   <p className="text-white/45 text-sm mb-8">
-                    A confirmation has been sent to your email.
+                    {t('confirmationSent')}
                   </p>
 
                   <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mb-7">
                     <div className="px-4 py-2.5 border-b border-white/10">
-                      <p className="text-white/35 text-[10px] font-bold uppercase tracking-widest">Booking Summary</p>
+                      <p className="text-white/35 text-[10px] font-bold uppercase tracking-widest">{t('bookingSummary')}</p>
                     </div>
                     <div className="divide-y divide-white/5">
                       {[
-                        { Icon: FiUsers,    label: guests + ' guest' + (guests > 1 ? 's' : ''), sub: 'Party size' },
-                        { Icon: FiCalendar, label: selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }), sub: 'Date' },
+                        { Icon: FiUsers,    label: guests + ' ' + t('guests'), sub: t('partySize') },
+                        { Icon: FiCalendar, label: selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }), sub: t('date') },
                         { Icon: FiClock, label: (() => {
-                          if (!selectedTime) return 'Select a time';
+                          if (!selectedTime) return t('selectTime');
                           const [h, m] = selectedTime.split(':').map(Number);
                           const startLabel = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
                           if (!settings?.defaultReservationDuration) return startLabel;
@@ -1596,8 +2112,8 @@ const collectionName = restaurantData._collection || 'restaurants';
                           endDate.setHours(h, m + getEffectiveDuration(guests), 0, 0);
                           const endLabel = `${String(endDate.getHours()).padStart(2,'0')}:${String(endDate.getMinutes()).padStart(2,'0')}`;
                           return `${startLabel} → ${endLabel}`;
-                        })(), sub: 'Time' },
-                        { Icon: FiMapPin,   label: displayName, sub: 'Restaurant' },
+                        })(), sub: t('time') },
+                        { Icon: FiMapPin,   label: displayName, sub: t('restaurant') },
                       ].map(({ Icon, label, sub }, i) => (
                         <div key={i} className="flex items-center gap-3 px-4 py-3 text-left">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -1619,7 +2135,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                       className="flex-1 py-4 rounded-2xl text-base font-bold text-white transition-all duration-200 hover:opacity-90 hover:shadow-lg active:scale-[0.98]"
                       style={{ backgroundColor: accent }}
                     >
-                      Make Another Reservation
+                      {t('makeAnotherReservation')}
                     </button>
 
                     <button
@@ -1629,7 +2145,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                       }}
                       className="flex-1 py-4 rounded-2xl text-base font-semibold text-white transition-all duration-200 bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/30 active:scale-[0.98]"
                     >
-                      Exit Page
+                      {t('exitPage')}
                     </button>
                   </div>
 
@@ -1638,7 +2154,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                   <p className="text-white/60 text-sm">
-                    A confirmation has been sent to your email. If you did not receive it, please check your spam folder.
+                    {t('confirmationSentNote')}
                   </p>
                 </div>
                 </div>
@@ -1649,11 +2165,11 @@ const collectionName = restaurantData._collection || 'restaurants';
 
               <div className="lg:col-span-2">
                 <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-6 border border-white/20 lg:sticky lg:top-8 shadow-xl">
-                  <h3 className="text-white font-black text-lg mb-5">Your booking</h3>
+                  <h3 className="text-white font-black text-lg mb-5">{t('yourBooking')}</h3>
 
                   {step === 1 && <div className="mb-5">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="text-white/45 text-xs font-semibold uppercase tracking-wider">Guests</p>
+                      <p className="text-white/45 text-xs font-semibold uppercase tracking-wider">{t('guests')}</p>
                       <div className="flex items-center gap-2 bg-white/10 rounded-xl px-1 py-1">
                         <button
                           onClick={() => {
@@ -1689,7 +2205,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                       {effectiveMax > 10 && (
                         <button
                           onClick={() => {
-                            const v = parseInt(window.prompt('Enter number of guests (max ' + effectiveMax + '):')) || guests;
+                            const v = parseInt(window.prompt(t('enterGuestsPrompt').replace('{max}', effectiveMax))) || guests;
                             if (v > 0 && v <= effectiveMax) setGuests(v);
                           }}
                           className={'w-10 h-10 rounded-xl text-xs font-bold transition-all ' + (guests > 10 ? 'text-white shadow-lg' : 'bg-white/8 text-white/50 hover:bg-white/15 hover:text-white/80')}
@@ -1699,10 +2215,10 @@ const collectionName = restaurantData._collection || 'restaurants';
                       )}
                     </div>
                     <p className="text-white/25 text-[10px] mt-2">
-                      {guests === effectiveMax ? 'Maximum capacity reached' : `Up to ${effectiveMax} guests`}
+                      {guests === effectiveMax ? t('maximumCapacity') : t('upToGuests').replace('{max}', effectiveMax)}
                       {settings?.maxGuestsPerReservation && (
                         <span className="ml-2 text-white/40">
-                          (limit: {settings.maxGuestsPerReservation})
+                          ({t('limit')}: {settings.maxGuestsPerReservation})
                         </span>
                       )}
                     </p>
@@ -1710,8 +2226,8 @@ const collectionName = restaurantData._collection || 'restaurants';
 
                   <div className="space-y-2">
                     {[
-                      { Icon: FiUsers,    label: guests + ' guest' + (guests > 1 ? 's' : '') },
-                      { Icon: FiCalendar, label: selectedDate ? selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select a date', editable: !!selectedDate },
+                      { Icon: FiUsers,    label: guests + ' ' + t('guests') },
+                      { Icon: FiCalendar, label: selectedDate ? selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : t('selectDate'), editable: !!selectedDate },
                       { Icon: FiMapPin,   label: displayName },
                       { Icon: FiClock,    label: getTimeLabel(selectedTime), editable: !!selectedTime },
                     ].map(({ Icon, label, editable }) => (
@@ -1736,31 +2252,32 @@ const collectionName = restaurantData._collection || 'restaurants';
 
                   {step === 1 && (
                     <>
-                      <p className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-5">Select Date</p>
+                      <p className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-5">{t('selectDateLabel')}</p>
                       <MiniCalendar
                         selectedDate={selectedDate}
                         onDateSelect={d => { setSelectedDate(d); setSelectedTime(''); setSlotAvailability(null); }}
                         accentColor={accent}
                         openDayNames={openDayNames}
                         holidays={restaurantData?.customHolidays || []}
+                        t={t}
                       />
 
                       {selectedDate && (
                         <div className="mt-6">
                           {!isOpen ? (
                             <div className="bg-red-500/15 border border-red-500/25 rounded-2xl p-5 text-center">
-                              <p className="text-red-300 text-sm font-bold mb-1">Closed on this day</p>
-                              <p className="text-red-300/60 text-xs">Please choose a different date</p>
+                              <p className="text-red-300 text-sm font-bold mb-1">{t('closedOnThisDay')}</p>
+                              <p className="text-red-300/60 text-xs">{t('selectDifferentDate')}</p>
                             </div>
                           ) : timeSlots.length === 0 ? (
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-                              <p className="text-white/60 text-sm font-bold mb-1">No time slots available</p>
-                              <p className="text-white/30 text-xs">Please contact us directly to book.</p>
+                              <p className="text-white/60 text-sm font-bold mb-1">{t('noTimeSlots')}</p>
+                              <p className="text-white/30 text-xs">{t('contactUsDirectly')}</p>
                             </div>
                           ) : (
                             <>
                               <p className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-3">
-                                Select Time
+                                {t('selectTimeLabel')}
                                 <span className="text-white/25 normal-case font-normal ml-1">
                                   ({effectiveOpenTime} – {effectiveCloseTime})
                                 </span>
@@ -1790,7 +2307,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                                       ) : isFull ? (
                                         <div className="flex flex-col items-center">
                                           <span className="text-xs">{slot.label}</span>
-                                          <span className="text-[10px] font-bold">FULL</span>
+                                          <span className="text-[10px] font-bold">{t('full')}</span>
                                         </div>
                                       ) : (
                                         slot.label
@@ -1817,7 +2334,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                           }}
                           className="mt-7 w-full py-4 rounded-2xl text-sm font-black text-white transition-all hover:opacity-90 hover:scale-[1.01] shadow-xl"
                           style={{ backgroundColor: accent }}>
-                          Continue →
+                          {t('continue')}
                         </button>
                       )}
                     </>
@@ -1829,19 +2346,19 @@ const collectionName = restaurantData._collection || 'restaurants';
                         <button onClick={() => setStep(1)} className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors">
                           <FiChevronLeft className="w-4 h-4 text-white" />
                         </button>
-                        <h3 className="text-white font-black text-lg">Your details</h3>
+                        <h3 className="text-white font-black text-lg">{t('yourDetails')}</h3>
                       </div>
 
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">First name <span style={{ color: accent }}>*</span></label>
+                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('firstName')} <span style={{ color: accent }}>*</span></label>
                             <input value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))}
                               className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all"
                               placeholder="John" />
                           </div>
                           <div>
-                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">Last name <span style={{ color: accent }}>*</span></label>
+                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('lastName')} <span style={{ color: accent }}>*</span></label>
                             <input value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))}
                               className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all"
                               placeholder="Doe" />
@@ -1850,7 +2367,7 @@ const collectionName = restaurantData._collection || 'restaurants';
 
                         <div>
                           <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
-                            Phone {config.requirePhone && <span style={{ color: accent }}>*</span>}
+                            {t('phone')} {config.requirePhone && <span style={{ color: accent }}>*</span>}
                           </label>
                           <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
                             type="tel"
@@ -1860,7 +2377,7 @@ const collectionName = restaurantData._collection || 'restaurants';
 
                         <div>
                           <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
-                            Email {config.requireEmail && <span style={{ color: accent }}>*</span>}
+                            {t('email')} {config.requireEmail && <span style={{ color: accent }}>*</span>}
                           </label>
                           <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                             type="email"
@@ -1870,20 +2387,20 @@ const collectionName = restaurantData._collection || 'restaurants';
 
                         {config.showCompany && (
                           <div>
-                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">Company</label>
+                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('company')}</label>
                             <input value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))}
                               className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all"
-                              placeholder="Company name" />
+                              placeholder={t('companyName')} />
                           </div>
                         )}
 
                         {config.showNotes && (
                           <div>
-                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">Special requests</label>
+                            <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('specialRequests')}</label>
                             <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
                               rows={3} maxLength={360}
                               className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder-white/25 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all resize-none"
-                              placeholder="Dietary requirements, accessibility needs, celebrations..." />
+                              placeholder={t('dietaryRequirements')} />
                             <p className="text-white/25 text-xs text-right mt-1">{form.notes.length}/360</p>
                           </div>
                         )}
@@ -1895,10 +2412,10 @@ const collectionName = restaurantData._collection || 'restaurants';
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="text-lg">🎂</span>
                                 <p className="text-white/80 text-sm font-semibold">
-                                  {settings.birthdayOfferMessage || 'Would you like a special offer for your birthday?'}
+                                  {settings.birthdayOfferMessage || t('birthdayOffer')}
                                 </p>
                               </div>
-                              <p className="text-white/35 text-xs mb-3 ml-7">Optional — day and month only</p>
+                              <p className="text-white/35 text-xs mb-3 ml-7">{t('optional')}</p>
                               {(() => {
                                 const parts = (form.birthday || '').split('-');
                                 const bdMonth = parts.length === 2 ? parts[0] : '';
@@ -1908,7 +2425,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                                   <>
                                     <div className="flex gap-2 ml-7">
                                       <div className="flex-1">
-                                        <label className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-1 block">Month</label>
+                                        <label className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-1 block">{t('month')}</label>
                                         <select
                                           value={bdMonth}
                                           onChange={e => {
@@ -1917,14 +2434,14 @@ const collectionName = restaurantData._collection || 'restaurants';
                                           }}
                                           className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-white/40 transition-all"
                                           style={{ colorScheme: 'dark' }}>
-                                          <option value="" className="bg-gray-800">— Month</option>
+                                          <option value="" className="bg-gray-800">— {t('month')}</option>
                                           {MONTHS.map((m, i) => (
                                             <option key={m} value={String(i + 1).padStart(2, '0')} className="bg-gray-800">{m}</option>
                                           ))}
                                         </select>
                                       </div>
                                       <div className="flex-1">
-                                        <label className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-1 block">Day</label>
+                                        <label className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-1 block">{t('day')}</label>
                                         <select
                                           value={bdDay}
                                           onChange={e => {
@@ -1933,7 +2450,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                                           }}
                                           className="w-full bg-white/10 border border-white/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-white/40 transition-all"
                                           style={{ colorScheme: 'dark' }}>
-                                          <option value="" className="bg-gray-800">— Day</option>
+                                          <option value="" className="bg-gray-800">— {t('day')}</option>
                                           {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
                                             <option key={d} value={String(d).padStart(2, '0')} className="bg-gray-800">{d}</option>
                                           ))}
@@ -1943,11 +2460,11 @@ const collectionName = restaurantData._collection || 'restaurants';
                                     {bdMonth && bdDay && (
                                       <div className="ml-7 mt-2 flex items-center justify-between">
                                         <span className="text-xs font-semibold" style={{ color: accent }}>
-                                          🎉 Birthday: {MONTHS[parseInt(bdMonth) - 1]} {parseInt(bdDay)}
+                                          🎉 {t('birthdayLabel')}: {MONTHS[parseInt(bdMonth) - 1]} {parseInt(bdDay)}
                                         </span>
                                         <button type="button" onClick={() => setForm(p => ({ ...p, birthday: '' }))}
                                           className="text-white/30 hover:text-white/60 text-xs transition-colors">
-                                          Clear
+                                          {t('clear')}
                                         </button>
                                       </div>
                                     )}
@@ -1961,7 +2478,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                         {settings?.enableOfferCode && (
                           <div>
                             <label className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
-                              {settings.offerCodeFieldLabel || 'Have an offer code?'}
+                              {settings.offerCodeFieldLabel || t('haveOfferCode')}
                             </label>
                             <div className="relative">
                               <input
@@ -1970,13 +2487,13 @@ const collectionName = restaurantData._collection || 'restaurants';
                                   setOfferCodeInput(e.target.value.toUpperCase());
                                   setOfferCodeSource(e.target.value ? 'manual' : null);
                                 }}
-                                placeholder="e.g. WELCOME10"
+                                placeholder={t('offerCodePlaceholder')}
                                 className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-white/25 focus:outline-none focus:border-white/40 focus:bg-white/15 transition-all"
                               />
                               {offerCodeSource === 'auto' && offerCodeInput === urlOfferCode && (
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold px-2 py-1 rounded-full text-white"
                                   style={{ backgroundColor: accent }}>
-                                  Applied
+                                  {t('applied')}
                                 </span>
                               )}
                             </div>
@@ -1987,14 +2504,12 @@ const collectionName = restaurantData._collection || 'restaurants';
                           <input type="checkbox" checked={agreeNewsletter} onChange={e => setAgreeNewsletter(e.target.checked)}
                             className="mt-0.5 w-4 h-4 rounded flex-shrink-0" style={{ accentColor: accent }} />
                           <span className="text-white/40 text-xs leading-relaxed group-hover:text-white/55 transition-colors">
-                            I agree to receive newsletters in accordance with the{' '}
-                            <span className="underline" style={{ color: accent }}>declaration of consent</span>.
+                            {t('agreeToNewsletters')}
                           </span>
                         </label>
 
                         <p className="text-white/25 text-xs">
-                          By completing the booking you agree to our{' '}
-                          <span className="underline cursor-pointer" style={{ color: accent }}>Terms & Conditions</span>
+                          {t('termsConditions')}
                         </p>
 
                         {error && (
@@ -2015,10 +2530,10 @@ const collectionName = restaurantData._collection || 'restaurants';
                           {saving ? (
                             <span className="flex items-center justify-center gap-2">
                               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              Processing...
+                              {t('processing')}
                             </span>
                           ) : (
-                            'Make reservation'
+                            t('makeReservation')
                           )}
                         </button>
                       </div>
@@ -2042,10 +2557,10 @@ const collectionName = restaurantData._collection || 'restaurants';
                     </div>
                     <div className="flex-1">
                       <h3 className="text-white font-black text-xl mb-1">
-                        {settings?.menuDisplayTitle || 'Group Menu Selection'}
+                        {settings?.menuDisplayTitle || t('groupMenuSelection')}
                       </h3>
                       <p className="text-white/50 text-sm">
-                        {settings?.groupMenuRequiredMessage || 'Please select your group menu to continue'}
+                        {settings?.groupMenuRequiredMessage || t('selectGroupMenu')}
                       </p>
 
                       {(() => {
@@ -2058,13 +2573,13 @@ const collectionName = restaurantData._collection || 'restaurants';
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-xs text-white/50">
                                 {isRequired
-                                  ? `${totalSelected} of 1 item selected`
-                                  : `${totalSelected} item${totalSelected !== 1 ? 's' : ''} added`
+                                  ? `${totalSelected} of 1 ${t('itemsSelected')}`
+                                  : `${totalSelected} ${t('itemsSelected')}`
                                 }
                               </span>
                               {done && (
                                 <span className="text-xs font-bold text-green-400 flex items-center gap-1">
-                                  <FiCheck className="w-3 h-3"/> Ready to confirm
+                                  <FiCheck className="w-3 h-3"/> {t('readyToConfirm')}
                                 </span>
                               )}
                             </div>
@@ -2082,7 +2597,7 @@ const collectionName = restaurantData._collection || 'restaurants';
 
                   <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-white/10">
                     <span className="flex items-center gap-1.5 bg-white/5 border border-white/15 text-white/60 text-xs font-semibold px-3 py-1.5 rounded-full">
-                      <FiUsers className="w-3 h-3"/> {guests} guests
+                      <FiUsers className="w-3 h-3"/> {guests} {t('guests')}
                     </span>
                     <span className="flex items-center gap-1.5 bg-white/5 border border-white/15 text-white/60 text-xs font-semibold px-3 py-1.5 rounded-full">
                       <FiCalendar className="w-3 h-3"/> {selectedDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -2099,9 +2614,10 @@ const collectionName = restaurantData._collection || 'restaurants';
                 collectionName={restaurantData._collection || 'restaurants'}
                 guests={guests}
                 accentColor={accent}
-                lang="en"
+                lang={lang}
                 settings={{ ...settings, showMenuOnPublicPage: true }}
                 onSelectionChange={setSelectedMenuItems}
+                t={t}
               />
 
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
@@ -2117,7 +2633,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                       return resDateCheck >= start && resDateCheck <= end;
                     });
                     if (isHolidayBlocked) {
-                      setError('This date is unavailable. The restaurant is closed during this period.');
+                      setError(t('closedDuringPeriod'));
                       return;
                     }
                     setError('');
@@ -2129,7 +2645,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                   }}
                   className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl text-sm font-bold text-white/60 bg-white/10 hover:bg-white/15 transition-all border border-white/15">
                   <FiChevronLeft className="w-4 h-4"/>
-                  {(!form.firstName && !form.lastName && !form.phone && !form.email) ? 'Back to date & time' : 'Back to guest details'}
+                  {(!form.firstName && !form.lastName && !form.phone && !form.email) ? t('backToDateTime') : t('backToGuestDetails')}
                 </button>
                 <button
                   onClick={() => {
@@ -2138,7 +2654,7 @@ const collectionName = restaurantData._collection || 'restaurants';
                       if (totalSelected < 1) {
                         setError(
                           settings?.groupMenuRequiredMessage ||
-                          'Please select at least one menu item to continue'
+                          t('pleaseSelectMenuItem')
                         );
                         return;
                       }
@@ -2152,12 +2668,12 @@ const collectionName = restaurantData._collection || 'restaurants';
                   {saving ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                      Processing...
+                      {t('processing')}
                     </span>
                   ) : (
                     <>
                       <FiCheck className="w-4 h-4"/>
-                      Confirm Reservation
+                      {t('confirmReservation')}
                     </>
                   )}
                 </button>

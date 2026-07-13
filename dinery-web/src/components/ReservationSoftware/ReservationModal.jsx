@@ -8,7 +8,527 @@ import {
   FiLock, FiGlobe, FiPlus, FiMinus, FiChevronDown, FiChevronRight, FiSearch 
 } from 'react-icons/fi';
 
-const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemoveItem, onUpdateQuantity, getCategoryName }) => {
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    editBooking: 'Edit Booking',
+    bookingId: 'Booking',
+    customerInformation: 'Customer Information',
+    customerName: 'Customer Name',
+    email: 'Email',
+    phoneNumber: 'Phone Number',
+    birthday: 'Birthday',
+    customerProvided: 'Customer provided',
+    tableAssignment: 'Table Assignment',
+    tables: 'tables',
+    clickToToggle: 'Click to toggle · select multiple tables',
+    fitsGuests: 'fits guests',
+    tooSmall: 'too small',
+    clearAll: 'Clear all',
+    reservationDetails: 'Reservation Details',
+    date: 'Date',
+    time: 'Time (24-hour format)',
+    from: 'From',
+    to: 'To',
+    use24Hour: 'Use 24-hour format (e.g., 14:30 for 2:30 PM)',
+    numberOfGuests: 'Number of Guests',
+    serviceType: 'Service Type',
+    dineIn: 'Dine-In',
+    takeaway: 'Takeaway',
+    delivery: 'Delivery',
+    status: 'Status',
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    mealStatus: 'Meal Status',
+    none: '— None —',
+    arrived: 'Arrived',
+    foodDelivered: 'Food Delivered',
+    dessert: 'Dessert',
+    billDelivered: 'Bill Delivered',
+    tableCleared: 'Table Cleared',
+    noShow: 'No Show',
+    notes: 'Notes',
+    publicNotes: 'Public Notes',
+    visibleToCustomer: '(visible to customer)',
+    internalNotes: 'Internal Notes',
+    staffOnly: '(staff only)',
+    partyMenu: 'Party Menu',
+    editPartyMenu: 'Edit Party Menu',
+    hidePartyMenu: 'Hide Party Menu',
+    items: 'items',
+    selectedItems: 'items selected',
+    noItemsMatch: 'No items match your search',
+    noMenuItemsAvailable: 'No menu items available for this party size',
+    searchMenuItems: 'Search menu items…',
+    allItems: 'All Items',
+    allergens: 'Allergens',
+    add: 'Add',
+    selectedItemsLabel: 'Selected Items:',
+    offerApplied: 'Offer Applied',
+    confirmedLabel: 'Confirmed',
+    mobile: 'Mobile',
+    discount: 'Discount',
+    off: 'off',
+    bookingSource: 'Booking Source:',
+    mobileApp: 'Mobile App',
+    reservationLink: 'Reservation Link',
+    deleteReservation: 'Delete',
+    deleting: 'Deleting...',
+    cancel: 'Cancel',
+    saveChanges: 'Save Changes',
+    saving: 'Saving...',
+    reservationSaved: 'Reservation saved successfully!',
+    reservationDeleted: 'Reservation deleted successfully!',
+    areYouSure: 'Are you sure you want to delete this reservation?',
+    failedUpdate: 'Failed to update reservation',
+    failedDelete: 'Failed to delete reservation',
+    editBookingTitle: 'Edit Booking #',
+    updateNotification: 'Reservation Updated –',
+    pendingRequest: 'Change Request',
+    approvedSuccessfully: 'Approved Successfully',
+    requestRejected: 'Request Rejected',
+    cancellationRequest: 'Cancellation Request',
+    customerModifiedBooking: 'Customer Modified Booking',
+    awaitingApproval: 'Awaiting your approval',
+    requestApproved: 'The request has been approved and the customer has been notified by email.',
+    requestRejectedMessage: 'The request has been rejected. Reservation remains unchanged.',
+    customerUpdatedBooking: 'Customer updated their booking:',
+    customerWantsToCancel: 'Customer wants to cancel:',
+    customerRequested: 'Customer requested:',
+    requestedNewDateTime: 'Requested new date/time:',
+    approve: 'Approve',
+    reject: 'Reject',
+    dismiss: 'Dismiss',
+    total: 'Total',
+    specialRequests: 'Special requests, dietary requirements, allergies, celebrations…',
+    staffNotes: 'Staff notes, VIP info, special arrangements, pre-order details…',
+    table: 'Table',
+    cap: 'Cap',
+    newTable: 'New Table',
+    walkIn: 'Walk in',
+    allDay: 'All Day',
+    event: 'Event',
+    party: 'Party',
+    viewDetails: 'View Details',
+  },
+  fi: {
+    editBooking: 'Muokkaa varausta',
+    bookingId: 'Varaus',
+    customerInformation: 'Asiakastiedot',
+    customerName: 'Asiakkaan nimi',
+    email: 'Sähköposti',
+    phoneNumber: 'Puhelinnumero',
+    birthday: 'Syntymäpäivä',
+    customerProvided: 'Asiakkaan ilmoittama',
+    tableAssignment: 'Pöytävaraus',
+    tables: 'pöytää',
+    clickToToggle: 'Napsauta valitaksesi · valitse useita pöytiä',
+    fitsGuests: 'sopii vieraalle',
+    tooSmall: 'liian pieni',
+    clearAll: 'Tyhjennä kaikki',
+    reservationDetails: 'Varauksen tiedot',
+    date: 'Päivä',
+    time: 'Aika (24 tunnin muodossa)',
+    from: 'Alkaen',
+    to: 'Päättyen',
+    use24Hour: 'Käytä 24 tunnin muotoa (esim. 14:30)',
+    numberOfGuests: 'Vieraiden määrä',
+    serviceType: 'Palvelutyyppi',
+    dineIn: 'Ravintolassa',
+    takeaway: 'Nouto',
+    delivery: 'Kotiinkuljetus',
+    status: 'Tila',
+    pending: 'Odottaa',
+    confirmed: 'Vahvistettu',
+    completed: 'Valmis',
+    cancelled: 'Peruttu',
+    mealStatus: 'Aterian tila',
+    none: '— Ei mitään —',
+    arrived: 'Saapunut',
+    foodDelivered: 'Ruoka toimitettu',
+    dessert: 'Jälkiruoka',
+    billDelivered: 'Lasku toimitettu',
+    tableCleared: 'Pöytä tyhjennetty',
+    noShow: 'Ei saapunut',
+    notes: 'Muistiinpanot',
+    publicNotes: 'Julkiset muistiinpanot',
+    visibleToCustomer: '(näkyy asiakkaalle)',
+    internalNotes: 'Sisäiset muistiinpanot',
+    staffOnly: '(vain henkilökunnalle)',
+    partyMenu: 'Ruokalista',
+    editPartyMenu: 'Muokkaa ruokalistaa',
+    hidePartyMenu: 'Piilota ruokalista',
+    items: 'tuotetta',
+    selectedItems: 'tuotetta valittu',
+    noItemsMatch: 'Yksikään tuote ei vastaa hakua',
+    noMenuItemsAvailable: 'Ruokalistan tuotteita ei ole saatavilla tälle seurueelle',
+    searchMenuItems: 'Etsi ruokalistan tuotteita…',
+    allItems: 'Kaikki tuotteet',
+    allergens: 'Allergeenit',
+    add: 'Lisää',
+    selectedItemsLabel: 'Valitut tuotteet:',
+    offerApplied: 'Tarjous käytössä',
+    confirmedLabel: 'Vahvistettu',
+    mobile: 'Mobiili',
+    discount: 'Alennus',
+    off: 'alennus',
+    bookingSource: 'Varauksen lähde:',
+    mobileApp: 'Mobiilisovellus',
+    reservationLink: 'Varauslinkki',
+    deleteReservation: 'Poista',
+    deleting: 'Poistetaan...',
+    cancel: 'Peruuta',
+    saveChanges: 'Tallenna muutokset',
+    saving: 'Tallennetaan...',
+    reservationSaved: 'Varaus tallennettu onnistuneesti!',
+    reservationDeleted: 'Varaus poistettu onnistuneesti!',
+    areYouSure: 'Haluatko varmasti poistaa tämän varauksen?',
+    failedUpdate: 'Varauksen päivitys epäonnistui',
+    failedDelete: 'Varauksen poisto epäonnistui',
+    editBookingTitle: 'Muokkaa varausta #',
+    updateNotification: 'Varaus päivitetty –',
+    pendingRequest: 'Muutospyyntö',
+    approvedSuccessfully: 'Hyväksytty onnistuneesti',
+    requestRejected: 'Pyyntö hylätty',
+    cancellationRequest: 'Peruutuspäivä',
+    customerModifiedBooking: 'Asiakas muokkasi varausta',
+    awaitingApproval: 'Odottaa hyväksyntääsi',
+    requestApproved: 'Pyyntö on hyväksytty ja asiakkaalle on lähetetty ilmoitus sähköpostitse.',
+    requestRejectedMessage: 'Pyyntö on hylätty. Varaus pysyy ennallaan.',
+    customerUpdatedBooking: 'Asiakas päivitti varauksensa:',
+    customerWantsToCancel: 'Asiakas haluaa perua:',
+    customerRequested: 'Asiakas pyysi:',
+    requestedNewDateTime: 'Pyydetty uusi päivämäärä/aika:',
+    approve: 'Hyväksy',
+    reject: 'Hylkää',
+    dismiss: 'Poista',
+    total: 'Yhteensä',
+    specialRequests: 'Erityistoiveet, ruokavaliot, allergiat, juhlat…',
+    staffNotes: 'Henkilökunnan muistiinpanot, VIP-tiedot, erityisjärjestelyt, ennakkotilaukset…',
+    table: 'Pöytä',
+    cap: 'Kap.',
+    newTable: 'Uusi pöytä',
+    walkIn: 'Kävelylle',
+    allDay: 'Koko päivä',
+    event: 'Tapahtuma',
+    party: 'Seurue',
+    viewDetails: 'Näytä tiedot',
+  },
+  no: {
+    editBooking: 'Rediger bestilling',
+    bookingId: 'Bestilling',
+    customerInformation: 'Kundeinformasjon',
+    customerName: 'Kundenavn',
+    email: 'E-post',
+    phoneNumber: 'Telefonnummer',
+    birthday: 'Bursdag',
+    customerProvided: 'Kunden oppgitt',
+    tableAssignment: 'Bordtildeling',
+    tables: 'bord',
+    clickToToggle: 'Klikk for å velge · velg flere bord',
+    fitsGuests: 'passer gjester',
+    tooSmall: 'for liten',
+    clearAll: 'Tøm alle',
+    reservationDetails: 'Bestillingsdetaljer',
+    date: 'Dato',
+    time: 'Tid (24-timers format)',
+    from: 'Fra',
+    to: 'Til',
+    use24Hour: 'Bruk 24-timers format (f.eks. 14:30)',
+    numberOfGuests: 'Antall gjester',
+    serviceType: 'Servicetype',
+    dineIn: 'Spise inne',
+    takeaway: 'Takeaway',
+    delivery: 'Levering',
+    status: 'Status',
+    pending: 'Venter',
+    confirmed: 'Bekreftet',
+    completed: 'Fullført',
+    cancelled: 'Avbestilt',
+    mealStatus: 'Måltidsstatus',
+    none: '— Ingen —',
+    arrived: 'Ankommet',
+    foodDelivered: 'Mat levert',
+    dessert: 'Dessert',
+    billDelivered: 'Regning levert',
+    tableCleared: 'Bord ryddet',
+    noShow: 'Ikke møtt',
+    notes: 'Notater',
+    publicNotes: 'Offentlige notater',
+    visibleToCustomer: '(synlig for kunde)',
+    internalNotes: 'Interne notater',
+    staffOnly: '(kun ansatte)',
+    partyMenu: 'Festmeny',
+    editPartyMenu: 'Rediger festmeny',
+    hidePartyMenu: 'Skjul festmeny',
+    items: 'elementer',
+    selectedItems: 'elementer valgt',
+    noItemsMatch: 'Ingen elementer samsvarer med søket',
+    noMenuItemsAvailable: 'Ingen menyelementer tilgjengelig for denne gruppen',
+    searchMenuItems: 'Søk i menyelementer…',
+    allItems: 'Alle elementer',
+    allergens: 'Allergener',
+    add: 'Legg til',
+    selectedItemsLabel: 'Valgte elementer:',
+    offerApplied: 'Tilbud brukt',
+    confirmedLabel: 'Bekreftet',
+    mobile: 'Mobil',
+    discount: 'Rabatt',
+    off: 'av',
+    bookingSource: 'Bestillingskilde:',
+    mobileApp: 'Mobilapp',
+    reservationLink: 'Bestillingslenke',
+    deleteReservation: 'Slett',
+    deleting: 'Sletter...',
+    cancel: 'Avbryt',
+    saveChanges: 'Lagre endringer',
+    saving: 'Lagrer...',
+    reservationSaved: 'Bestilling lagret!',
+    reservationDeleted: 'Bestilling slettet!',
+    areYouSure: 'Er du sikker på at du vil slette denne bestillingen?',
+    failedUpdate: 'Kunne ikke oppdatere bestilling',
+    failedDelete: 'Kunne ikke slette bestilling',
+    editBookingTitle: 'Rediger bestilling #',
+    updateNotification: 'Bestilling oppdatert –',
+    pendingRequest: 'Endringsforespørsel',
+    approvedSuccessfully: 'Godkjent',
+    requestRejected: 'Forespørsel avvist',
+    cancellationRequest: 'Avbestillingsforespørsel',
+    customerModifiedBooking: 'Kunde endret bestilling',
+    awaitingApproval: 'Venter på din godkjenning',
+    requestApproved: 'Forespørselen er godkjent og kunden er varslet på e-post.',
+    requestRejectedMessage: 'Forespørselen er avvist. Bestillingen forblir uendret.',
+    customerUpdatedBooking: 'Kunden oppdaterte bestillingen sin:',
+    customerWantsToCancel: 'Kunden vil avbestille:',
+    customerRequested: 'Kunden forespurte:',
+    requestedNewDateTime: 'Forespurt ny dato/tid:',
+    approve: 'Godkjenn',
+    reject: 'Avvis',
+    dismiss: 'Lukk',
+    total: 'Totalt',
+    specialRequests: 'Spesielle ønsker, diettkrav, allergier, feiringer…',
+    staffNotes: 'Ansattnotater, VIP-info, spesielle ordninger, forhåndsbestillinger…',
+    table: 'Bord',
+    cap: 'Kap.',
+    newTable: 'Nytt bord',
+    walkIn: 'Drop-in',
+    allDay: 'Hele dagen',
+    event: 'Arrangement',
+    party: 'Gruppe',
+    viewDetails: 'Vis detaljer',
+  },
+  sv: {
+    editBooking: 'Redigera bokning',
+    bookingId: 'Bokning',
+    customerInformation: 'Kundinformation',
+    customerName: 'Kundnamn',
+    email: 'E-post',
+    phoneNumber: 'Telefonnummer',
+    birthday: 'Födelsedag',
+    customerProvided: 'Kundens uppgift',
+    tableAssignment: 'Bordtilldelning',
+    tables: 'bord',
+    clickToToggle: 'Klicka för att välja · välj flera bord',
+    fitsGuests: 'passar gäster',
+    tooSmall: 'för litet',
+    clearAll: 'Rensa alla',
+    reservationDetails: 'Bokningsdetaljer',
+    date: 'Datum',
+    time: 'Tid (24-timmarsformat)',
+    from: 'Från',
+    to: 'Till',
+    use24Hour: 'Använd 24-timmarsformat (t.ex. 14:30)',
+    numberOfGuests: 'Antal gäster',
+    serviceType: 'Servicetyp',
+    dineIn: 'Äta inne',
+    takeaway: 'Takeaway',
+    delivery: 'Hemleverans',
+    status: 'Status',
+    pending: 'Väntar',
+    confirmed: 'Bekräftad',
+    completed: 'Slutförd',
+    cancelled: 'Avbokad',
+    mealStatus: 'Måltidsstatus',
+    none: '— Ingen —',
+    arrived: 'Anländ',
+    foodDelivered: 'Mat levererad',
+    dessert: 'Efterrätt',
+    billDelivered: 'Nota levererad',
+    tableCleared: 'Bord rensat',
+    noShow: 'Ej anländ',
+    notes: 'Anteckningar',
+    publicNotes: 'Offentliga anteckningar',
+    visibleToCustomer: '(synlig för kund)',
+    internalNotes: 'Interna anteckningar',
+    staffOnly: '(endast personal)',
+    partyMenu: 'Meny för sällskap',
+    editPartyMenu: 'Redigera menyn',
+    hidePartyMenu: 'Dölj menyn',
+    items: 'artiklar',
+    selectedItems: 'artiklar valda',
+    noItemsMatch: 'Inga artiklar matchar sökningen',
+    noMenuItemsAvailable: 'Inga menyalternativ tillgängliga för detta sällskap',
+    searchMenuItems: 'Sök i menyalternativ…',
+    allItems: 'Alla artiklar',
+    allergens: 'Allergener',
+    add: 'Lägg till',
+    selectedItemsLabel: 'Valda artiklar:',
+    offerApplied: 'Erbjudande använt',
+    confirmedLabel: 'Bekräftad',
+    mobile: 'Mobil',
+    discount: 'Rabatt',
+    off: 'av',
+    bookingSource: 'Bokningskälla:',
+    mobileApp: 'Mobilapp',
+    reservationLink: 'Bokningslänk',
+    deleteReservation: 'Ta bort',
+    deleting: 'Tar bort...',
+    cancel: 'Avbryt',
+    saveChanges: 'Spara ändringar',
+    saving: 'Sparar...',
+    reservationSaved: 'Bokning sparad!',
+    reservationDeleted: 'Bokning borttagen!',
+    areYouSure: 'Är du säker på att du vill ta bort denna bokning?',
+    failedUpdate: 'Kunde inte uppdatera bokningen',
+    failedDelete: 'Kunde inte ta bort bokningen',
+    editBookingTitle: 'Redigera bokning #',
+    updateNotification: 'Bokning uppdaterad –',
+    pendingRequest: 'Ändringsförfrågan',
+    approvedSuccessfully: 'Godkänd',
+    requestRejected: 'Förfrågan avvisad',
+    cancellationRequest: 'Avbokningsförfrågan',
+    customerModifiedBooking: 'Kund ändrade bokning',
+    awaitingApproval: 'Väntar på ditt godkännande',
+    requestApproved: 'Förfrågan har godkänts och kunden har meddelats via e-post.',
+    requestRejectedMessage: 'Förfrågan har avvisats. Bokningen förblir oförändrad.',
+    customerUpdatedBooking: 'Kunden uppdaterade sin bokning:',
+    customerWantsToCancel: 'Kunden vill avboka:',
+    customerRequested: 'Kunden begärde:',
+    requestedNewDateTime: 'Begärd ny tid/datum:',
+    approve: 'Godkänn',
+    reject: 'Avvisa',
+    dismiss: 'Stäng',
+    total: 'Totalt',
+    specialRequests: 'Speciella önskemål, kostkrav, allergier, firande…',
+    staffNotes: 'Personalanteckningar, VIP-info, speciella arrangemang, förbeställningar…',
+    table: 'Bord',
+    cap: 'Kap.',
+    newTable: 'Nytt bord',
+    walkIn: 'Drop-in',
+    allDay: 'Hela dagen',
+    event: 'Evenemang',
+    party: 'Sällskap',
+    viewDetails: 'Visa detaljer',
+  },
+  de: {
+    editBooking: 'Buchung bearbeiten',
+    bookingId: 'Buchung',
+    customerInformation: 'Kundeninformation',
+    customerName: 'Kundenname',
+    email: 'E-Mail',
+    phoneNumber: 'Telefonnummer',
+    birthday: 'Geburtstag',
+    customerProvided: 'Kundenangabe',
+    tableAssignment: 'Tischzuweisung',
+    tables: 'Tische',
+    clickToToggle: 'Klicken zum Auswählen · mehrere Tische auswählen',
+    fitsGuests: 'passt Gäste',
+    tooSmall: 'zu klein',
+    clearAll: 'Alle löschen',
+    reservationDetails: 'Buchungsdetails',
+    date: 'Datum',
+    time: 'Uhrzeit (24-Stunden-Format)',
+    from: 'Von',
+    to: 'Bis',
+    use24Hour: '24-Stunden-Format verwenden (z.B. 14:30)',
+    numberOfGuests: 'Anzahl Gäste',
+    serviceType: 'Servicetyp',
+    dineIn: 'Vor Ort',
+    takeaway: 'Zum Mitnehmen',
+    delivery: 'Lieferung',
+    status: 'Status',
+    pending: 'Ausstehend',
+    confirmed: 'Bestätigt',
+    completed: 'Abgeschlossen',
+    cancelled: 'Storniert',
+    mealStatus: 'Mahlzeitstatus',
+    none: '— Keine —',
+    arrived: 'Angekommen',
+    foodDelivered: 'Essen geliefert',
+    dessert: 'Dessert',
+    billDelivered: 'Rechnung geliefert',
+    tableCleared: 'Tisch geräumt',
+    noShow: 'Nicht erschienen',
+    notes: 'Notizen',
+    publicNotes: 'Öffentliche Notizen',
+    visibleToCustomer: '(für Kunden sichtbar)',
+    internalNotes: 'Interne Notizen',
+    staffOnly: '(nur Personal)',
+    partyMenu: 'Partymenü',
+    editPartyMenu: 'Partymenü bearbeiten',
+    hidePartyMenu: 'Partymenü ausblenden',
+    items: 'Artikel',
+    selectedItems: 'Artikel ausgewählt',
+    noItemsMatch: 'Keine Artikel entsprechen der Suche',
+    noMenuItemsAvailable: 'Keine Menüpunkte für diese Gruppe verfügbar',
+    searchMenuItems: 'Menüpunkte durchsuchen…',
+    allItems: 'Alle Artikel',
+    allergens: 'Allergene',
+    add: 'Hinzufügen',
+    selectedItemsLabel: 'Ausgewählte Artikel:',
+    offerApplied: 'Angebot angewendet',
+    confirmedLabel: 'Bestätigt',
+    mobile: 'Mobil',
+    discount: 'Rabatt',
+    off: 'Rabatt',
+    bookingSource: 'Buchungsquelle:',
+    mobileApp: 'Mobile App',
+    reservationLink: 'Buchungslink',
+    deleteReservation: 'Löschen',
+    deleting: 'Lösche...',
+    cancel: 'Abbrechen',
+    saveChanges: 'Änderungen speichern',
+    saving: 'Speichere...',
+    reservationSaved: 'Buchung gespeichert!',
+    reservationDeleted: 'Buchung gelöscht!',
+    areYouSure: 'Möchten Sie diese Buchung wirklich löschen?',
+    failedUpdate: 'Buchung konnte nicht aktualisiert werden',
+    failedDelete: 'Buchung konnte nicht gelöscht werden',
+    editBookingTitle: 'Buchung bearbeiten #',
+    updateNotification: 'Buchung aktualisiert –',
+    pendingRequest: 'Änderungsanfrage',
+    approvedSuccessfully: 'Erfolgreich genehmigt',
+    requestRejected: 'Anfrage abgelehnt',
+    cancellationRequest: 'Stornierungsanfrage',
+    customerModifiedBooking: 'Kunde hat Buchung geändert',
+    awaitingApproval: 'Wartet auf Ihre Genehmigung',
+    requestApproved: 'Die Anfrage wurde genehmigt und der Kunde wurde per E-Mail benachrichtigt.',
+    requestRejectedMessage: 'Die Anfrage wurde abgelehnt. Die Buchung bleibt unverändert.',
+    customerUpdatedBooking: 'Kunde hat seine Buchung aktualisiert:',
+    customerWantsToCancel: 'Kunde möchte stornieren:',
+    customerRequested: 'Kunde hat angefordert:',
+    requestedNewDateTime: 'Angefragtes neues Datum/Uhrzeit:',
+    approve: 'Genehmigen',
+    reject: 'Ablehnen',
+    dismiss: 'Schließen',
+    total: 'Gesamt',
+    specialRequests: 'Besondere Wünsche, Ernährungseinschränkungen, Allergien, Feierlichkeiten…',
+    staffNotes: 'Personalnotizen, VIP-Info, Sondervereinbarungen, Vorbestellungen…',
+    table: 'Tisch',
+    cap: 'Kap.',
+    newTable: 'Neuer Tisch',
+    walkIn: 'Laufkundschaft',
+    allDay: 'Ganztägig',
+    event: 'Veranstaltung',
+    party: 'Gruppe',
+    viewDetails: 'Details anzeigen',
+  },
+};
+
+// ─── MenuItemSelector Component ───────────────────────────────────────────────
+const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemoveItem, onUpdateQuantity, getCategoryName, t }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -47,10 +567,10 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">🍽️ Party Menu Selection</p>
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">🍽️ {t('partyMenu')}</p>
         {totalItems > 0 && (
           <span className="text-xs font-bold bg-[#fe8a24]/10 text-[#fe8a24] px-2.5 py-1 rounded-full">
-            {totalItems} items selected
+            {totalItems} {t('items')} {t('selectedItems')}
           </span>
         )}
       </div>
@@ -62,7 +582,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search menu items…"
+          placeholder={t('searchMenuItems')}
           className="bg-transparent text-sm text-gray-700 focus:outline-none w-full"
         />
         {searchQuery && (
@@ -76,13 +596,13 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
       <div className="max-h-60 overflow-y-auto pr-1 space-y-2">
         {Object.keys(filteredItems).length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">
-            {searchQuery ? 'No items match your search' : 'No menu items available for this party size'}
+            {searchQuery ? t('noItemsMatch') : t('noMenuItemsAvailable')}
           </p>
         ) : (
           Object.keys(filteredItems).map((catId) => {
             const items = filteredItems[catId];
             const isExpanded = expandedCategory === catId;
-            const catName = getCategoryName ? getCategoryName(catId) : (catId === 'uncategorized' ? 'Uncategorized' : catId);
+            const catName = getCategoryName ? getCategoryName(catId) : (catId === 'uncategorized' ? t('allItems') : catId);
 
             return (
               <div key={catId} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -92,7 +612,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                 >
                   <span className="text-xs font-semibold text-gray-700 truncate">{catName}</span>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs text-gray-400">{items.length} items</span>
+                    <span className="text-xs text-gray-400">{items.length} {t('items')}</span>
                     {isExpanded ? <FiChevronDown className="w-4 h-4 text-gray-400" /> : <FiChevronRight className="w-4 h-4 text-gray-400" />}
                   </div>
                 </button>
@@ -118,14 +638,14 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                               {(item.minCapacity > 0 || item.maxCapacity > 0) && (
                                 <span className="text-[10px] text-gray-400">
                                   👥 {item.minCapacity > 0 && item.maxCapacity > 0
-                                    ? `${item.minCapacity}–${item.maxCapacity} guests`
+                                    ? `${item.minCapacity}–${item.maxCapacity} ${t('guests')}`
                                     : item.minCapacity > 0
-                                    ? `${item.minCapacity}+ guests`
-                                    : `up to ${item.maxCapacity} guests`}
+                                    ? `${item.minCapacity}+ ${t('guests')}`
+                                    : `${t('upTo')} ${item.maxCapacity} ${t('guests')}`}
                                 </span>
                               )}
                               {item.allergens?.length > 0 && (
-                                <span className="text-[10px] text-amber-600">⚠️ Allergens</span>
+                                <span className="text-[10px] text-amber-600">⚠️ {t('allergens')}</span>
                               )}
                             </div>
                           </div>
@@ -161,7 +681,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
                               onClick={() => onAddItem(item)}
                               className="flex items-center gap-1 px-3 py-1.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-lg text-xs font-semibold transition-colors flex-shrink-0"
                             >
-                              <FiPlus className="w-3 h-3" /> Add
+                              <FiPlus className="w-3 h-3" /> {t('add')}
                             </button>
                           )}
                         </div>
@@ -178,7 +698,7 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
       {/* Selected items summary */}
       {selectedItems.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-          <p className="text-xs font-semibold text-green-700 mb-2">Selected Items:</p>
+          <p className="text-xs font-semibold text-green-700 mb-2">{t('selectedItemsLabel')}</p>
           <div className="flex flex-wrap gap-1.5">
             {selectedItems.map((si) => (
               <span key={si.id} className="inline-flex items-center gap-1 bg-white border border-green-200 rounded-full px-2.5 py-1 text-xs font-medium text-gray-700">
@@ -193,7 +713,26 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
   );
 };
 
+// ─── Main ReservationModal Component ───────────────────────────────────────────
 const ReservationModal = ({ reservation, onClose }) => {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const [formData, setFormData] = useState({
       customer_name: reservation.customer_name || '',
       customer_email: reservation.customer_email || '',
@@ -415,9 +954,9 @@ const ReservationModal = ({ reservation, onClose }) => {
 
   // Get category name by ID
   const getCategoryName = (catId) => {
-    if (catId === 'uncategorized') return 'Uncategorized';
+    if (catId === 'uncategorized') return t('allItems');
     const cat = menuCategories.find(c => c.id === catId);
-    return cat?.name?.en || cat?.name || catId || 'Uncategorized';
+    return cat?.name?.en || cat?.name || catId || t('allItems');
   };
 
   const handleSave = async () => {
@@ -523,36 +1062,36 @@ const oldTableIds = reservation.table_ids?.length
 
           await sendEmailFn({
             to: formData.customer_email.trim(),
-            subject: `Reservation Updated – ${reservation.restaurant_name || 'Restaurant'}`,
+            subject: `${t('updateNotification')} ${reservation.restaurant_name || 'Restaurant'}`,
             html: `
               <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-                <h2 style="color:#22c55e;">Your reservation has been updated ✏️</h2>
+                <h2 style="color:#22c55e;">${t('updateNotification')} ✏️</h2>
                 <p>Hi ${formData.customer_name?.split(' ')[0] || 'there'},</p>
                 <p>Your booking at <strong>${reservation.restaurant_name || 'Restaurant'}</strong> has been updated. Here are the current details:</p>
                 <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                  <tr><td style="padding:8px 0;color:#888;">Date</td><td><strong>${resDateFormatted}</strong></td></tr>
-                  <tr><td style="padding:8px 0;color:#888;">Time</td><td><strong>${displayFromTime} – ${displayToTime}</strong></td></tr>
-                  <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${formData.number_of_guests}</strong></td></tr>
-                  <tr><td style="padding:8px 0;color:#888;">Table</td><td><strong>${tableNamesStr}</strong></td></tr>
-                  <tr><td style="padding:8px 0;color:#888;">Status</td><td><strong style="text-transform:capitalize;">${formData.status}</strong></td></tr>
-                  ${formData.special_requests?.trim() ? `<tr><td style="padding:8px 0;color:#888;">Special Requests</td><td>${formData.special_requests}</td></tr>` : ''}
+                  <tr><td style="padding:8px 0;color:#888;">${t('date')}</td><td><strong>${resDateFormatted}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">${t('time')}</td><td><strong>${displayFromTime} – ${displayToTime}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">${t('numberOfGuests')}</td><td><strong>${formData.number_of_guests}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">${t('table')}</td><td><strong>${tableNamesStr}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">${t('status')}</td><td><strong style="text-transform:capitalize;">${formData.status}</strong></td></tr>
+                  ${formData.special_requests?.trim() ? `<tr><td style="padding:8px 0;color:#888;">${t('specialRequests')}</td><td>${formData.special_requests}</td></tr>` : ''}
                 </table>
                 <p style="color:#888;font-size:12px;margin-top:8px;">
                   Need to change the time again, or anything else? You can manage your reservation here:
                 </p>
                 <a href="https://booking.dinery.ai/manage-reservation/${reservation.id}"
                   style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
-                  Manage My Reservation
+                  ${t('manageMyReservation')}
                 </a>
                 ${(settings?.contactEmail || settings?.contactPhone) ? `
                   <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
-                    <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 Restaurant Contact</p>
+                    <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 ${t('restaurantContact')}</p>
                     ${settings?.contactEmail ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">✉️ <a href="mailto:${settings.contactEmail}" style="color:#fe8a24;">${settings.contactEmail}</a></p>` : ''}
                     ${settings?.contactPhone ? `<p style="margin:0;font-size:13px;color:#555;">📱 <a href="tel:${settings.contactPhone}" style="color:#fe8a24;">${settings.contactPhone}</a></p>` : ''}
                   </div>
                 ` : ''}
                 <p style="color:#888;font-size:12px;margin-top:16px;">
-                  Questions or feedback? Reach us at <a href="mailto:feedback@yayas.no" style="color:#fe8a24;">feedback@yayas.no</a>
+                  ${t('questionsFeedback')} <a href="mailto:feedback@yayas.no" style="color:#fe8a24;">feedback@yayas.no</a>
                 </p>
                 <p style="color:#888;font-size:12px;margin-top:8px;">— ${reservation.restaurant_name || ''}</p>
               </div>
@@ -564,17 +1103,17 @@ const oldTableIds = reservation.table_ids?.length
       }
 
       console.log('✅ Reservation updated successfully');
-      showToast('Reservation saved successfully!');
+      showToast(t('reservationSaved'));
     } catch (error) {
       console.error('❌ Error updating reservation:', error);
-      alert('Failed to update reservation: ' + error.message);
+      alert(t('failedUpdate') + ': ' + error.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this reservation?')) {
+    if (!window.confirm(t('areYouSure'))) {
       return;
     }
 
@@ -586,10 +1125,10 @@ const oldTableIds = reservation.table_ids?.length
       await deleteDoc(reservationRef);
       await clearAssignedTables();
       console.log('✅ Reservation deleted successfully');
-      showToast('Reservation deleted successfully!', 'delete');
+      showToast(t('reservationDeleted'), 'delete');
     } catch (error) {
       console.error('❌ Error deleting reservation:', error);
-      alert('Failed to delete reservation: ' + error.message);
+      alert(t('failedDelete') + ': ' + error.message);
     } finally {
       setDeleting(false);
     }
@@ -612,13 +1151,13 @@ const oldTableIds = reservation.table_ids?.length
 
   const getMealStatusConfig = (mealStatus) => {
     const map = {
-      'arrived':        { color: '#ef4444', label: 'Arrived', icon: '🔴' },
-      'food_delivered': { color: '#3b82f6', label: 'Food', icon: '🔵' },
-      'dessert':        { color: '#8b5cf6', label: 'Dessert', icon: '🟣' },
-      'bill_delivered': { color: '#eab308', label: 'Bill', icon: '🟡' },
-      'table_cleared':  { color: '#84cc16', label: 'Cleared', icon: '🟢' },
-      'no_show':        { color: '#000000', label: 'No Show', icon: '⚫' },
-      'clear_out':      { color: '#6b7280', label: 'Clear Out', icon: '⚪' },
+      'arrived':        { color: '#ef4444', label: t('arrived'), icon: '🔴' },
+      'food_delivered': { color: '#3b82f6', label: t('foodDelivered'), icon: '🔵' },
+      'dessert':        { color: '#8b5cf6', label: t('dessert'), icon: '🟣' },
+      'bill_delivered': { color: '#eab308', label: t('billDelivered'), icon: '🟡' },
+      'table_cleared':  { color: '#84cc16', label: t('tableCleared'), icon: '🟢' },
+      'no_show':        { color: '#000000', label: t('noShow'), icon: '⚫' },
+      'clear_out':      { color: '#6b7280', label: t('clearOut'), icon: '⚪' },
     };
     return map[mealStatus?.toLowerCase()] || null;
   };
@@ -630,6 +1169,17 @@ const oldTableIds = reservation.table_ids?.length
       r => guestCount >= (r.minGuests || 1) && guestCount <= (r.maxGuests || 99)
     );
     return match ? match.duration : def;
+  };
+
+  // Additional translations needed for email
+  const emailTranslations = {
+    manageMyReservation: 'Manage My Reservation',
+    restaurantContact: 'Restaurant Contact',
+    questionsFeedback: 'Questions or feedback? Reach us at',
+    clearOut: 'Clear Out',
+    upTo: 'up to',
+    guests: 'guests',
+    specialRequests: 'Special Requests',
   };
 
   return (
@@ -664,7 +1214,7 @@ const oldTableIds = reservation.table_ids?.length
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <h3 className="text-base sm:text-2xl font-bold truncate">
-                Edit Booking #{reservation.id.slice(0, 8)}
+                {t('editBooking')} #{reservation.id.slice(0, 8)}
               </h3>
               <p className="text-green-100 text-xs sm:text-sm mt-0.5 sm:mt-1 truncate">
                 {new Date(reservation.created_at?.toDate?.() || reservation.created_at).toLocaleString()}
@@ -685,8 +1235,6 @@ const oldTableIds = reservation.table_ids?.length
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-6">
-          {/* ... (keep all existing content inside here) ... */}
-
           {/* ── Pending Request Banner ── */}
           {(liveReservation.change_request || liveReservation.cancel_reason || liveReservation.modification_summary) && (
           <div className={`mb-4 sm:mb-6 rounded-2xl border-2 overflow-hidden ${
@@ -704,14 +1252,14 @@ const oldTableIds = reservation.table_ids?.length
               'bg-blue-500'
             }`}>
               <span className="text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-                {approvalStatus === 'approved' ? '✅ Approved Successfully' :
-                approvalStatus === 'rejected' ? '✗ Request Rejected' :
-                liveReservation.cancel_reason ? '✕ Cancellation Request' :
-                liveReservation.modification_summary ? '✏️ Customer Modified Booking' :
-                '! Change Request'}
+                {approvalStatus === 'approved' ? `✅ ${t('approvedSuccessfully')}` :
+                approvalStatus === 'rejected' ? `✗ ${t('requestRejected')}` :
+                liveReservation.cancel_reason ? `✕ ${t('cancellationRequest')}` :
+                liveReservation.modification_summary ? `✏️ ${t('customerModifiedBooking')}` :
+                `! ${t('pendingRequest')}`}
               </span>
               {!approvalStatus && !liveReservation.modification_summary && (
-                <span className="ml-auto text-white/70 text-[10px] sm:text-xs">Awaiting your approval</span>
+                <span className="ml-auto text-white/70 text-[10px] sm:text-xs">{t('awaitingApproval')}</span>
               )}
               {liveReservation.modification_summary && !liveReservation.cancel_reason && (
                 <span className="ml-auto text-white/70 text-[10px] sm:text-xs">
@@ -725,15 +1273,15 @@ const oldTableIds = reservation.table_ids?.length
               <div className="flex-1 min-w-0">
                 {approvalStatus === 'approved' ? (
                   <p className="text-xs sm:text-sm font-semibold text-green-700">
-                    ✅ The request has been approved and the customer has been notified by email.
+                    ✅ {t('requestApproved')}
                   </p>
                 ) : approvalStatus === 'rejected' ? (
                   <p className="text-xs sm:text-sm font-semibold text-gray-600">
-                    ✗ The request has been rejected. Reservation remains unchanged.
+                    ✗ {t('requestRejectedMessage')}
                   </p>
                 ) : liveReservation.modification_summary && !liveReservation.cancel_reason ? (
                   <div>
-                    <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-1">Customer updated their booking:</p>
+                    <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-1">{t('customerUpdatedBooking')}</p>
                     <div className="flex flex-wrap gap-1 sm:gap-2 mt-1">
                       {liveReservation.modification_summary.split(' · ').map((change, i) => (
                         <span key={i} className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full">
@@ -755,18 +1303,18 @@ const oldTableIds = reservation.table_ids?.length
                       }
                     }}
                     className="mt-1.5 sm:mt-2 text-[9px] sm:text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
-                    Dismiss
+                    {t('dismiss')}
                   </button>
                   </div>
                 ) : (
                   <>
                     <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-1">
-                      {liveReservation.cancel_reason ? 'Customer wants to cancel:' : 'Customer requested:'}
+                      {liveReservation.cancel_reason ? t('customerWantsToCancel') : t('customerRequested')}
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600 break-words">{liveReservation.change_request || liveReservation.cancel_reason}</p>
                     {liveReservation.requested_date && (
                       <p className="text-[10px] sm:text-xs text-blue-600 font-semibold mt-1">
-                        📅 Requested new date/time: {(() => {
+                        📅 {t('requestedNewDateTime')} {(() => {
                           const d = liveReservation.requested_date?.toDate?.() || new Date(liveReservation.requested_date);
                           const hours = String(d.getHours()).padStart(2, '0');
                           const minutes = String(d.getMinutes()).padStart(2, '0');
@@ -836,7 +1384,7 @@ const oldTableIds = reservation.table_ids?.length
                       }
                     }}
                     className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-all disabled:opacity-50 min-h-[44px] min-w-[60px]">
-                    {approvalStatus === 'loading' ? '...' : '✓ Approve'}
+                    {approvalStatus === 'loading' ? '...' : `✓ ${t('approve')}`}
                   </button>
                   <button
                     disabled={approvalStatus === 'loading'}
@@ -859,7 +1407,7 @@ const oldTableIds = reservation.table_ids?.length
                       }
                     }}
                     className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-all disabled:opacity-50 min-h-[44px] min-w-[60px]">
-                    {approvalStatus === 'loading' ? '...' : '✗ Reject'}
+                    {approvalStatus === 'loading' ? '...' : `✗ ${t('reject')}`}
                   </button>
                 </div>
               )}
@@ -871,13 +1419,13 @@ const oldTableIds = reservation.table_ids?.length
             {/* Customer Information */}
             <div className="space-y-3 sm:space-y-4 flex flex-col">
               <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2">
-                Customer Information
+                {t('customerInformation')}
               </h4>
               
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <FiUser className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  Customer Name *
+                  {t('customerName')} *
                 </label>
                 <input
                   type="text"
@@ -893,7 +1441,7 @@ const oldTableIds = reservation.table_ids?.length
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <FiMail className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  Email
+                  {t('email')}
                 </label>
                 <input
                   type="email"
@@ -908,7 +1456,7 @@ const oldTableIds = reservation.table_ids?.length
                <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <FiPhone className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  Phone Number
+                  {t('phoneNumber')}
                 </label>
                 <input
                   type="tel"
@@ -931,11 +1479,11 @@ const oldTableIds = reservation.table_ids?.length
                 return (
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
-                      🎂 Birthday
+                      🎂 {t('birthday')}
                     </label>
                     <div className="w-full rounded-lg border-2 border-amber-200 bg-amber-50 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center gap-2">
                       <span className="text-xs sm:text-sm font-semibold text-amber-800 truncate">{display}</span>
-                      <span className="ml-auto text-[10px] sm:text-xs text-amber-500 font-medium">Customer provided</span>
+                      <span className="ml-auto text-[10px] sm:text-xs text-amber-500 font-medium">{t('customerProvided')}</span>
                     </div>
                   </div>
                 );
@@ -944,15 +1492,15 @@ const oldTableIds = reservation.table_ids?.length
               {tables.length > 0 && (
                 <div className="flex-1">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                    Table Assignment
+                    {t('tableAssignment')}
                     {selectedTableIds.length > 1 && (
                       <span className="ml-2 text-[10px] sm:text-xs font-bold text-purple-600 bg-purple-100 px-1.5 sm:px-2 py-0.5 rounded-full">
-                        ⛓ {selectedTableIds.length} tables
+                        ⛓ {selectedTableIds.length} {t('tables')}
                       </span>
                     )}
                   </label>
                   <div className="border-2 border-gray-200 rounded-xl p-2 overflow-y-auto" style={{ maxHeight: 220 }}>
-                    <p className="text-[10px] sm:text-xs text-gray-400 mb-2">Click to toggle · select multiple tables</p>
+                    <p className="text-[10px] sm:text-xs text-gray-400 mb-2">{t('clickToToggle')}</p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
                       {tables.map(t => {
                         const isSelected = selectedTableIds.includes(t.id);
@@ -969,7 +1517,7 @@ const oldTableIds = reservation.table_ids?.length
                                   : [...prev, t.id]
                               );
                             }}
-                            title={`${t.name} · Cap. ${cap}`}
+                            title={`${t.name} · ${t('cap')}. ${cap}`}
                             className={`relative rounded-lg px-0.5 sm:px-1 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 min-h-[44px] ${
                               isSelected
                                 ? 'bg-[#fe8a24] border-[#fe8a24] text-white shadow-md scale-105'
@@ -991,17 +1539,17 @@ const oldTableIds = reservation.table_ids?.length
                     </div>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 pt-2 border-t border-gray-100">
                       <span className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-400">
-                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400 inline-block" /> fits guests
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400 inline-block" /> {t('fitsGuests')}
                       </span>
                       <span className="flex items-center gap-1 text-[9px] sm:text-[10px] text-gray-400">
-                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-orange-400 inline-block" /> too small
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-orange-400 inline-block" /> {t('tooSmall')}
                       </span>
                       <button
                         type="button"
                         onClick={() => setSelectedTableIds([])}
                         className="ml-auto text-[9px] sm:text-[10px] text-gray-400 hover:text-red-500 transition-colors min-h-[32px] min-w-[32px]"
                       >
-                        Clear all
+                        {t('clearAll')}
                       </button>
                     </div>
                   </div>
@@ -1012,12 +1560,12 @@ const oldTableIds = reservation.table_ids?.length
             {/* Reservation Details */}
             <div className="space-y-3 sm:space-y-4">
               <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2">
-                Reservation Details
+                {t('reservationDetails')}
               </h4>
               
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Date *
+                  {t('date')} *
                 </label>
                 <input
                   type="date"
@@ -1032,12 +1580,12 @@ const oldTableIds = reservation.table_ids?.length
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <FiClock className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  Time (24-hour format) *
+                  {t('time')} *
                 </label>
                 <div className="flex flex-col sm:flex-row items-center gap-2">
                   {/* From */}
                 <div className="w-full sm:flex-1 border-2 border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus-within:border-orange-500 transition-colors">
-                  <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">From</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">{t('from')}</p>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -1070,7 +1618,7 @@ const oldTableIds = reservation.table_ids?.length
                 </div>
                 {/* To */}
                 <div className="w-full sm:flex-1 border-2 border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus-within:border-orange-500 transition-colors">
-                  <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">To</p>
+                  <p className="text-[10px] sm:text-xs text-gray-400 mb-0.5 sm:mb-1">{t('to')}</p>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -1100,13 +1648,13 @@ const oldTableIds = reservation.table_ids?.length
                   />
                 </div>
                 </div>
-                <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Use 24-hour format (e.g., 14:30 for 2:30 PM)</p>
+                <p className="text-[10px] sm:text-xs text-gray-400 mt-1">{t('use24Hour')}</p>
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                   <FiUsers className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                  Number of Guests *
+                  {t('numberOfGuests')} *
                 </label>
                <input
                     type="number"
@@ -1140,7 +1688,7 @@ const oldTableIds = reservation.table_ids?.length
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Service Type
+                  {t('serviceType')}
                 </label>
                 <select
                   name="ServiceType_Reservation"
@@ -1148,15 +1696,15 @@ const oldTableIds = reservation.table_ids?.length
                   onChange={handleChange}
                   className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                 >
-                  <option value="dine-in">Dine-In</option>
-                  <option value="takeaway">Takeaway</option>
-                  <option value="delivery">Delivery</option>
+                  <option value="dine-in">{t('dineIn')}</option>
+                  <option value="takeaway">{t('takeaway')}</option>
+                  <option value="delivery">{t('delivery')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                  Status
+                  {t('status')}
                 </label>
                 <select
                   name="status"
@@ -1164,10 +1712,10 @@ const oldTableIds = reservation.table_ids?.length
                   onChange={handleChange}
                   className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="pending">{t('pending')}</option>
+                  <option value="confirmed">{t('confirmed')}</option>
+                  <option value="completed">{t('completed')}</option>
+                  <option value="cancelled">{t('cancelled')}</option>
                 </select>
               </div>
             </div>
@@ -1175,27 +1723,27 @@ const oldTableIds = reservation.table_ids?.length
             {/* Meal Status - Full Width */}
             <div className="md:col-span-2">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Meal Status
+                {t('mealStatus')}
               </label>
               <select
                 value={formData.meal_status || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, meal_status: e.target.value || null }))}
                 className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors"
               >
-                <option value="">— None —</option>
-                <option value="arrived">🔴 Arrived</option>
-                <option value="food_delivered">🔵 Food Delivered</option>
-                <option value="dessert">🟣 Dessert</option>
-                <option value="bill_delivered">🟡 Bill Delivered</option>
-                <option value="table_cleared">🟢 Table Cleared</option>
-                <option value="no_show">⚫ No Show</option>
+                <option value="">{t('none')}</option>
+                <option value="arrived">🔴 {t('arrived')}</option>
+                <option value="food_delivered">🔵 {t('foodDelivered')}</option>
+                <option value="dessert">🟣 {t('dessert')}</option>
+                <option value="bill_delivered">🟡 {t('billDelivered')}</option>
+                <option value="table_cleared">🟢 {t('tableCleared')}</option>
+                <option value="no_show">⚫ {t('noShow')}</option>
               </select>
             </div>
 
             {/* Notes Section - Full Width */}
             <div className="md:col-span-2">
               <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2 mb-3 sm:mb-4">
-                Notes
+                {t('notes')}
               </h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -1203,7 +1751,7 @@ const oldTableIds = reservation.table_ids?.length
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                     <FiGlobe className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                    Public Notes <span className="text-[10px] sm:text-xs text-gray-400 font-normal">(visible to customer)</span>
+                    {t('publicNotes')} <span className="text-[10px] sm:text-xs text-gray-400 font-normal">{t('visibleToCustomer')}</span>
                   </label>
                   <textarea
                     name="special_requests"
@@ -1211,7 +1759,7 @@ const oldTableIds = reservation.table_ids?.length
                     onChange={handleChange}
                     rows="4"
                     className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors resize-none"
-                    placeholder="Special requests, dietary requirements, allergies, celebrations…"
+                    placeholder={t('specialRequests')}
                   />
                 </div>
 
@@ -1219,7 +1767,7 @@ const oldTableIds = reservation.table_ids?.length
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2 flex items-center gap-2">
                     <FiLock className="w-4 h-4 text-purple-500 flex-shrink-0" />
-                    Internal Notes <span className="text-[10px] sm:text-xs text-gray-400 font-normal">(staff only)</span>
+                    {t('internalNotes')} <span className="text-[10px] sm:text-xs text-gray-400 font-normal">{t('staffOnly')}</span>
                   </label>
                   <textarea
                     name="internal_notes"
@@ -1227,7 +1775,7 @@ const oldTableIds = reservation.table_ids?.length
                     onChange={handleChange}
                     rows="4"
                     className="w-full rounded-lg border-2 border-gray-200 px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:outline-none focus:border-orange-500 transition-colors resize-none"
-                    placeholder="Staff notes, VIP info, special arrangements, pre-order details…"
+                    placeholder={t('staffNotes')}
                   />
                 </div>
               </div>
@@ -1236,7 +1784,7 @@ const oldTableIds = reservation.table_ids?.length
             {/* ── Party Menu Section ── */}
             <div className="md:col-span-2">
               <h4 className="text-base sm:text-lg font-semibold text-gray-900 border-b pb-2 mb-3 sm:mb-4">
-                🍽️ Party Menu
+                🍽️ {t('partyMenu')}
               </h4>
               
               {menuItems.length > 0 && (
@@ -1247,10 +1795,10 @@ const oldTableIds = reservation.table_ids?.length
                     className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-semibold text-[#fe8a24] hover:text-[#ff9d47] transition-colors min-h-[44px]"
                   >
                     {showMenuSelector ? <FiChevronDown className="w-4 h-4" /> : <FiChevronRight className="w-4 h-4" />}
-                    {showMenuSelector ? 'Hide Party Menu' : 'Edit Party Menu'}
+                    {showMenuSelector ? t('hidePartyMenu') : t('editPartyMenu')}
                     {selectedMenuItems.length > 0 && (
                       <span className="text-[10px] sm:text-xs bg-[#fe8a24] text-white px-1.5 sm:px-2 py-0.5 rounded-full">
-                        {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} items
+                        {selectedMenuItems.reduce((sum, i) => sum + i.quantity, 0)} {t('items')}
                       </span>
                     )}
                   </button>
@@ -1269,6 +1817,7 @@ const oldTableIds = reservation.table_ids?.length
                           onRemoveItem={handleRemoveMenuItem}
                           onUpdateQuantity={handleUpdateMenuItemQuantity}
                           getCategoryName={getCategoryName}
+                          t={t}
                         />
                       )}
                     </div>
@@ -1302,11 +1851,11 @@ const oldTableIds = reservation.table_ids?.length
                   </div>
                   <div className="px-3 sm:px-4 py-1.5 sm:py-2 bg-orange-100 border-t border-orange-200 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[10px] sm:text-xs font-semibold text-orange-700">
-                      {reservation.selected_menu_items.reduce((s, i) => s + (i.quantity || 1), 0)} items selected
+                      {reservation.selected_menu_items.reduce((s, i) => s + (i.quantity || 1), 0)} {t('items')} {t('selectedItems')}
                     </span>
                     {reservation.selected_menu_items.some(i => i.price) && (
                       <span className="text-xs sm:text-sm font-bold text-[#fe8a24]">
-                        Total: {reservation.selected_menu_items.reduce((s, i) =>
+                        {t('total')}: {reservation.selected_menu_items.reduce((s, i) =>
                           s + (parseFloat(i.price) || 0) * (i.quantity || 1), 0
                         ).toFixed(0)},-
                       </span>
@@ -1323,7 +1872,7 @@ const oldTableIds = reservation.table_ids?.length
                   {/* Source badge */}
                   {formData.source && (
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">Booking Source:</span>
+                      <span className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bookingSource')}</span>
                       <span className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold ${
                         formData.source === 'mobile_app'
                           ? 'bg-purple-100 text-purple-700 border border-purple-200'
@@ -1331,8 +1880,8 @@ const oldTableIds = reservation.table_ids?.length
                           ? 'bg-blue-100 text-blue-700 border border-blue-200'
                           : 'bg-gray-100 text-gray-700 border border-gray-200'
                       }`}>
-                        {formData.source === 'mobile_app' ? 'Mobile App' :
-                        formData.source === 'reservation_link' ? '🔗 Reservation Link' :
+                        {formData.source === 'mobile_app' ? t('mobileApp') :
+                        formData.source === 'reservation_link' ? `🔗 ${t('reservationLink')}` :
                         formData.source}
                       </span>
                     </div>
@@ -1352,16 +1901,16 @@ const oldTableIds = reservation.table_ids?.length
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <h4 className="font-bold text-amber-900 text-xs sm:text-sm uppercase tracking-wide">
-                            Offer Applied
+                            {t('offerApplied')}
                           </h4>
                           {reservation.coupon_confirmed && (
                             <span className="text-[9px] sm:text-xs bg-green-500 text-white px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
-                              ✓ Confirmed
+                              ✓ {t('confirmedLabel')}
                             </span>
                           )}
                           {formData.source === 'mobile_app' && (
                             <span className="text-[9px] sm:text-xs bg-purple-500 text-white px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
-                              Mobile
+                              {t('mobile')}
                             </span>
                           )}
                         </div>
@@ -1375,8 +1924,8 @@ const oldTableIds = reservation.table_ids?.length
                             <div className="flex items-center gap-1.5 bg-white border border-amber-200 rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 shadow-sm">
                               <span className="text-amber-500 font-bold text-base sm:text-lg">%</span>
                               <div>
-                                <p className="text-[9px] sm:text-xs text-gray-500 leading-none">Discount</p>
-                                <p className="text-xs sm:text-sm font-bold text-gray-900">{formData.discount_percent}% off</p>
+                                <p className="text-[9px] sm:text-xs text-gray-500 leading-none">{t('discount')}</p>
+                                <p className="text-xs sm:text-sm font-bold text-gray-900">{formData.discount_percent}% {t('off')}</p>
                               </div>
                             </div>
                           )}
@@ -1402,7 +1951,7 @@ const oldTableIds = reservation.table_ids?.length
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm min-h-[48px] min-w-[80px]"
           >
             <FiTrash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-            {deleting ? 'Deleting...' : 'Delete'}
+            {deleting ? t('deleting') : t('deleteReservation')}
           </button>
 
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 w-full sm:w-auto">
@@ -1414,7 +1963,7 @@ const oldTableIds = reservation.table_ids?.length
               }}
               className="w-full sm:w-auto px-4 sm:px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm min-h-[48px] min-w-[80px]"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={handleSave}
@@ -1426,7 +1975,7 @@ const oldTableIds = reservation.table_ids?.length
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 sm:px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm min-h-[48px] min-w-[80px]"
             >
               <FiSave className="w-4 h-4 sm:w-5 sm:h-5" />
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('saving') : t('saveChanges')}
             </button>
           </div>
         </div>

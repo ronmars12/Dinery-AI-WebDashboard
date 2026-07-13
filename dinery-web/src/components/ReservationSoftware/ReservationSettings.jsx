@@ -1,4 +1,4 @@
-// ReservationSettings.jsx - Updated with text-only tabs
+// ReservationSettings.jsx - Updated with text-only tabs and language support
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, getDocs, collection, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
@@ -6,8 +6,928 @@ import { FiCheck, FiX, FiSave, FiClock, FiCalendar, FiUsers, FiBell, FiMonitor, 
 
 const db = getFirestore();
 
-// ── Menu Category Panel ────────────────────────────────────────────────────
-const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    // General
+    general: 'General',
+    booking: 'Booking',
+    menu: 'Menu',
+    tables: 'Tables',
+    hours: 'Hours',
+    timeSlots: 'Time Slots',
+    notifications: 'Notifications',
+    display: 'Display',
+    // Settings labels
+    twentyFourHourFormat: '24-Hour Time Format',
+    displayTimes24Hour: 'Display times in 24-hour format',
+    diningDuration: 'Dining Duration',
+    defaultDiningTime: 'Default time for dining',
+    tableCleanup: 'Table Cleanup',
+    timeBetweenReservations: 'Time between reservations',
+    totalSlotTime: 'Total slot time',
+    diningAndCleanup: 'Dining + Cleanup',
+    guestBasedDuration: 'Guest-Based Duration',
+    setDurationByPartySize: 'Set different dining durations based on party size',
+    defineDurationPerRange: 'Define duration (minutes) per guest range. Ranges are evaluated top to bottom — first match wins.',
+    previewByPartySize: 'Preview by party size:',
+    addRule: 'Add Rule',
+    advanceBooking: 'Advance Booking',
+    maxDaysInAdvance: 'Max days in advance',
+    minNotice: 'Min Notice',
+    hoursBeforeBooking: 'Hours before booking',
+    // Booking tab
+    publicBookingPage: 'Public booking page settings',
+    controlCustomerFields: 'Control what customers see and need to provide',
+    contactInfo: 'Contact Info',
+    usedInConfirmationEmails: 'Used in confirmation emails sent to customers',
+    contactEmail: 'Contact Email',
+    contactPhone: 'Contact Phone',
+    requireFullName: 'Require Full Name',
+    makeFullNameMandatory: 'Make full name mandatory',
+    requireEmail: 'Require Email',
+    makeEmailMandatory: 'Make email mandatory',
+    requirePhone: 'Require Phone',
+    makePhoneMandatory: 'Make phone mandatory',
+    showCompanyField: 'Show Company Field',
+    displayCompanyField: 'Display company field',
+    showNotesField: 'Show Notes Field',
+    allowSpecialRequests: 'Allow special requests',
+    maxPartySize: 'Max Party Size',
+    maximumGuestsPerBooking: 'Maximum guests per online booking',
+    minPartySize: 'Min Party Size',
+    minimumGuestsAllowed: 'Minimum guests allowed',
+    overallMaximum: 'Overall maximum — based on largest table',
+    blockFullSlots: 'Block Full Slots',
+    preventBookingsWhenFull: 'Prevent bookings when full',
+    allowWalkIns: 'Allow Walk-ins',
+    walkInsWithoutTable: 'Walk-ins without table assignment',
+    birthdayOffer: 'Birthday Offer',
+    showBirthdayField: 'Show Birthday Field',
+    askCustomersForBirthday: 'Ask customers for their birthday',
+    birthdayOfferMessage: 'Birthday Offer Message',
+    shownAboveBirthdayPicker: 'Shown above the birthday date picker',
+    menuOnBookingPage: 'Menu on Booking Page',
+    showMenuOnPublicPage: 'Show Menu on Public Page',
+    displayMenuBelowBooking: 'Display your menu below the booking form',
+    minGuestsToShowMenu: 'Min Guests to Show Menu',
+    menuAppearsWhenPartySize: 'Menu only appears when party size reaches this number',
+    requireGroupMenuSelection: 'Require Group Menu Selection',
+    forceCustomersToSelectItem: 'Force customers to select a menu item before confirming',
+    requirementMessage: 'Requirement Message',
+    shownWhenGroupMenuRequired: 'Shown when group menu selection is required',
+    menuSectionTitle: 'Menu Section Title',
+    headingShownAboveMenu: 'Heading shown above the menu',
+    menuSectionSubtitle: 'Menu Section Subtitle',
+    shownBelowTitle: 'Shown below the title',
+    reservationSuccessPage: 'Reservation Success Page',
+    thankYouMessage: 'Thank You Message',
+    shownAfterSuccessfulReservation: 'Shown after a successful reservation',
+    restaurantPageUrl: 'Restaurant Page URL',
+    linkShownOnSuccessPage: 'Link shown on success page to return to your website',
+    offerCampaignCode: 'Offer / Campaign Code',
+    oneUnifiedCodeField: 'One unified code field for every marketing channel — CRM thank-you emails, Facebook, Instagram, Google Ads, flyers/QR codes, or the Dinery App. Links can pre-fill it automatically; guests can also type a code in manually.',
+    enableOfferCodeField: 'Enable Offer Code Field',
+    showOfferCodeField: 'Show an offer code field on the public reservation page',
+    fieldLabel: 'Field Label',
+    shownAboveOfferCodeInput: 'Shown above the offer code input',
+    // Tables tab
+    requireTableAssignment: 'Require Table Assignment',
+    blockIfNoSuitableTable: 'Block if no suitable table',
+    autoAssignTables: 'Auto-Assign Tables',
+    automaticTableAssignment: 'Automatic table assignment',
+    allowOverbooking: 'Allow Overbooking',
+    allowOverCapacity: 'Allow over capacity (not recommended)',
+    showCapacityWarnings: 'Show Capacity Warnings',
+    alertWhenPartyExceedsCapacity: 'Alert when party exceeds capacity',
+    // Hours tab
+    closed: 'Closed',
+    slotInterval: 'Slot Interval',
+    howOftenTimeSlotsDisplayed: 'Slot Interval: how often time slots are displayed',
+    noStartBuffer: 'No start buffer',
+    startBuffer: 'start buffer',
+    noEndBuffer: 'No end buffer',
+    endBuffer: 'end buffer',
+    notAcceptingBookings: 'Not accepting bookings',
+    noOperatingHoursSet: 'No operating hours set',
+    configureRestaurantHours: 'Please configure restaurant hours in main settings first',
+    // Time Slots tab
+    individualTimeSlotControl: 'Individual Time Slot Control',
+    toggleSpecificTimeSlots: 'Toggle specific time slots on/off for each day. Green = available, Red = blocked.',
+    restaurantHours: 'Restaurant hours',
+    bookings: 'bookings',
+    minSlots: 'min slots',
+    totalSlots: 'total slots',
+    availableTimeSlots: 'Available Time Slots',
+    available: 'Available',
+    blocked: 'Blocked',
+    enableAllSlots: 'Enable All Slots',
+    disableAllSlots: 'Disable All Slots',
+    restaurantClosedOn: 'Restaurant is closed on',
+    noOperatingHoursConfigured: 'No operating hours configured',
+    setOperatingHoursFirst: 'Please set your restaurant\'s operating hours in the main settings before configuring time slot availability.',
+    howThisWorks: 'How this works',
+    greenSlotsAvailable: 'Green slots are available for customer bookings',
+    redSlotsBlocked: 'Red crossed slots are blocked and won\'t appear on booking pages',
+    clickToToggleSlot: 'Click any time slot to toggle it between available and blocked',
+    useEnableAllDisableAll: 'Use "Enable All" or "Disable All" for quick batch changes',
+    slotsBasedOnInterval: 'Time slots are based on the interval setting in the "Hours" tab (15/30/60 min)',
+    dontForgetToSave: 'Don\'t forget to click "Save Changes" at the bottom!',
+    // Notifications tab
+    confirmationEmail: 'Confirmation Email',
+    sendWhenBookingConfirmed: 'Send when booking confirmed',
+    reminderEmail: 'Reminder Email',
+    sendBeforeReservation: 'Send before reservation',
+    reminderTime: 'Reminder Time',
+    hoursBeforeReservation: 'Hours before reservation',
+    // Display tab
+    timeBarStartOfHour: 'Time Bar Start of Hour',
+    showHourLabelsAtBeginning: 'Show hour labels at beginning',
+    highlightCurrentTime: 'Highlight Current Time',
+    showCurrentTimeIndicator: 'Show current time indicator',
+    // Menu panel
+    categories: 'Categories',
+    allItems: 'All Items',
+    addCategory: 'Add Category',
+    editCategory: 'Edit Category',
+    addItem: 'Add Item',
+    editItem: 'Edit Item',
+    itemName: 'Item Name',
+    price: 'Price',
+    allergens: 'Allergens',
+    attributes: 'Attributes',
+    actions: 'Actions',
+    noMenuItemsYet: 'No menu items yet',
+    addFirstItem: 'Click "Add Item" to create your first menu item',
+    addFirstItemBtn: 'Add First Item',
+    searchMenuItems: 'Search menu items…',
+    summary: 'Summary',
+    total: 'total',
+    active: 'active',
+    hidden: 'hidden',
+    // Category modal
+    color: 'Color',
+    categoryName: 'Category Name',
+    subcategories: 'Subcategories',
+    addSubcategory: 'Add subcategory…',
+    add: 'Add',
+    // Item modal
+    content: 'Content',
+    select: '— Select —',
+    none: '— None —',
+    // Delete confirm
+    delete: 'Delete',
+    deleteItem: 'Delete {type}?',
+    deleteConfirm: '"{name}" will be permanently removed.',
+    cancel: 'Cancel',
+    deleting: 'Deleting…',
+    // Save
+    saving: 'Saving...',
+    saved: 'Saved!',
+    saveChanges: 'Save Changes',
+    // Toast
+    categoryAdded: 'Category added',
+    categoryUpdated: 'Category updated',
+    itemAdded: 'Item added',
+    itemUpdated: 'Item updated',
+    deleted: 'Deleted',
+    failed: 'Failed',
+    // Status
+    activeStatus: 'Active',
+    hiddenStatus: 'Hidden',
+    on: 'on',
+    off: 'off',
+    // Responsive tab labels
+    slots: 'Slots',
+    alerts: 'Alerts',
+    view: 'View',
+    seats: 'Seats',
+    book: 'Book',
+  },
+  fi: {
+    general: 'Yleiset',
+    booking: 'Varaus',
+    menu: 'Ruokalista',
+    tables: 'Pöydät',
+    hours: 'Aukioloajat',
+    timeSlots: 'Aikavälit',
+    notifications: 'Ilmoitukset',
+    display: 'Näyttö',
+    twentyFourHourFormat: '24 tunnin aikamuoto',
+    displayTimes24Hour: 'Näytä ajat 24 tunnin muodossa',
+    diningDuration: 'Ruokailuaika',
+    defaultDiningTime: 'Oletusaika ruokailulle',
+    tableCleanup: 'Pöydän siivous',
+    timeBetweenReservations: 'Aika varausten välillä',
+    totalSlotTime: 'Kokonaisaika',
+    diningAndCleanup: 'Ruokailu + Siivous',
+    guestBasedDuration: 'Vierasmäärään perustuva kesto',
+    setDurationByPartySize: 'Aseta eri ruokailuajat seurueen koon mukaan',
+    defineDurationPerRange: 'Määritä kesto (minuutteina) vierasmääräalueittain. Alueet arvioidaan ylhäältä alas — ensimmäinen osuma voittaa.',
+    previewByPartySize: 'Esikatselu seurueen koon mukaan:',
+    addRule: 'Lisää sääntö',
+    advanceBooking: 'Ennakkovaraus',
+    maxDaysInAdvance: 'Maksimipäivät etukäteen',
+    minNotice: 'Vähimmäisilmoitus',
+    hoursBeforeBooking: 'Tuntia ennen varausta',
+    publicBookingPage: 'Julkisen varaussivun asetukset',
+    controlCustomerFields: 'Hallitse, mitä asiakkaat näkevät ja mitä heidän tulee antaa',
+    contactInfo: 'Yhteystiedot',
+    usedInConfirmationEmails: 'Käytetään asiakkaille lähetettävissä vahvistussähköposteissa',
+    contactEmail: 'Yhteyssähköposti',
+    contactPhone: 'Yhteyspuhelin',
+    requireFullName: 'Vaadi koko nimi',
+    makeFullNameMandatory: 'Tee koko nimestä pakollinen',
+    requireEmail: 'Vaadi sähköposti',
+    makeEmailMandatory: 'Tee sähköpostista pakollinen',
+    requirePhone: 'Vaadi puhelin',
+    makePhoneMandatory: 'Tee puhelimesta pakollinen',
+    showCompanyField: 'Näytä yrityskenttä',
+    displayCompanyField: 'Näytä yrityskenttä',
+    showNotesField: 'Näytä muistiinpanokenttä',
+    allowSpecialRequests: 'Salli erityistoiveet',
+    maxPartySize: 'Maksimiseurueen koko',
+    maximumGuestsPerBooking: 'Maksimivierasmäärä verkkovarauksessa',
+    minPartySize: 'Minimiseurueen koko',
+    minimumGuestsAllowed: 'Sallittu vähimmäisvierasmäärä',
+    overallMaximum: 'Yleinen maksimi — perustuu suurimpaan pöytään',
+    blockFullSlots: 'Estä täydet ajat',
+    preventBookingsWhenFull: 'Estä varaukset kun täynnä',
+    allowWalkIns: 'Salli kävelyt',
+    walkInsWithoutTable: 'Kävelyt ilman pöytävarausta',
+    birthdayOffer: 'Syntymäpäivätarjous',
+    showBirthdayField: 'Näytä syntymäpäiväkenttä',
+    askCustomersForBirthday: 'Kysy asiakkailta syntymäpäivä',
+    birthdayOfferMessage: 'Syntymäpäivätarjouksen viesti',
+    shownAboveBirthdayPicker: 'Näytetään syntymäpäivävalitsimen yläpuolella',
+    menuOnBookingPage: 'Ruokalista varaussivulla',
+    showMenuOnPublicPage: 'Näytä ruokalista julkisella sivulla',
+    displayMenuBelowBooking: 'Näytä ruokalista varauslomakkeen alapuolella',
+    minGuestsToShowMenu: 'Minimivieraat ruokalistan näyttämiseen',
+    menuAppearsWhenPartySize: 'Ruokalista näkyy vain, kun seurueen koko saavuttaa tämän määrän',
+    requireGroupMenuSelection: 'Vaadi ryhmäruokalistan valinta',
+    forceCustomersToSelectItem: 'Pakota asiakkaat valitsemaan ruokalistalta ennen vahvistusta',
+    requirementMessage: 'Vaatimusviesti',
+    shownWhenGroupMenuRequired: 'Näytetään, kun ryhmäruokalistan valinta vaaditaan',
+    menuSectionTitle: 'Ruokalistaosion otsikko',
+    headingShownAboveMenu: 'Otsikko, joka näkyy ruokalistan yläpuolella',
+    menuSectionSubtitle: 'Ruokalistaosion alaotsikko',
+    shownBelowTitle: 'Näytetään otsikon alapuolella',
+    reservationSuccessPage: 'Varauksen onnistumissivu',
+    thankYouMessage: 'Kiitosviesti',
+    shownAfterSuccessfulReservation: 'Näytetään onnistuneen varauksen jälkeen',
+    restaurantPageUrl: 'Ravintolan sivun URL',
+    linkShownOnSuccessPage: 'Linkki, joka näkyy onnistumissivulla paluuta varten verkkosivustollesi',
+    offerCampaignCode: 'Tarjous / Kampanjakoodi',
+    oneUnifiedCodeField: 'Yksi yhtenäinen koodikenttä kaikille markkinointikanaville — CRM-kiitos-sähköpostit, Facebook, Instagram, Google Ads, mainokset/QR-koodit tai Dinery-sovellus. Linkit voivat täyttää sen automaattisesti; asiakkaat voivat myös kirjoittaa koodin manuaalisesti.',
+    enableOfferCodeField: 'Ota tarjouskoodikenttä käyttöön',
+    showOfferCodeField: 'Näytä tarjouskoodikenttä julkisella varaussivulla',
+    fieldLabel: 'Kentän nimi',
+    shownAboveOfferCodeInput: 'Näytetään tarjouskoodikentän yläpuolella',
+    requireTableAssignment: 'Vaadi pöytävaraus',
+    blockIfNoSuitableTable: 'Estä, jos sopivaa pöytää ei ole',
+    autoAssignTables: 'Automaattinen pöydänvaraus',
+    automaticTableAssignment: 'Automaattinen pöydän määritys',
+    allowOverbooking: 'Salli ylivaraus',
+    allowOverCapacity: 'Salli kapasiteetin ylittäminen (ei suositeltava)',
+    showCapacityWarnings: 'Näytä kapasiteettivaroitukset',
+    alertWhenPartyExceedsCapacity: 'Varoita, kun seurue ylittää kapasiteetin',
+    closed: 'Suljettu',
+    slotInterval: 'Aikavälin pituus',
+    howOftenTimeSlotsDisplayed: 'Aikavälin pituus: kuinka usein aikavälit näytetään',
+    noStartBuffer: 'Ei alkupuskuria',
+    startBuffer: 'alkupuskuri',
+    noEndBuffer: 'Ei loppupuskuria',
+    endBuffer: 'loppupuskuri',
+    notAcceptingBookings: 'Ei ota vastaan varauksia',
+    noOperatingHoursSet: 'Aukioloaikoja ei ole asetettu',
+    configureRestaurantHours: 'Määritä ravintolan aukioloajat ensin pääasetuksissa',
+    individualTimeSlotControl: 'Yksittäisten aikavälien hallinta',
+    toggleSpecificTimeSlots: 'Kytke yksittäiset aikavälit päälle/pois jokaiselle päivälle. Vihreä = saatavilla, Punainen = estetty.',
+    restaurantHours: 'Ravintolan aukioloajat',
+    bookings: 'varaukset',
+    minSlots: 'min aikaväliä',
+    totalSlots: 'yhteensä aikaväliä',
+    availableTimeSlots: 'Saatavilla olevat aikavälit',
+    available: 'Saatavilla',
+    blocked: 'Estetty',
+    enableAllSlots: 'Ota kaikki käyttöön',
+    disableAllSlots: 'Estä kaikki',
+    restaurantClosedOn: 'Ravintola on suljettu',
+    noOperatingHoursConfigured: 'Aukioloaikoja ei ole määritetty',
+    setOperatingHoursFirst: 'Aseta ravintolan aukioloajat pääasetuksissa ennen aikavälien määrittämistä.',
+    howThisWorks: 'Näin tämä toimii',
+    greenSlotsAvailable: 'Vihreät aikavälit ovat saatavilla asiakasvarauksia varten',
+    redSlotsBlocked: 'Punaiset yliviivatut aikavälit on estetty eivätkä näy varaussivuilla',
+    clickToToggleSlot: 'Napsauta mitä tahansa aikaväliä vaihtaaksesi sen saatavuuden ja eston välillä',
+    useEnableAllDisableAll: 'Käytä "Ota kaikki käyttöön" tai "Estä kaikki" nopeisiin erämuutoksiin',
+    slotsBasedOnInterval: 'Aikavälit perustuvat "Aukioloajat"-välilehden aikaväliasetukseen (15/30/60 min)',
+    dontForgetToSave: 'Älä unohda napsauttaa "Tallenna muutokset" alareunassa!',
+    confirmationEmail: 'Vahvistussähköposti',
+    sendWhenBookingConfirmed: 'Lähetä, kun varaus vahvistetaan',
+    reminderEmail: 'Muistutussähköposti',
+    sendBeforeReservation: 'Lähetä ennen varausta',
+    reminderTime: 'Muistutusaika',
+    hoursBeforeReservation: 'Tuntia ennen varausta',
+    timeBarStartOfHour: 'Aikapalkki tunnin alussa',
+    showHourLabelsAtBeginning: 'Näytä tuntimerkit alussa',
+    highlightCurrentTime: 'Korosta nykyinen aika',
+    showCurrentTimeIndicator: 'Näytä nykyinen aikamerkki',
+    categories: 'Kategoriat',
+    allItems: 'Kaikki tuotteet',
+    addCategory: 'Lisää kategoria',
+    editCategory: 'Muokkaa kategoriaa',
+    addItem: 'Lisää tuote',
+    editItem: 'Muokkaa tuotetta',
+    itemName: 'Tuotteen nimi',
+    price: 'Hinta',
+    allergens: 'Allergeenit',
+    attributes: 'Ominaisuudet',
+    actions: 'Toiminnot',
+    noMenuItemsYet: 'Ei vielä ruokalistan tuotteita',
+    addFirstItem: 'Napsauta "Lisää tuote" luodaksesi ensimmäisen tuotteen',
+    addFirstItemBtn: 'Lisää ensimmäinen tuote',
+    searchMenuItems: 'Hae ruokalistan tuotteita…',
+    summary: 'Yhteenveto',
+    total: 'yhteensä',
+    active: 'aktiivista',
+    hidden: 'piilotettua',
+    color: 'Väri',
+    categoryName: 'Kategorian nimi',
+    subcategories: 'Alakategoriat',
+    addSubcategory: 'Lisää alakategoria…',
+    add: 'Lisää',
+    content: 'Sisältö',
+    select: '— Valitse —',
+    none: '— Ei mitään —',
+    delete: 'Poista',
+    deleteItem: 'Poista {type}?',
+    deleteConfirm: '"{name}" poistetaan pysyvästi.',
+    cancel: 'Peruuta',
+    deleting: 'Poistetaan…',
+    saving: 'Tallennetaan...',
+    saved: 'Tallennettu!',
+    saveChanges: 'Tallenna muutokset',
+    categoryAdded: 'Kategoria lisätty',
+    categoryUpdated: 'Kategoria päivitetty',
+    itemAdded: 'Tuote lisätty',
+    itemUpdated: 'Tuote päivitetty',
+    deleted: 'Poistettu',
+    failed: 'Epäonnistui',
+    activeStatus: 'Aktiivinen',
+    hiddenStatus: 'Piilotettu',
+    on: 'päällä',
+    off: 'pois',
+    slots: 'Välit',
+    alerts: 'Ilmoitukset',
+    view: 'Näkymä',
+    seats: 'Istuimet',
+    book: 'Varaa',
+  },
+  no: {
+    general: 'Generelt',
+    booking: 'Bestilling',
+    menu: 'Meny',
+    tables: 'Bord',
+    hours: 'Åpningstider',
+    timeSlots: 'Tidspor',
+    notifications: 'Varsler',
+    display: 'Visning',
+    twentyFourHourFormat: '24-timers format',
+    displayTimes24Hour: 'Vis tider i 24-timers format',
+    diningDuration: 'Spisetid',
+    defaultDiningTime: 'Standard tid for spising',
+    tableCleanup: 'Bordrydding',
+    timeBetweenReservations: 'Tid mellom reservasjoner',
+    totalSlotTime: 'Total tid',
+    diningAndCleanup: 'Spising + Rydding',
+    guestBasedDuration: 'Gjestebasert varighet',
+    setDurationByPartySize: 'Sett forskjellig spisetid basert på selskapsstørrelse',
+    defineDurationPerRange: 'Definer varighet (minutter) per gjesteområde. Områder vurderes topp til bunn — første treff vinner.',
+    previewByPartySize: 'Forhåndsvisning etter selskapsstørrelse:',
+    addRule: 'Legg til regel',
+    advanceBooking: 'Forhåndsbestilling',
+    maxDaysInAdvance: 'Maks dager i forveien',
+    minNotice: 'Minste varsel',
+    hoursBeforeBooking: 'Timer før bestilling',
+    publicBookingPage: 'Offentlig bestillingsside innstillinger',
+    controlCustomerFields: 'Kontroller hva kunder ser og må oppgi',
+    contactInfo: 'Kontaktinfo',
+    usedInConfirmationEmails: 'Brukes i bekreftelses-e-poster sendt til kunder',
+    contactEmail: 'Kontakt e-post',
+    contactPhone: 'Kontakt telefon',
+    requireFullName: 'Krev fullt navn',
+    makeFullNameMandatory: 'Gjør fullt navn obligatorisk',
+    requireEmail: 'Krev e-post',
+    makeEmailMandatory: 'Gjør e-post obligatorisk',
+    requirePhone: 'Krev telefon',
+    makePhoneMandatory: 'Gjør telefon obligatorisk',
+    showCompanyField: 'Vis bedriftsfelt',
+    displayCompanyField: 'Vis bedriftsfelt',
+    showNotesField: 'Vis notatfelt',
+    allowSpecialRequests: 'Tillat spesielle ønsker',
+    maxPartySize: 'Maks selskapsstørrelse',
+    maximumGuestsPerBooking: 'Maks antall gjester per online bestilling',
+    minPartySize: 'Min selskapsstørrelse',
+    minimumGuestsAllowed: 'Minimum antall gjester tillatt',
+    overallMaximum: 'Generelt maksimum — basert på største bord',
+    blockFullSlots: 'Blokker fulle spor',
+    preventBookingsWhenFull: 'Forhindre bestillinger når fullt',
+    allowWalkIns: 'Tillat drop-in',
+    walkInsWithoutTable: 'Drop-in uten bordtildeling',
+    birthdayOffer: 'Bursdagstilbud',
+    showBirthdayField: 'Vis bursdagsfelt',
+    askCustomersForBirthday: 'Spør kunder om bursdag',
+    birthdayOfferMessage: 'Bursdagstilbud melding',
+    shownAboveBirthdayPicker: 'Vist over bursdagsvelgeren',
+    menuOnBookingPage: 'Meny på bestillingsside',
+    showMenuOnPublicPage: 'Vis meny på offentlig side',
+    displayMenuBelowBooking: 'Vis menyen under bestillingsskjemaet',
+    minGuestsToShowMenu: 'Min gjester for å vise meny',
+    menuAppearsWhenPartySize: 'Menyen vises bare når selskapets størrelse når dette antallet',
+    requireGroupMenuSelection: 'Krev gruppemenyvalg',
+    forceCustomersToSelectItem: 'Tving kunder til å velge et menyelement før bekreftelse',
+    requirementMessage: 'Kravmelding',
+    shownWhenGroupMenuRequired: 'Vist når gruppemenyvalg kreves',
+    menuSectionTitle: 'Meny seksjon tittel',
+    headingShownAboveMenu: 'Overskrift vist over menyen',
+    menuSectionSubtitle: 'Meny seksjon undertekst',
+    shownBelowTitle: 'Vist under tittelen',
+    reservationSuccessPage: 'Bestilling vellykket side',
+    thankYouMessage: 'Takkemelding',
+    shownAfterSuccessfulReservation: 'Vist etter vellykket bestilling',
+    restaurantPageUrl: 'Restaurant side URL',
+    linkShownOnSuccessPage: 'Link vist på suksessiden for å gå tilbake til nettstedet ditt',
+    offerCampaignCode: 'Tilbud / Kampanjekode',
+    oneUnifiedCodeField: 'Ett enhetlig kodefelt for alle markedsføringskanaler — CRM-takk-e-poster, Facebook, Instagram, Google Ads, flyers/QR-koder eller Dinery App. Lenker kan fylle det automatisk; gjester kan også skrive inn en kode manuelt.',
+    enableOfferCodeField: 'Aktiver tilbudskodefelt',
+    showOfferCodeField: 'Vis et tilbudskodefelt på den offentlige bestillingssiden',
+    fieldLabel: 'Feltnavn',
+    shownAboveOfferCodeInput: 'Vist over tilbudskodefeltet',
+    requireTableAssignment: 'Krev bordtildeling',
+    blockIfNoSuitableTable: 'Blokker hvis ikke egnet bord',
+    autoAssignTables: 'Auto-tildel bord',
+    automaticTableAssignment: 'Automatisk bordtildeling',
+    allowOverbooking: 'Tillat overbestilling',
+    allowOverCapacity: 'Tillat over kapasitet (ikke anbefalt)',
+    showCapacityWarnings: 'Vis kapasitetsadvarsler',
+    alertWhenPartyExceedsCapacity: 'Varsle når selskapet overskrider kapasitet',
+    closed: 'Stengt',
+    slotInterval: 'Sporintervall',
+    howOftenTimeSlotsDisplayed: 'Sporintervall: hvor ofte tidspor vises',
+    noStartBuffer: 'Ingen startbuffer',
+    startBuffer: 'startbuffer',
+    noEndBuffer: 'Ingen sluttbuffer',
+    endBuffer: 'sluttbuffer',
+    notAcceptingBookings: 'Tar ikke imot bestillinger',
+    noOperatingHoursSet: 'Ingen åpningstider satt',
+    configureRestaurantHours: 'Vennligst konfigurer restaurantens åpningstider i hovedinnstillingene først',
+    individualTimeSlotControl: 'Individuell tidsporkontroll',
+    toggleSpecificTimeSlots: 'Aktiver/deaktiver spesifikke tidspor for hver dag. Grønn = tilgjengelig, Rød = blokkert.',
+    restaurantHours: 'Restaurantens åpningstider',
+    bookings: 'bestillinger',
+    minSlots: 'min spor',
+    totalSlots: 'totalt spor',
+    availableTimeSlots: 'Tilgjengelige tidspor',
+    available: 'Tilgjengelig',
+    blocked: 'Blokkert',
+    enableAllSlots: 'Aktiver alle spor',
+    disableAllSlots: 'Deaktiver alle spor',
+    restaurantClosedOn: 'Restauranten er stengt på',
+    noOperatingHoursConfigured: 'Ingen åpningstider konfigurert',
+    setOperatingHoursFirst: 'Vennligst sett restaurantens åpningstider i hovedinnstillingene før du konfigurerer tidspor.',
+    howThisWorks: 'Hvordan dette fungerer',
+    greenSlotsAvailable: 'Grønne spor er tilgjengelige for kundebestillinger',
+    redSlotsBlocked: 'Røde overstrykede spor er blokkert og vil ikke vises på bestillingssider',
+    clickToToggleSlot: 'Klikk på et hvilket som helst tidspor for å veksle mellom tilgjengelig og blokkert',
+    useEnableAllDisableAll: 'Bruk "Aktiver alle" eller "Deaktiver alle" for raske batch-endringer',
+    slotsBasedOnInterval: 'Tidspor er basert på intervallinnstillingen i "Åpningstider"-fanen (15/30/60 min)',
+    dontForgetToSave: 'Ikke glem å klikke "Lagre endringer" nederst!',
+    confirmationEmail: 'Bekreftelses-e-post',
+    sendWhenBookingConfirmed: 'Send når bestilling bekreftes',
+    reminderEmail: 'Påminnelses-e-post',
+    sendBeforeReservation: 'Send før reservasjon',
+    reminderTime: 'Påminnelsestid',
+    hoursBeforeReservation: 'Timer før reservasjon',
+    timeBarStartOfHour: 'Tidslinje start av time',
+    showHourLabelsAtBeginning: 'Vis timetiketter ved start',
+    highlightCurrentTime: 'Fremhev nåværende tid',
+    showCurrentTimeIndicator: 'Vis nåværende tidsindikator',
+    categories: 'Kategorier',
+    allItems: 'Alle varer',
+    addCategory: 'Legg til kategori',
+    editCategory: 'Rediger kategori',
+    addItem: 'Legg til vare',
+    editItem: 'Rediger vare',
+    itemName: 'Varenavn',
+    price: 'Pris',
+    allergens: 'Allergener',
+    attributes: 'Egenskaper',
+    actions: 'Handlinger',
+    noMenuItemsYet: 'Ingen menyvarer ennå',
+    addFirstItem: 'Klikk "Legg til vare" for å opprette din første menyvare',
+    addFirstItemBtn: 'Legg til første vare',
+    searchMenuItems: 'Søk i menyelementer…',
+    summary: 'Sammendrag',
+    total: 'totalt',
+    active: 'aktive',
+    hidden: 'skjulte',
+    color: 'Farge',
+    categoryName: 'Kategorinavn',
+    subcategories: 'Underkategorier',
+    addSubcategory: 'Legg til underkategori…',
+    add: 'Legg til',
+    content: 'Innhold',
+    select: '— Velg —',
+    none: '— Ingen —',
+    delete: 'Slett',
+    deleteItem: 'Slett {type}?',
+    deleteConfirm: '"{name}" vil bli permanent fjernet.',
+    cancel: 'Avbryt',
+    deleting: 'Sletter…',
+    saving: 'Lagrer...',
+    saved: 'Lagret!',
+    saveChanges: 'Lagre endringer',
+    categoryAdded: 'Kategori lagt til',
+    categoryUpdated: 'Kategori oppdatert',
+    itemAdded: 'Vare lagt til',
+    itemUpdated: 'Vare oppdatert',
+    deleted: 'Slettet',
+    failed: 'Mislyktes',
+    activeStatus: 'Aktiv',
+    hiddenStatus: 'Skjult',
+    on: 'på',
+    off: 'av',
+    slots: 'Spor',
+    alerts: 'Varsler',
+    view: 'Visning',
+    seats: 'Seter',
+    book: 'Bestill',
+  },
+  sv: {
+    general: 'Allmänt',
+    booking: 'Bokning',
+    menu: 'Meny',
+    tables: 'Bord',
+    hours: 'Öppettider',
+    timeSlots: 'Tidsspalt',
+    notifications: 'Aviseringar',
+    display: 'Visning',
+    twentyFourHourFormat: '24-timmarsformat',
+    displayTimes24Hour: 'Visa tider i 24-timmarsformat',
+    diningDuration: 'Måltidstid',
+    defaultDiningTime: 'Standardtid för måltid',
+    tableCleanup: 'Bordrensning',
+    timeBetweenReservations: 'Tid mellan bokningar',
+    totalSlotTime: 'Total tid',
+    diningAndCleanup: 'Måltid + Rensning',
+    guestBasedDuration: 'Gästbaserad varaktighet',
+    setDurationByPartySize: 'Ange olika måltidstider baserat på sällskapets storlek',
+    defineDurationPerRange: 'Definiera varaktighet (minuter) per gästintervall. Intervaller utvärderas uppifrån och ned — första träffen vinner.',
+    previewByPartySize: 'Förhandsvisning efter sällskapsstorlek:',
+    addRule: 'Lägg till regel',
+    advanceBooking: 'Förhandsbeställning',
+    maxDaysInAdvance: 'Max dagar i förväg',
+    minNotice: 'Minsta varsel',
+    hoursBeforeBooking: 'Timmar före bokning',
+    publicBookingPage: 'Offentlig bokningssida inställningar',
+    controlCustomerFields: 'Kontrollera vad kunder ser och måste ange',
+    contactInfo: 'Kontaktinfo',
+    usedInConfirmationEmails: 'Används i bekräftelsemejl som skickas till kunder',
+    contactEmail: 'Kontakt e-post',
+    contactPhone: 'Kontakt telefon',
+    requireFullName: 'Kräv fullständigt namn',
+    makeFullNameMandatory: 'Gör fullständigt namn obligatoriskt',
+    requireEmail: 'Kräv e-post',
+    makeEmailMandatory: 'Gör e-post obligatoriskt',
+    requirePhone: 'Kräv telefon',
+    makePhoneMandatory: 'Gör telefon obligatoriskt',
+    showCompanyField: 'Visa företagsfält',
+    displayCompanyField: 'Visa företagsfält',
+    showNotesField: 'Visa anteckningsfält',
+    allowSpecialRequests: 'Tillåt speciella önskemål',
+    maxPartySize: 'Max sällskapsstorlek',
+    maximumGuestsPerBooking: 'Max antal gäster per onlinebokning',
+    minPartySize: 'Min sällskapsstorlek',
+    minimumGuestsAllowed: 'Minsta antal gäster tillåtna',
+    overallMaximum: 'Övergripande maximum — baserat på största bordet',
+    blockFullSlots: 'Blockera fulla tider',
+    preventBookingsWhenFull: 'Förhindra bokningar när fullt',
+    allowWalkIns: 'Tillåt drop-in',
+    walkInsWithoutTable: 'Drop-in utan bordstilldelning',
+    birthdayOffer: 'Födelsedagserbjudande',
+    showBirthdayField: 'Visa födelsedagsfält',
+    askCustomersForBirthday: 'Fråga kunder om födelsedag',
+    birthdayOfferMessage: 'Födelsedagserbjudande meddelande',
+    shownAboveBirthdayPicker: 'Visas ovanför födelsedagsväljaren',
+    menuOnBookingPage: 'Meny på bokningssida',
+    showMenuOnPublicPage: 'Visa meny på offentlig sida',
+    displayMenuBelowBooking: 'Visa menyn under bokningsformuläret',
+    minGuestsToShowMenu: 'Min gäster för att visa meny',
+    menuAppearsWhenPartySize: 'Menyn visas bara när sällskapets storlek når detta antal',
+    requireGroupMenuSelection: 'Kräv gruppmenyval',
+    forceCustomersToSelectItem: 'Tvinga kunder att välja ett menyalternativ innan bekräftelse',
+    requirementMessage: 'Kravmeddelande',
+    shownWhenGroupMenuRequired: 'Visas när gruppmenyval krävs',
+    menuSectionTitle: 'Menysektion titel',
+    headingShownAboveMenu: 'Rubrik som visas ovanför menyn',
+    menuSectionSubtitle: 'Menysektion undertext',
+    shownBelowTitle: 'Visas under titeln',
+    reservationSuccessPage: 'Bokningsframgångssida',
+    thankYouMessage: 'Tackmeddelande',
+    shownAfterSuccessfulReservation: 'Visas efter lyckad bokning',
+    restaurantPageUrl: 'Restaurang sidans URL',
+    linkShownOnSuccessPage: 'Länk som visas på framgångssidan för att återgå till din webbplats',
+    offerCampaignCode: 'Erbjudande / Kampanjkod',
+    oneUnifiedCodeField: 'Ett enhetligt kodfält för alla marknadsföringskanaler — CRM-tack-mejl, Facebook, Instagram, Google Ads, flyers/QR-koder eller Dinery App. Länkar kan fylla i det automatiskt; gäster kan också skriva in en kod manuellt.',
+    enableOfferCodeField: 'Aktivera erbjudandekodfält',
+    showOfferCodeField: 'Visa ett erbjudandekodfält på den offentliga bokningssidan',
+    fieldLabel: 'Fältetikett',
+    shownAboveOfferCodeInput: 'Visas ovanför erbjudandekodfältet',
+    requireTableAssignment: 'Kräv bordstilldelning',
+    blockIfNoSuitableTable: 'Blockera om inget lämpligt bord',
+    autoAssignTables: 'Auto-tilldela bord',
+    automaticTableAssignment: 'Automatisk bordstilldelning',
+    allowOverbooking: 'Tillåt överbokning',
+    allowOverCapacity: 'Tillåt över kapacitet (rekommenderas inte)',
+    showCapacityWarnings: 'Visa kapacitetsvarningar',
+    alertWhenPartyExceedsCapacity: 'Varna när sällskapet överskrider kapacitet',
+    closed: 'Stängd',
+    slotInterval: 'Tidsintervall',
+    howOftenTimeSlotsDisplayed: 'Tidsintervall: hur ofta tidsspalt visas',
+    noStartBuffer: 'Ingen startbuffert',
+    startBuffer: 'startbuffert',
+    noEndBuffer: 'Ingen slutbuffert',
+    endBuffer: 'slutbuffert',
+    notAcceptingBookings: 'Tar inte emot bokningar',
+    noOperatingHoursSet: 'Inga öppettider inställda',
+    configureRestaurantHours: 'Vänligen konfigurera restaurangens öppettider i huvudinställningarna först',
+    individualTimeSlotControl: 'Individuell tidsspaltkontroll',
+    toggleSpecificTimeSlots: 'Aktivera/inaktivera specifika tidsspalt för varje dag. Grön = tillgänglig, Röd = blockerad.',
+    restaurantHours: 'Restaurangens öppettider',
+    bookings: 'bokningar',
+    minSlots: 'min spalt',
+    totalSlots: 'totalt spalt',
+    availableTimeSlots: 'Tillgängliga tidsspalt',
+    available: 'Tillgänglig',
+    blocked: 'Blockerad',
+    enableAllSlots: 'Aktivera alla spalt',
+    disableAllSlots: 'Inaktivera alla spalt',
+    restaurantClosedOn: 'Restaurangen är stängd på',
+    noOperatingHoursConfigured: 'Inga öppettider konfigurerade',
+    setOperatingHoursFirst: 'Vänligen ställ in restaurangens öppettider i huvudinställningarna innan du konfigurerar tidsspalt.',
+    howThisWorks: 'Hur detta fungerar',
+    greenSlotsAvailable: 'Gröna spalt är tillgängliga för kundbokningar',
+    redSlotsBlocked: 'Röda överstrukna spalt är blockerade och kommer inte att visas på bokningssidor',
+    clickToToggleSlot: 'Klicka på valfri tidsspalt för att växla mellan tillgänglig och blockerad',
+    useEnableAllDisableAll: 'Använd "Aktivera alla" eller "Inaktivera alla" för snabba batchändringar',
+    slotsBasedOnInterval: 'Tidsspalt baseras på intervallinställningen i "Öppettider"-fliken (15/30/60 min)',
+    dontForgetToSave: 'Glöm inte att klicka på "Spara ändringar" längst ner!',
+    confirmationEmail: 'Bekräftelsemejl',
+    sendWhenBookingConfirmed: 'Skicka när bokning bekräftas',
+    reminderEmail: 'Påminnelsemejl',
+    sendBeforeReservation: 'Skicka före bokning',
+    reminderTime: 'Påminnelsetid',
+    hoursBeforeReservation: 'Timmar före bokning',
+    timeBarStartOfHour: 'Tidslinje start av timme',
+    showHourLabelsAtBeginning: 'Visa timetiketter vid start',
+    highlightCurrentTime: 'Markera aktuell tid',
+    showCurrentTimeIndicator: 'Visa aktuell tidsindikator',
+    categories: 'Kategorier',
+    allItems: 'Alla artiklar',
+    addCategory: 'Lägg till kategori',
+    editCategory: 'Redigera kategori',
+    addItem: 'Lägg till artikel',
+    editItem: 'Redigera artikel',
+    itemName: 'Artikelnamn',
+    price: 'Pris',
+    allergens: 'Allergener',
+    attributes: 'Egenskaper',
+    actions: 'Åtgärder',
+    noMenuItemsYet: 'Inga menyartiklar ännu',
+    addFirstItem: 'Klicka på "Lägg till artikel" för att skapa din första menyartikel',
+    addFirstItemBtn: 'Lägg till första artikel',
+    searchMenuItems: 'Sök i menyalternativ…',
+    summary: 'Sammanfattning',
+    total: 'totalt',
+    active: 'aktiva',
+    hidden: 'dolda',
+    color: 'Färg',
+    categoryName: 'Kategorinamn',
+    subcategories: 'Underkategorier',
+    addSubcategory: 'Lägg till underkategori…',
+    add: 'Lägg till',
+    content: 'Innehåll',
+    select: '— Välj —',
+    none: '— Ingen —',
+    delete: 'Ta bort',
+    deleteItem: 'Ta bort {type}?',
+    deleteConfirm: '"{name}" kommer att tas bort permanent.',
+    cancel: 'Avbryt',
+    deleting: 'Tar bort…',
+    saving: 'Sparar...',
+    saved: 'Sparad!',
+    saveChanges: 'Spara ändringar',
+    categoryAdded: 'Kategori tillagd',
+    categoryUpdated: 'Kategori uppdaterad',
+    itemAdded: 'Artikel tillagd',
+    itemUpdated: 'Artikel uppdaterad',
+    deleted: 'Borttagen',
+    failed: 'Misslyckades',
+    activeStatus: 'Aktiv',
+    hiddenStatus: 'Dold',
+    on: 'på',
+    off: 'av',
+    slots: 'Spalt',
+    alerts: 'Varningar',
+    view: 'Visa',
+    seats: 'Säten',
+    book: 'Boka',
+  },
+  de: {
+    general: 'Allgemein',
+    booking: 'Buchung',
+    menu: 'Menü',
+    tables: 'Tische',
+    hours: 'Öffnungszeiten',
+    timeSlots: 'Zeitslots',
+    notifications: 'Benachrichtigungen',
+    display: 'Anzeige',
+    twentyFourHourFormat: '24-Stunden-Format',
+    displayTimes24Hour: 'Zeiten im 24-Stunden-Format anzeigen',
+    diningDuration: 'Essensdauer',
+    defaultDiningTime: 'Standardzeit für Essen',
+    tableCleanup: 'Tischreinigung',
+    timeBetweenReservations: 'Zeit zwischen Reservierungen',
+    totalSlotTime: 'Gesamtzeit',
+    diningAndCleanup: 'Essen + Reinigung',
+    guestBasedDuration: 'Gästebasierte Dauer',
+    setDurationByPartySize: 'Verschiedene Essenszeiten basierend auf Gruppengröße festlegen',
+    defineDurationPerRange: 'Dauer (Minuten) pro Gästebereich definieren. Bereiche werden von oben nach unten ausgewertet — erste Übereinstimmung gewinnt.',
+    previewByPartySize: 'Vorschau nach Gruppengröße:',
+    addRule: 'Regel hinzufügen',
+    advanceBooking: 'Vorausbuchung',
+    maxDaysInAdvance: 'Max. Tage im Voraus',
+    minNotice: 'Mindestvorlauf',
+    hoursBeforeBooking: 'Stunden vor Buchung',
+    publicBookingPage: 'Öffentliche Buchungsseite Einstellungen',
+    controlCustomerFields: 'Steuern Sie, was Kunden sehen und angeben müssen',
+    contactInfo: 'Kontaktinfo',
+    usedInConfirmationEmails: 'Wird in Bestätigungs-E-Mails an Kunden verwendet',
+    contactEmail: 'Kontakt E-Mail',
+    contactPhone: 'Kontakt Telefon',
+    requireFullName: 'Vollständigen Namen verlangen',
+    makeFullNameMandatory: 'Vollständigen Namen verpflichtend machen',
+    requireEmail: 'E-Mail verlangen',
+    makeEmailMandatory: 'E-Mail verpflichtend machen',
+    requirePhone: 'Telefon verlangen',
+    makePhoneMandatory: 'Telefon verpflichtend machen',
+    showCompanyField: 'Firmenfeld anzeigen',
+    displayCompanyField: 'Firmenfeld anzeigen',
+    showNotesField: 'Notizfeld anzeigen',
+    allowSpecialRequests: 'Besondere Wünsche erlauben',
+    maxPartySize: 'Max. Gruppengröße',
+    maximumGuestsPerBooking: 'Max. Gäste pro Online-Buchung',
+    minPartySize: 'Min. Gruppengröße',
+    minimumGuestsAllowed: 'Min. erlaubte Gäste',
+    overallMaximum: 'Gesamtmaximum — basierend auf größtem Tisch',
+    blockFullSlots: 'Volle Slots blockieren',
+    preventBookingsWhenFull: 'Buchungen verhindern wenn voll',
+    allowWalkIns: 'Laufkundschaft erlauben',
+    walkInsWithoutTable: 'Laufkundschaft ohne Tischzuweisung',
+    birthdayOffer: 'Geburtstagsangebot',
+    showBirthdayField: 'Geburtstagsfeld anzeigen',
+    askCustomersForBirthday: 'Kunden nach Geburtstag fragen',
+    birthdayOfferMessage: 'Geburtstagsangebot Nachricht',
+    shownAboveBirthdayPicker: 'Über dem Geburtstagsauswahlfeld angezeigt',
+    menuOnBookingPage: 'Menü auf Buchungsseite',
+    showMenuOnPublicPage: 'Menü auf öffentlicher Seite anzeigen',
+    displayMenuBelowBooking: 'Menü unter dem Buchungsformular anzeigen',
+    minGuestsToShowMenu: 'Min. Gäste für Menüanzeige',
+    menuAppearsWhenPartySize: 'Menü wird nur angezeigt, wenn die Gruppengröße diese Anzahl erreicht',
+    requireGroupMenuSelection: 'Gruppenmenüauswahl verlangen',
+    forceCustomersToSelectItem: 'Kunden zwingen, vor der Bestätigung ein Menüelement auszuwählen',
+    requirementMessage: 'Anforderungsnachricht',
+    shownWhenGroupMenuRequired: 'Wird angezeigt, wenn Gruppenmenüauswahl erforderlich ist',
+    menuSectionTitle: 'Menübereich Titel',
+    headingShownAboveMenu: 'Überschrift über dem Menü',
+    menuSectionSubtitle: 'Menübereich Untertitel',
+    shownBelowTitle: 'Unter dem Titel angezeigt',
+    reservationSuccessPage: 'Buchungserfolgsseite',
+    thankYouMessage: 'Dankesnachricht',
+    shownAfterSuccessfulReservation: 'Nach erfolgreicher Buchung angezeigt',
+    restaurantPageUrl: 'Restaurant-Seiten-URL',
+    linkShownOnSuccessPage: 'Link auf Erfolgsseite zur Rückkehr zu Ihrer Website',
+    offerCampaignCode: 'Angebot / Kampagnencode',
+    oneUnifiedCodeField: 'Ein einheitliches Codefeld für alle Marketingkanäle — CRM-Dankes-E-Mails, Facebook, Instagram, Google Ads, Flyer/QR-Codes oder die Dinery App. Links können es automatisch ausfüllen; Gäste können auch manuell einen Code eingeben.',
+    enableOfferCodeField: 'Angebotscodefeld aktivieren',
+    showOfferCodeField: 'Ein Angebotscodefeld auf der öffentlichen Buchungsseite anzeigen',
+    fieldLabel: 'Feldbezeichnung',
+    shownAboveOfferCodeInput: 'Über dem Angebotscodefeld angezeigt',
+    requireTableAssignment: 'Tischzuweisung verlangen',
+    blockIfNoSuitableTable: 'Blockieren wenn kein geeigneter Tisch',
+    autoAssignTables: 'Tische automatisch zuweisen',
+    automaticTableAssignment: 'Automatische Tischzuweisung',
+    allowOverbooking: 'Überbuchung erlauben',
+    allowOverCapacity: 'Über Kapazität erlauben (nicht empfohlen)',
+    showCapacityWarnings: 'Kapazitätswarnungen anzeigen',
+    alertWhenPartyExceedsCapacity: 'Warnen wenn Gruppe Kapazität überschreitet',
+    closed: 'Geschlossen',
+    slotInterval: 'Slot-Intervall',
+    howOftenTimeSlotsDisplayed: 'Slot-Intervall: wie oft Zeitslots angezeigt werden',
+    noStartBuffer: 'Kein Startpuffer',
+    startBuffer: 'Startpuffer',
+    noEndBuffer: 'Kein Endpuffer',
+    endBuffer: 'Endpuffer',
+    notAcceptingBookings: 'Nimmt keine Buchungen an',
+    noOperatingHoursSet: 'Keine Öffnungszeiten festgelegt',
+    configureRestaurantHours: 'Bitte konfigurieren Sie zuerst die Öffnungszeiten des Restaurants in den Haupt-Einstellungen',
+    individualTimeSlotControl: 'Individuelle Zeitslot-Steuerung',
+    toggleSpecificTimeSlots: 'Spezifische Zeitslots für jeden Tag ein-/ausschalten. Grün = verfügbar, Rot = blockiert.',
+    restaurantHours: 'Öffnungszeiten des Restaurants',
+    bookings: 'Buchungen',
+    minSlots: 'min Slots',
+    totalSlots: 'Slots insgesamt',
+    availableTimeSlots: 'Verfügbare Zeitslots',
+    available: 'Verfügbar',
+    blocked: 'Blockiert',
+    enableAllSlots: 'Alle Slots aktivieren',
+    disableAllSlots: 'Alle Slots deaktivieren',
+    restaurantClosedOn: 'Restaurant ist geschlossen am',
+    noOperatingHoursConfigured: 'Keine Öffnungszeiten konfiguriert',
+    setOperatingHoursFirst: 'Bitte legen Sie zuerst die Öffnungszeiten des Restaurants in den Haupt-Einstellungen fest, bevor Sie Zeitslots konfigurieren.',
+    howThisWorks: 'So funktioniert es',
+    greenSlotsAvailable: 'Grüne Slots sind für Kundenbuchungen verfügbar',
+    redSlotsBlocked: 'Rote durchgestrichene Slots sind blockiert und erscheinen nicht auf Buchungsseiten',
+    clickToToggleSlot: 'Klicken Sie auf einen beliebigen Zeitslot, um zwischen verfügbar und blockiert umzuschalten',
+    useEnableAllDisableAll: 'Verwenden Sie "Alle aktivieren" oder "Alle deaktivieren" für schnelle Batch-Änderungen',
+    slotsBasedOnInterval: 'Zeitslots basieren auf der Intervall-Einstellung im "Öffnungszeiten"-Tab (15/30/60 min)',
+    dontForgetToSave: 'Vergessen Sie nicht, unten auf "Änderungen speichern" zu klicken!',
+    confirmationEmail: 'Bestätigungs-E-Mail',
+    sendWhenBookingConfirmed: 'Senden wenn Buchung bestätigt wird',
+    reminderEmail: 'Erinnerungs-E-Mail',
+    sendBeforeReservation: 'Vor der Reservierung senden',
+    reminderTime: 'Erinnerungszeit',
+    hoursBeforeReservation: 'Stunden vor der Reservierung',
+    timeBarStartOfHour: 'Zeitbalken Stundenbeginn',
+    showHourLabelsAtBeginning: 'Stundenmarkierungen am Anfang anzeigen',
+    highlightCurrentTime: 'Aktuelle Zeit hervorheben',
+    showCurrentTimeIndicator: 'Aktuelle Zeitindikator anzeigen',
+    categories: 'Kategorien',
+    allItems: 'Alle Artikel',
+    addCategory: 'Kategorie hinzufügen',
+    editCategory: 'Kategorie bearbeiten',
+    addItem: 'Artikel hinzufügen',
+    editItem: 'Artikel bearbeiten',
+    itemName: 'Artikelname',
+    price: 'Preis',
+    allergens: 'Allergene',
+    attributes: 'Eigenschaften',
+    actions: 'Aktionen',
+    noMenuItemsYet: 'Noch keine Menüartikel',
+    addFirstItem: 'Klicken Sie auf "Artikel hinzufügen", um Ihren ersten Menüartikel zu erstellen',
+    addFirstItemBtn: 'Ersten Artikel hinzufügen',
+    searchMenuItems: 'Menüpunkte durchsuchen…',
+    summary: 'Zusammenfassung',
+    total: 'gesamt',
+    active: 'aktiv',
+    hidden: 'versteckt',
+    color: 'Farbe',
+    categoryName: 'Kategoriename',
+    subcategories: 'Unterkategorien',
+    addSubcategory: 'Unterkategorie hinzufügen…',
+    add: 'Hinzufügen',
+    content: 'Inhalt',
+    select: '— Auswählen —',
+    none: '— Keine —',
+    delete: 'Löschen',
+    deleteItem: '{type} löschen?',
+    deleteConfirm: '"{name}" wird dauerhaft entfernt.',
+    cancel: 'Abbrechen',
+    deleting: 'Lösche…',
+    saving: 'Speichere...',
+    saved: 'Gespeichert!',
+    saveChanges: 'Änderungen speichern',
+    categoryAdded: 'Kategorie hinzugefügt',
+    categoryUpdated: 'Kategorie aktualisiert',
+    itemAdded: 'Artikel hinzugefügt',
+    itemUpdated: 'Artikel aktualisiert',
+    deleted: 'Gelöscht',
+    failed: 'Fehlgeschlagen',
+    activeStatus: 'Aktiv',
+    hiddenStatus: 'Versteckt',
+    on: 'ein',
+    off: 'aus',
+    slots: 'Slots',
+    alerts: 'Alarme',
+    view: 'Ansicht',
+    seats: 'Sitze',
+    book: 'Buchen',
+  },
+};
+
+// ─── Menu Category Panel ────────────────────────────────────────────────────
+const MenuCategoryPanel = ({ restaurantId, collectionName, t }) => {
   const [categories, setCategories] = useState([]);
   const [itemCounts, setItemCounts]  = useState({});
   const [loading, setLoading]        = useState(true);
@@ -46,8 +966,8 @@ const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
   if (categories.length === 0) return (
     <div className="flex flex-col items-center justify-center py-10 text-center px-4">
       <span className="text-4xl mb-3">🍽️</span>
-      <p className="text-sm font-semibold text-gray-600">No menu categories yet</p>
-      <p className="text-xs text-gray-400 mt-1">Open the Menu manager to create your first category</p>
+      <p className="text-sm font-semibold text-gray-600">{t('noMenuItemsYet')}</p>
+      <p className="text-xs text-gray-400 mt-1">{t('addFirstItem')}</p>
     </div>
   );
 
@@ -55,27 +975,25 @@ const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
 
   return (
     <div>
-      {/* Summary bar */}
       <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center gap-4 overflow-x-auto">
         <div className="text-center flex-shrink-0">
           <p className="text-lg font-bold text-gray-800">{categories.length}</p>
-          <p className="text-[10px] text-gray-400 uppercase">Categories</p>
+          <p className="text-[10px] text-gray-400 uppercase">{t('categories')}</p>
         </div>
         <div className="w-px h-8 bg-gray-200 flex-shrink-0" />
         <div className="text-center flex-shrink-0">
           <p className="text-lg font-bold text-gray-800">{totalItems}</p>
-          <p className="text-[10px] text-gray-400 uppercase">Items</p>
+          <p className="text-[10px] text-gray-400 uppercase">{t('items')}</p>
         </div>
         <div className="w-px h-8 bg-gray-200 flex-shrink-0" />
         <div className="text-center flex-shrink-0">
           <p className="text-lg font-bold text-green-600">
             {categories.filter(c => c.active !== false).length}
           </p>
-          <p className="text-[10px] text-gray-400 uppercase">Active</p>
+          <p className="text-[10px] text-gray-400 uppercase">{t('active')}</p>
         </div>
       </div>
 
-      {/* Category list */}
       <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto">
         {categories.map(cat => {
           const count = itemCounts[cat.id] || 0;
@@ -94,19 +1012,19 @@ const MenuCategoryPanel = ({ restaurantId, collectionName }) => {
                     {cat.name?.en || 'Unnamed'}
                   </p>
                   {subs.length > 0 && (
-                    <span className="text-[10px] sm:text-xs text-gray-400">{subs.length} subcategories</span>
+                    <span className="text-[10px] sm:text-xs text-gray-400">{subs.length} {t('subcategories')}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <span className="text-[10px] sm:text-xs font-bold bg-gray-100 text-gray-600 px-1.5 sm:px-2 py-0.5 rounded-full">
-                    {count} items
+                    {count} {t('items')}
                   </span>
                   <span className={`text-[8px] sm:text-[10px] font-semibold px-1 sm:px-1.5 py-0.5 rounded-full ${
                     cat.active !== false
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-400'
                   }`}>
-                    {cat.active !== false ? 'on' : 'off'}
+                    {cat.active !== false ? t('on') : t('off')}
                   </span>
                   {subs.length > 0 && (
                     <svg className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''} flex-shrink-0`}
@@ -181,6 +1099,24 @@ const emptyCategory = () => ({
 });
 
 const MenuPanel = ({ restaurantId, collectionName }) => {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const [categories, setCategories] = useState([]);
   const [menuItems,  setMenuItems]   = useState([]);
   const [loading,    setLoading]     = useState(true);
@@ -230,14 +1166,14 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
           { ...form, sortOrder: categories.length, createdAt: new Date() });
         setCategories(p => [...p, { id: ref.id, ...form }]);
         setSelectedCat(ref.id);
-        showToast('Category added');
+        showToast(t('categoryAdded'));
       } else {
         await updateDoc(doc(db, collectionName, restaurantId, 'menuCategories', catModal.id), form);
         setCategories(p => p.map(c => c.id === catModal.id ? { ...c, ...form } : c));
-        showToast('Category updated');
+        showToast(t('categoryUpdated'));
       }
       setCatModal(null);
-    } catch(e) { showToast('Failed', 'error'); }
+    } catch(e) { showToast(t('failed'), 'error'); }
     finally { setSaving(false); }
   };
 
@@ -250,14 +1186,14 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
             const ref = await addDoc(collection(db, collectionName, restaurantId, 'menuItems'),
               { ...form, sortOrder: maxOrder, createdAt: new Date() });
         setMenuItems(p => [...p, { id: ref.id, ...form }]);
-        showToast('Item added');
+        showToast(t('itemAdded'));
       } else {
         await updateDoc(doc(db, collectionName, restaurantId, 'menuItems', itemModal.id), form);
         setMenuItems(p => p.map(i => i.id === itemModal.id ? { ...i, ...form } : i));
-        showToast('Item updated');
+        showToast(t('itemUpdated'));
       }
       setItemModal(null);
-    } catch(e) { showToast('Failed', 'error'); }
+    } catch(e) { showToast(t('failed'), 'error'); }
     finally { setSaving(false); }
   };
 
@@ -273,9 +1209,9 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
         setMenuItems(p => p.filter(i => i.category !== deleteConf.id));
         if (selectedCat === deleteConf.id) setSelectedCat(null);
       }
-      showToast('Deleted');
+      showToast(t('deleted'));
       setDeleteConf(null);
-    } catch(e) { showToast('Failed', 'error'); }
+    } catch(e) { showToast(t('failed'), 'error'); }
     finally { setSaving(false); }
   };
 
@@ -316,7 +1252,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
         updates.map(item =>
           updateDoc(doc(db, collectionName, restaurantId, 'menuItems', item.id), { sortOrder: item.sortOrder })
         )
-      ).catch(err => { console.error(err); showToast('Failed to reorder', 'error'); });
+      ).catch(err => { console.error(err); showToast(t('failed'), 'error'); });
       showToast('Order saved');
     };
 
@@ -332,7 +1268,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
       {/* ── Left sidebar ── */}
       <div className="w-full md:w-64 flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col bg-gray-50">
         <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-white">
-          <span className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">📁 Categories</span>
+          <span className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider">📁 {t('categories')}</span>
           <button onClick={() => setCatModal('add')}
             className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#fe8a24] text-white flex items-center justify-center hover:bg-[#ff9d47] transition-all shadow-sm">
             <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -344,7 +1280,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
             className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold flex items-center justify-between transition-colors ${
               !selectedCat ? 'bg-[#fe8a24]/10 text-[#fe8a24] border-r-2 border-[#fe8a24]' : 'text-gray-700 hover:bg-gray-100'
             }`}>
-            <span>📋 All Items</span>
+            <span>📋 {t('allItems')}</span>
             <span className="text-[10px] sm:text-xs bg-gray-200 text-gray-700 px-1.5 sm:px-2 py-0.5 rounded-full font-semibold">{menuItems.length}</span>
           </button>
           {categories.map(cat => {
@@ -388,7 +1324,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
           <div className="flex items-center gap-1 sm:gap-2 bg-gray-100 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex-1 sm:flex-initial">
             <FiSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
             <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-              placeholder="Search menu items…"
+              placeholder={t('searchMenuItems')}
               className="bg-transparent text-xs sm:text-sm text-gray-700 focus:outline-none w-20 sm:w-32 placeholder:text-xs sm:placeholder:text-sm" />
             {searchQ && <button onClick={() => setSearchQ('')} className="text-gray-400 hover:text-gray-600"><FiX className="w-3.5 h-3.5 sm:w-4 sm:h-4" /></button>}
           </div>
@@ -417,7 +1353,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
           </div>
           <button onClick={() => setItemModal('add')}
             className="ml-auto flex items-center gap-1 sm:gap-2 bg-[#fe8a24] hover:bg-[#ff9d47] text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-sm font-semibold transition-all shadow-sm">
-            <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">Add Item</span>
+            <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden xs:inline">{t('addItem')}</span>
           </button>
         </div>
 
@@ -426,11 +1362,11 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-8 sm:py-16">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gray-100 flex items-center justify-center mb-3 sm:mb-4 text-3xl sm:text-4xl shadow-inner">🍽️</div>
-              <p className="text-sm sm:text-base font-semibold text-gray-600">No menu items yet</p>
-              <p className="text-xs sm:text-sm text-gray-400 mt-1">Click "Add Item" to create your first menu item</p>
+              <p className="text-sm sm:text-base font-semibold text-gray-600">{t('noMenuItemsYet')}</p>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">{t('addFirstItem')}</p>
               <button onClick={() => setItemModal('add')}
                 className="mt-3 sm:mt-4 flex items-center gap-2 bg-[#fe8a24] text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#ff9d47] transition-all shadow-md">
-                <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Add First Item
+                <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t('addFirstItemBtn')}
               </button>
             </div>
           ) : (
@@ -438,11 +1374,11 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
               {/* Header row - hidden on mobile */}
               <div className={`hidden md:grid px-4 py-2 text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-50 rounded-lg ${sortBy === 'sortOrder' ? 'pl-8' : ''}`}
                 style={{ gridTemplateColumns: '1fr 100px 180px 180px 100px' }}>
-                <span>🍽️ Item Name</span>
-                <span>💰 Price</span>
-                <span>⚠️ Allergens</span>
-                <span>🏷️ Attributes</span>
-                <span>⚡ Actions</span>
+                <span>🍽️ {t('itemName')}</span>
+                <span>💰 {t('price')}</span>
+                <span>⚠️ {t('allergens')}</span>
+                <span>🏷️ {t('attributes')}</span>
+                <span>⚡ {t('actions')}</span>
               </div>
               
               {filteredItems.map(item => {
@@ -468,7 +1404,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         {cat && <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ background: cat.color || '#fe8a24' }} />}
                         <span className="text-sm sm:text-base font-bold text-gray-900 truncate">{name}</span>
-                        {!item.active && <span className="text-[8px] sm:text-[10px] text-gray-400 bg-gray-200 px-1 sm:px-1.5 py-0.5 rounded">hidden</span>}
+                        {!item.active && <span className="text-[8px] sm:text-[10px] text-gray-400 bg-gray-200 px-1 sm:px-1.5 py-0.5 rounded">{t('hidden')}</span>}
                       </div>
                       {desc && <p className="text-[10px] sm:text-xs text-gray-500 truncate mt-0.5 sm:mt-1 ml-1 sm:ml-3">{desc}</p>}
                     </div>
@@ -525,11 +1461,11 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
         {/* Footer - responsive */}
         <div className="px-3 sm:px-5 py-2 sm:py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0 overflow-x-auto">
           <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-sm text-gray-600 flex-nowrap">
-            <span className="font-semibold hidden xs:inline">📊 Summary:</span>
-            <span><span className="font-bold text-gray-800">{menuItems.length}</span> total</span>
-            <span className="text-green-700"><span className="font-bold text-green-600">{menuItems.filter(i=>i.active).length}</span> active</span>
-            <span className="text-gray-500 hidden sm:inline"><span className="font-bold">{menuItems.filter(i=>!i.active).length}</span> hidden</span>
-            <span className="text-blue-700 hidden md:inline"><span className="font-bold">{categories.length}</span> categories</span>
+            <span className="font-semibold hidden xs:inline">{t('summary')}:</span>
+            <span><span className="font-bold text-gray-800">{menuItems.length}</span> {t('total')}</span>
+            <span className="text-green-700"><span className="font-bold text-green-600">{menuItems.filter(i=>i.active).length}</span> {t('active')}</span>
+            <span className="text-gray-500 hidden sm:inline"><span className="font-bold">{menuItems.filter(i=>!i.active).length}</span> {t('hidden')}</span>
+            <span className="text-blue-700 hidden md:inline"><span className="font-bold">{categories.length}</span> {t('categories')}</span>
           </div>
         </div>
       </div>
@@ -551,12 +1487,12 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-100 flex items-center justify-center mx-auto mb-3">
               <FiTrash2 className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 text-center mb-2">Delete {deleteConf.type}?</h3>
-            <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-5">"{deleteConf.name}" will be permanently removed.</p>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 text-center mb-2">{t('deleteItem').replace('{type}', deleteConf.type === 'item' ? t('item') : t('category'))}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 text-center mb-4 sm:mb-5">{t('deleteConfirm').replace('{name}', deleteConf.name)}</p>
             <div className="flex gap-2 sm:gap-3">
-              <button onClick={() => setDeleteConf(null)} className="flex-1 py-2 sm:py-2.5 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={() => setDeleteConf(null)} className="flex-1 py-2 sm:py-2.5 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-600 hover:bg-gray-50 transition-colors">{t('cancel')}</button>
               <button onClick={confirmDelete} disabled={saving} className="flex-1 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs sm:text-sm font-semibold disabled:opacity-50 transition-colors">
-                {saving ? 'Deleting…' : 'Delete'}
+                {saving ? t('deleting') : t('delete')}
               </button>
             </div>
           </div>
@@ -571,6 +1507,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
           onClose={() => setCatModal(null)}
           saving={saving}
           viewLang={viewLang}
+          t={t}
         />
       )}
 
@@ -583,6 +1520,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
           onClose={() => setItemModal(null)}
           saving={saving}
           defaultCat={selectedCat}
+          t={t}
         />
       )}
     </div>
@@ -590,7 +1528,7 @@ const MenuPanel = ({ restaurantId, collectionName }) => {
 };
 
 // ── Category modal ───────────────────────────────────────────────────────────
-const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
+const MenuCatModal = ({ category, onSave, onClose, saving, viewLang, t }) => {
   const [form, setForm] = useState(category || emptyCategory());
   const [activeLang, setActiveLang] = useState('en');
   const [newSub, setNewSub] = useState('');
@@ -601,13 +1539,13 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="text-sm sm:text-base font-bold text-gray-900">{category ? 'Edit Category' : 'Add Category'}</h3>
+          <h3 className="text-sm sm:text-base font-bold text-gray-900">{category ? t('editCategory') : t('addCategory')}</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500"><FiX className="w-4 h-4" /></button>
         </div>
         <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-3 sm:py-4 space-y-3 sm:space-y-4">
           {/* Color */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">Color</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 sm:mb-2">{t('color')}</label>
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {COLORS.map(col => (
                 <button key={col} onClick={() => setForm(p=>({...p,color:col}))}
@@ -628,12 +1566,12 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
           </div>
           {/* Name per lang */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Category Name</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">{t('categoryName')}</label>
             {MENU_LANGUAGES.filter(l => l.code === activeLang).map(l => (
               <div key={l.code} className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm flex-shrink-0">{l.flag}</span>
                 <input type="text" value={form.name[l.code]||''} onChange={e=>setForm(p=>({...p,name:{...p.name,[l.code]:e.target.value}}))}
-                  placeholder={`Name in ${l.name}…`}
+                  placeholder={`${t('name')} in ${l.name}…`}
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]" />
               </div>
             ))}
@@ -644,11 +1582,11 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
               className={`w-10 h-5 rounded-full relative transition-colors ${form.active?'bg-green-500':'bg-gray-300'}`}>
               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.active?'translate-x-5':'translate-x-0.5'}`} />
             </div>
-            <span className="text-xs sm:text-sm text-gray-700">{form.active ? 'Active' : 'Hidden'}</span>
+            <span className="text-xs sm:text-sm text-gray-700">{form.active ? t('activeStatus') : t('hiddenStatus')}</span>
           </label>
           {/* Subcategories */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Subcategories</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">{t('subcategories')}</label>
             <div className="space-y-1 mb-2">
               {(form.subcategories||[]).map(sub => (
                 <div key={sub.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5">
@@ -661,19 +1599,19 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
             <div className="flex gap-2">
               <input value={newSub} onChange={e=>setNewSub(e.target.value)}
                 onKeyDown={e=>{if(e.key==='Enter'&&newSub.trim()){setForm(p=>({...p,subcategories:[...(p.subcategories||[]),{id:Date.now().toString(),name:{...Object.fromEntries(MENU_LANGUAGES.map(l=>[l.code,''])),en:newSub.trim()},active:true}]}));setNewSub('');}}}
-                placeholder="Add subcategory…"
+                placeholder={t('addSubcategory')}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#fe8a24]" />
               <button onClick={()=>{if(newSub.trim()){setForm(p=>({...p,subcategories:[...(p.subcategories||[]),{id:Date.now().toString(),name:{...Object.fromEntries(MENU_LANGUAGES.map(l=>[l.code,''])),en:newSub.trim()},active:true}]}));setNewSub('');}}}
-                className="px-3 py-1.5 bg-[#fe8a24] text-white rounded-lg text-xs font-semibold hover:bg-[#ff9d47] whitespace-nowrap">Add</button>
+                className="px-3 py-1.5 bg-[#fe8a24] text-white rounded-lg text-xs font-semibold hover:bg-[#ff9d47] whitespace-nowrap">{t('add')}</button>
             </div>
           </div>
         </div>
         <div className="px-4 sm:px-5 py-3 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-3 sm:px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs sm:text-sm hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-3 sm:px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs sm:text-sm hover:bg-gray-50">{t('cancel')}</button>
           <button onClick={() => onSave(form)} disabled={saving}
             className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-xs sm:text-sm font-semibold disabled:opacity-50 hover:bg-[#ff9d47]">
             {saving ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FiCheck className="w-4 h-4" />}
-            Save
+            {t('save')}
           </button>
         </div>
       </div>
@@ -682,7 +1620,7 @@ const MenuCatModal = ({ category, onSave, onClose, saving, viewLang }) => {
 };
 
 // ── Item modal ───────────────────────────────────────────────────────────────
-const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }) => {
+const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat, t }) => {
   const [form, setForm] = useState(item || emptyItem(defaultCat || ''));
   const [activeLang, setActiveLang] = useState('en');
   const [tab, setTab] = useState('basic');
@@ -696,7 +1634,7 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="text-sm sm:text-base font-bold text-gray-900">{item ? 'Edit Item' : 'Add Item'}</h3>
+          <h3 className="text-sm sm:text-base font-bold text-gray-900">{item ? t('editItem') : t('addItem')}</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500"><FiX className="w-4 h-4" /></button>
         </div>
         {/* Lang tabs */}
@@ -710,7 +1648,7 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
         </div>
         {/* Tabs */}
         <div className="flex border-b border-gray-100 flex-shrink-0 px-3 sm:px-5 overflow-x-auto">
-          {[['basic','Content'],['allergens','Allergens'],['attributes','Attributes']].map(([k,l])=>(
+          {[['basic', t('content')],['allergens', t('allergens')],['attributes', t('attributes')]].map(([k,l])=>(
             <button key={k} onClick={()=>setTab(k)}
               className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${tab===k?'border-[#fe8a24] text-[#fe8a24]':'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>
           ))}
@@ -719,25 +1657,25 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
           {tab === 'basic' && <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">{t('category')}</label>
                 <select value={form.category} onChange={e=>set('category',e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]">
-                  <option value="">— Select —</option>
+                  <option value="">{t('select')}</option>
                   {categories.map(c=><option key={c.id} value={c.id}>{c.name?.en||c.id}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Subcategory</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">{t('subcategory')}</label>
                 <select value={form.subcategory} onChange={e=>set('subcategory',e.target.value)} disabled={subcats.length===0}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24] disabled:bg-gray-50">
-                  <option value="">— None —</option>
+                  <option value="">{t('none')}</option>
                   {subcats.map(s=><option key={s.id} value={s.id}>{s.name?.en||s.id}</option>)}
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Price</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">{t('price')}</label>
                 <input type="number" min="0" step="0.01" value={form.price} onChange={e=>set('price',e.target.value)}
                   placeholder="0.00"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]" />
@@ -748,30 +1686,30 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
                     className={`w-10 h-5 rounded-full relative transition-colors ${form.active?'bg-green-500':'bg-gray-300'}`}>
                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.active?'translate-x-5':'translate-x-0.5'}`} />
                   </div>
-                  <span className="text-xs sm:text-sm text-gray-700">{form.active?'Active':'Hidden'}</span>
+                  <span className="text-xs sm:text-sm text-gray-700">{form.active ? t('activeStatus') : t('hiddenStatus')}</span>
                 </label>
               </div>
             </div>
             {/* Name */}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Item Name</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">{t('itemName')}</label>
               {MENU_LANGUAGES.filter(l=>l.code===activeLang).map(l=>(
                 <div key={l.code} className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm">{l.flag}</span>
                   <input value={form.name[l.code]||''} onChange={e=>set('name',{...form.name,[l.code]:e.target.value})}
-                    placeholder={`Name in ${l.name}…`}
+                    placeholder={`${t('name')} in ${l.name}…`}
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24]" />
                 </div>
               ))}
             </div>
             {/* Description */}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">{t('description')}</label>
               {MENU_LANGUAGES.filter(l=>l.code===activeLang).map(l=>(
                 <div key={l.code} className="flex items-start gap-2">
                   <span className="text-xs sm:text-sm mt-2">{l.flag}</span>
                   <textarea value={form.description[l.code]||''} onChange={e=>set('description',{...form.description,[l.code]:e.target.value})}
-                    rows={3} placeholder={`Description in ${l.name}…`}
+                    rows={3} placeholder={`${t('description')} in ${l.name}…`}
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:border-[#fe8a24] resize-none" />
                 </div>
               ))}
@@ -780,7 +1718,7 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
 
           {tab === 'allergens' && (
             <div>
-              <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">Select allergens present in this item.</p>
+              <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">{t('selectAllergens')}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                 {MENU_ALLERGENS.map(a=>{
                   const active = form.allergens.includes(a.id);
@@ -798,7 +1736,7 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
 
           {tab === 'attributes' && (
             <div>
-              <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">Tag dietary and service attributes.</p>
+              <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">{t('tagItem')}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
                 {MENU_ATTRIBUTES.map(a=>{
                   const active = form.attributes.includes(a.id);
@@ -816,11 +1754,11 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
           )}
         </div>
         <div className="px-4 sm:px-5 py-3 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-3 sm:px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs sm:text-sm hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-3 sm:px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-xs sm:text-sm hover:bg-gray-50">{t('cancel')}</button>
           <button onClick={()=>onSave(form)} disabled={saving}
             className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-xs sm:text-sm font-semibold disabled:opacity-50 hover:bg-[#ff9d47]">
             {saving?<span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<FiCheck className="w-4 h-4"/>}
-            Save Item
+            {t('saveItem')}
           </button>
         </div>
       </div>
@@ -828,7 +1766,26 @@ const MenuItemModal = ({ item, categories, onSave, onClose, saving, defaultCat }
   );
 };
 
+// ─── Main ReservationSettings ──────────────────────────────────────────────────
 const ReservationSettings = ({ selectedRestaurant, onClose }) => {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const [activeTab, setActiveTab] = useState('general');
     const [settings, setSettings] = useState({
     use24HourFormat: false,
@@ -877,7 +1834,6 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
       { minGuests: 6,  maxGuests: 8,  duration: 135 },
       { minGuests: 9,  maxGuests: 99, duration: 165 },
     ],
-    // ── Offer / Campaign Code ──
     enableOfferCode: false,
     offerCodeFieldLabel: 'Have an offer code?',
   });
@@ -926,18 +1882,14 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
       const tables = tablesSnap.docs.map(d => d.data());
       const combos = combosSnap.docs.map(d => d.data());
 
-      // Total capacity = sum of all individual table capacities
       const totalTableCap = tables.reduce((s, t) => s + (t.maxCapacity || t.capacity || 0), 0);
-
-      // Largest combo capacity
       const maxComboCap = combos.reduce((s, c) => Math.max(s, c.maxCapacity || 0), 0);
-
       const maxCap = Math.max(totalTableCap, maxComboCap);
 
       if (maxCap > 0) {
         setSettings(prev => ({ 
           ...prev, 
-          maxGuestsPerReservation: maxCap  // always sync with actual table capacity
+          maxGuestsPerReservation: maxCap
         }));
     }
     } catch (e) {
@@ -999,7 +1951,6 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
         path: `${collectionName}/${restaurantId}/reservationSettings/config`
       });
       
-      // ✅ Save ALL settings (including blockedTimeSlots)
       await setDoc(
         doc(db, collectionName, restaurantId, 'reservationSettings', 'config'),
         {
@@ -1026,14 +1977,14 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
 
   // Updated tabs - using text labels only, no icons
   const tabs = [
-    { id: 'general', label: 'General' },
-    { id: 'booking', label: 'Booking' },
-    { id: 'menu',    label: 'Menu' },
-    { id: 'tables',  label: 'Tables' },
-    { id: 'hours',   label: 'Hours' },
-    { id: 'opening_hours', label: 'Time Slots' },
-    { id: 'notifications', label: 'Notifications' },
-    { id: 'display', label: 'Display' },
+    { id: 'general', label: t('general') },
+    { id: 'booking', label: t('booking') },
+    { id: 'menu',    label: t('menu') },
+    { id: 'tables',  label: t('tables') },
+    { id: 'hours',   label: t('hours') },
+    { id: 'opening_hours', label: t('timeSlots') },
+    { id: 'notifications', label: t('notifications') },
+    { id: 'display', label: t('display') },
   ];
 
   // Responsive tabs - shorter labels on mobile
@@ -1041,11 +1992,11 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
     const isMobile = window.innerWidth < 640;
     return tabs.map(tab => ({
       ...tab,
-      label: isMobile && tab.id === 'opening_hours' ? 'Slots' : 
-             isMobile && tab.id === 'notifications' ? 'Alerts' :
-             isMobile && tab.id === 'display' ? 'View' :
-             isMobile && tab.id === 'tables' ? 'Seats' :
-             isMobile && tab.id === 'booking' ? 'Book' :
+      label: isMobile && tab.id === 'opening_hours' ? t('slots') : 
+             isMobile && tab.id === 'notifications' ? t('alerts') :
+             isMobile && tab.id === 'display' ? t('view') :
+             isMobile && tab.id === 'tables' ? t('seats') :
+             isMobile && tab.id === 'booking' ? t('book') :
              tab.label
     }));
   };
@@ -1154,13 +2105,13 @@ const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 
 const renderGeneralTab = () => (
     <div className="space-y-4">
       <SettingToggle
-        label="24-Hour Time Format"
-        description="Display times in 24-hour format"
+        label={t('twentyFourHourFormat')}
+        description={t('displayTimes24Hour')}
         settingKey="use24HourFormat"
       />
       <SettingNumber
-        label="Dining Duration"
-        description="Default time for dining"
+        label={t('diningDuration')}
+        description={t('defaultDiningTime')}
         settingKey="defaultReservationDuration"
         min={30}
         max={240}
@@ -1168,33 +2119,32 @@ const renderGeneralTab = () => (
         step={15}
       />
       <SettingNumber
-        label="Table Cleanup"
-        description="Time between reservations"
+        label={t('tableCleanup')}
+        description={t('timeBetweenReservations')}
         settingKey="tableCleanupTime"
         min={0}
         max={60}
         unit="min"
       />
 <div className="bg-orange-50 rounded-lg p-3 mt-2">
-        <p className="text-xs text-gray-600">Total slot time</p>
+        <p className="text-xs text-gray-600">{t('totalSlotTime')}</p>
         <p className="text-lg font-bold text-[#fe8a24]">
           {settings.defaultReservationDuration + settings.tableCleanupTime} min
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          Dining + Cleanup
+          {t('diningAndCleanup')}
         </p>
       </div>
 
-      {/* Guest-based duration */}
       <div className="mt-4 pt-4 border-t border-gray-100">
         <SettingToggle
-          label="Guest-Based Duration"
-          description="Set different dining durations based on party size"
+          label={t('guestBasedDuration')}
+          description={t('setDurationByPartySize')}
           settingKey="useGuestBasedDuration"
         />
         {settings.useGuestBasedDuration && (
           <div className="mt-3 space-y-2">
-            <p className="text-xs text-gray-500 mb-3">Define duration (minutes) per guest range. Ranges are evaluated top to bottom — first match wins.</p>
+            <p className="text-xs text-gray-500 mb-3">{t('defineDurationPerRange')}</p>
             {(settings.guestDurationRules || [
               { minGuests: 1,  maxGuests: 2,  duration: 90  },
               { minGuests: 3,  maxGuests: 5,  duration: 120 },
@@ -1232,7 +2182,7 @@ const renderGeneralTab = () => (
                       onChange={e => updateRule('maxGuests', e.target.value)}
                       className="w-10 sm:w-12 px-1 sm:px-2 py-1 border border-gray-200 rounded-lg text-xs text-center focus:outline-none focus:border-[#fe8a24]"
                     />
-                    <span className="text-xs text-gray-400 hidden sm:inline">guests</span>
+                    <span className="text-xs text-gray-400 hidden sm:inline">{t('guests')}</span>
                   </div>
                   <span className="text-gray-300 mx-1">→</span>
                   <div className="flex items-center gap-1.5 flex-1 min-w-[100px]">
@@ -1265,13 +2215,13 @@ const renderGeneralTab = () => (
               }}
               className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-xs font-semibold text-gray-400 hover:border-[#fe8a24] hover:text-[#fe8a24] transition-colors flex items-center justify-center gap-1.5"
             >
-              <FiPlus className="w-3.5 h-3.5" /> Add Rule
+              <FiPlus className="w-3.5 h-3.5" /> {t('addRule')}
             </button>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-1 overflow-x-auto">
               <p className="text-xs text-blue-700 mb-2">
-                💡 When enabled, the matching rule overrides the default dining duration above. Cleanup time is still added on top.
+                💡 {t('whenEnabled')}
               </p>
-              <p className="text-xs font-semibold text-blue-800 mb-2">Preview by party size:</p>
+              <p className="text-xs font-semibold text-blue-800 mb-2">{t('previewByPartySize')}</p>
               <div className="flex flex-wrap gap-1.5">
                 {[1,2,3,4,5,6,7,8,9,10,12].map(g => {
                   const rules = settings.guestDurationRules || [];
@@ -1296,16 +2246,16 @@ const renderGeneralTab = () => (
         )}
       </div>
       <SettingNumber
-        label="Advance Booking"
-        description="Max days in advance"
+        label={t('advanceBooking')}
+        description={t('maxDaysInAdvance')}
         settingKey="maxAdvanceBookingDays"
         min={1}
         max={365}
         unit="days"
       />
       <SettingNumber
-        label="Min Notice"
-        description="Hours before booking"
+        label={t('minNotice')}
+        description={t('hoursBeforeBooking')}
         settingKey="minAdvanceBookingHours"
         min={0}
         max={48}
@@ -1314,23 +2264,21 @@ const renderGeneralTab = () => (
     </div>
 );
 
-
   const renderBookingTab = () => (
   <div className="space-y-4">
     <div className="bg-blue-50 rounded-lg p-3 mb-2">
-      <p className="text-xs font-medium text-blue-800">Public booking page settings</p>
-      <p className="text-xs text-blue-600 mt-1">Control what customers see and need to provide</p>
+      <p className="text-xs font-medium text-blue-800">{t('publicBookingPage')}</p>
+      <p className="text-xs text-blue-600 mt-1">{t('controlCustomerFields')}</p>
     </div>
 
-    {/* Restaurant Contact Info */}
     <div className="mb-4 pb-4 border-b border-gray-100">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        📞 Contact Info
+        📞 {t('contactInfo')}
       </p>
-      <p className="text-xs text-gray-400 mb-3">Used in confirmation emails sent to customers</p>
+      <p className="text-xs text-gray-400 mb-3">{t('usedInConfirmationEmails')}</p>
       <div className="space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-800 mb-1">Contact Email</label>
+          <label className="block text-sm font-medium text-gray-800 mb-1">{t('contactEmail')}</label>
           <input
             type="email"
             value={settings.contactEmail || ''}
@@ -1340,7 +2288,7 @@ const renderGeneralTab = () => (
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-800 mb-1">Contact Phone</label>
+          <label className="block text-sm font-medium text-gray-800 mb-1">{t('contactPhone')}</label>
           <input
             type="tel"
             value={settings.contactPhone || ''}
@@ -1353,42 +2301,41 @@ const renderGeneralTab = () => (
     </div>
 
     <SettingToggle
-      label="Require Full Name"
-      description="Make full name mandatory"
+      label={t('requireFullName')}
+      description={t('makeFullNameMandatory')}
       settingKey="requireName"
     />
-
     <SettingToggle
-      label="Require Email"
-      description="Make email mandatory"
+      label={t('requireEmail')}
+      description={t('makeEmailMandatory')}
       settingKey="requireEmail"
     />
     <SettingToggle
-      label="Require Phone"
-      description="Make phone mandatory"
+      label={t('requirePhone')}
+      description={t('makePhoneMandatory')}
       settingKey="requirePhone"
     />
     <SettingToggle
-      label="Show Company Field"
-      description="Display company field"
+      label={t('showCompanyField')}
+      description={t('displayCompanyField')}
       settingKey="showCompany"
     />
     <SettingToggle
-      label="Show Notes Field"
-      description="Allow special requests"
+      label={t('showNotesField')}
+      description={t('allowSpecialRequests')}
       settingKey="showNotes"
     />
     <SettingNumber
-      label="Max Party Size"
-      description="Maximum guests per online booking"
+      label={t('maxPartySize')}
+      description={t('maximumGuestsPerBooking')}
       settingKey="maxGuestsOnline"
       min={1}
       max={50}
       unit="guests"
     />
     <SettingNumber
-      label="Min Party Size"
-      description="Minimum guests allowed"
+      label={t('minPartySize')}
+      description={t('minimumGuestsAllowed')}
       settingKey="minGuestsPerReservation"
       min={1}
       max={10}
@@ -1396,8 +2343,8 @@ const renderGeneralTab = () => (
     />
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 gap-3 sm:gap-0">
       <div className="flex-1 pr-0 sm:pr-4">
-        <p className="text-sm font-medium text-gray-800">Max Party Size</p>
-        <p className="text-xs text-gray-500 mt-0.5">Overall maximum — based on largest table</p>
+        <p className="text-sm font-medium text-gray-800">{t('maxPartySize')}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{t('overallMaximum')}</p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
@@ -1408,38 +2355,38 @@ const renderGeneralTab = () => (
             })()}
           </span>
         </div>
-        <span className="text-xs text-gray-500 min-w-[30px] sm:min-w-[40px]">guests</span>
+        <span className="text-xs text-gray-500 min-w-[30px] sm:min-w-[40px]">{t('guests')}</span>
       </div>
     </div>
     <SettingToggle
-      label="Block Full Slots"
-      description="Prevent bookings when full"
+      label={t('blockFullSlots')}
+      description={t('preventBookingsWhenFull')}
       settingKey="blockFullTimeSlots"
     />
    <SettingToggle
-      label="Allow Walk-ins"
-      description="Walk-ins without table assignment"
+      label={t('allowWalkIns')}
+      description={t('walkInsWithoutTable')}
       settingKey="allowWalkInsWithoutTable"
     />
 
     <div className="mt-4 pt-4 border-t border-gray-100">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        🎂 Birthday Offer
+        🎂 {t('birthdayOffer')}
       </p>
       <SettingToggle
-        label="Show Birthday Field"
-        description="Ask customers for their birthday"
+        label={t('showBirthdayField')}
+        description={t('askCustomersForBirthday')}
         settingKey="showBirthdayField"
       />
       {settings.showBirthdayField && (
         <div className="py-3 border-b border-gray-100">
-          <p className="text-sm font-medium text-gray-800 mb-1">Birthday Offer Message</p>
-          <p className="text-xs text-gray-500 mb-2">Shown above the birthday date picker</p>
+          <p className="text-sm font-medium text-gray-800 mb-1">{t('birthdayOfferMessage')}</p>
+          <p className="text-xs text-gray-500 mb-2">{t('shownAboveBirthdayPicker')}</p>
           <input
             type="text"
             value={settings.birthdayOfferMessage || ''}
             onChange={e => setSettings(prev => ({ ...prev, birthdayOfferMessage: e.target.value }))}
-            placeholder="Would you like a special offer for your birthday?"
+            placeholder={t('birthdayOfferPlaceholder')}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
           />
         </div>
@@ -1448,60 +2395,60 @@ const renderGeneralTab = () => (
 
     <div className="mt-4 pt-4 border-t border-gray-100">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        🍽️ Menu on Booking Page
+        🍽️ {t('menuOnBookingPage')}
       </p>
       <SettingToggle
-        label="Show Menu on Public Page"
-        description="Display your menu below the booking form"
+        label={t('showMenuOnPublicPage')}
+        description={t('displayMenuBelowBooking')}
         settingKey="showMenuOnPublicPage"
       />
       {settings.showMenuOnPublicPage && (
         <>
           <SettingNumber
-            label="Min Guests to Show Menu"
-            description="Menu only appears when party size reaches this number"
+            label={t('minGuestsToShowMenu')}
+            description={t('menuAppearsWhenPartySize')}
             settingKey="menuDisplayMinGuests"
             min={1}
             max={50}
             unit="guests"
           />
           <SettingToggle
-            label="Require Group Menu Selection"
-            description="Force customers to select a menu item before confirming"
+            label={t('requireGroupMenuSelection')}
+            description={t('forceCustomersToSelectItem')}
             settingKey="requireGroupMenuSelection"
           />
           {settings.requireGroupMenuSelection && (
             <div className="py-3 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-800 mb-1">Requirement Message</p>
-              <p className="text-xs text-gray-500 mb-2">Shown when group menu selection is required</p>
+              <p className="text-sm font-medium text-gray-800 mb-1">{t('requirementMessage')}</p>
+              <p className="text-xs text-gray-500 mb-2">{t('shownWhenGroupMenuRequired')}</p>
               <input
                 type="text"
                 value={settings.groupMenuRequiredMessage || ''}
                 onChange={e => setSettings(prev => ({ ...prev, groupMenuRequiredMessage: e.target.value }))}
-                placeholder="Please select your group menu to continue"
+                placeholder={t('groupMenuRequiredPlaceholder')}
                 className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
               />
             </div>
           )}
           <div className="py-3 border-b border-gray-100">
-            <p className="text-sm font-medium text-gray-800 mb-1">Menu Section Title</p>
-            <p className="text-xs text-gray-500 mb-2">Heading shown above the menu</p>
+            <p className="text-sm font-medium text-gray-800 mb-1">{t('menuSectionTitle')}</p>
+            <p className="text-xs text-gray-500 mb-2">{t('headingShownAboveMenu')}</p>
             <input
               type="text"
               value={settings.menuDisplayTitle || ''}
               onChange={e => setSettings(prev => ({ ...prev, menuDisplayTitle: e.target.value }))}
-              placeholder="Our Menu"
+              placeholder={t('menuTitlePlaceholder')}
               className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
             />
           </div>
           <div className="py-3">
-            <p className="text-sm font-medium text-gray-800 mb-1">Menu Section Subtitle</p>
-            <p className="text-xs text-gray-500 mb-2">Shown below the title</p>
+            <p className="text-sm font-medium text-gray-800 mb-1">{t('menuSectionSubtitle')}</p>
+            <p className="text-xs text-gray-500 mb-2">{t('shownBelowTitle')}</p>
             <input
               type="text"
               value={settings.menuDisplaySubtitle || ''}
               onChange={e => setSettings(prev => ({ ...prev, menuDisplaySubtitle: e.target.value }))}
-              placeholder="Browse our menu selection for your party"
+              placeholder={t('menuSubtitlePlaceholder')}
               className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
             />
           </div>
@@ -1511,24 +2458,24 @@ const renderGeneralTab = () => (
 
     <div className="mt-6 pt-4 border-t border-gray-200">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        🎉 Reservation Success Page
+        🎉 {t('reservationSuccessPage')}
       </p>
       
       <div className="py-3 border-b border-gray-100">
-        <p className="text-sm font-medium text-gray-800 mb-1">Thank You Message</p>
-        <p className="text-xs text-gray-500 mb-2">Shown after a successful reservation</p>
+        <p className="text-sm font-medium text-gray-800 mb-1">{t('thankYouMessage')}</p>
+        <p className="text-xs text-gray-500 mb-2">{t('shownAfterSuccessfulReservation')}</p>
         <input
           type="text"
           value={settings.thankYouMessage || ''}
           onChange={e => setSettings(prev => ({ ...prev, thankYouMessage: e.target.value }))}
-          placeholder="Thank you for your reservation!"
+          placeholder={t('thankYouPlaceholder')}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
         />
       </div>
       
 <div className="py-3">
-        <p className="text-sm font-medium text-gray-800 mb-1">Restaurant Page URL</p>
-        <p className="text-xs text-gray-500 mb-2">Link shown on success page to return to your website</p>
+        <p className="text-sm font-medium text-gray-800 mb-1">{t('restaurantPageUrl')}</p>
+        <p className="text-xs text-gray-500 mb-2">{t('linkShownOnSuccessPage')}</p>
         <input
           type="url"
           value={settings.restaurantPageUrl || ''}
@@ -1541,27 +2488,25 @@ const renderGeneralTab = () => (
 
     <div className="mt-6 pt-4 border-t border-gray-200">
       <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-        🎟️ Offer / Campaign Code
+        🎟️ {t('offerCampaignCode')}
       </p>
       <p className="text-xs text-gray-400 mb-3">
-        One unified code field for every marketing channel — CRM thank-you emails, Facebook,
-        Instagram, Google Ads, flyers/QR codes, or the Dinery App. Links can pre-fill it
-        automatically; guests can also type a code in manually.
+        {t('oneUnifiedCodeField')}
       </p>
       <SettingToggle
-        label="Enable Offer Code Field"
-        description="Show an offer code field on the public reservation page"
+        label={t('enableOfferCodeField')}
+        description={t('showOfferCodeField')}
         settingKey="enableOfferCode"
       />
       {settings.enableOfferCode && (
         <div className="py-3">
-          <p className="text-sm font-medium text-gray-800 mb-1">Field Label</p>
-          <p className="text-xs text-gray-500 mb-2">Shown above the offer code input</p>
+          <p className="text-sm font-medium text-gray-800 mb-1">{t('fieldLabel')}</p>
+          <p className="text-xs text-gray-500 mb-2">{t('shownAboveOfferCodeInput')}</p>
           <input
             type="text"
             value={settings.offerCodeFieldLabel || ''}
             onChange={e => setSettings(prev => ({ ...prev, offerCodeFieldLabel: e.target.value }))}
-            placeholder="Have an offer code?"
+            placeholder={t('offerCodePlaceholder')}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 focus:border-[#fe8a24]"
           />
         </div>
@@ -1573,23 +2518,23 @@ const renderGeneralTab = () => (
   const renderTablesTab = () => (
     <div className="space-y-4">
       <SettingToggle
-        label="Require Table Assignment"
-        description="Block if no suitable table"
+        label={t('requireTableAssignment')}
+        description={t('blockIfNoSuitableTable')}
         settingKey="requireTableAssignment"
       />
       <SettingToggle
-        label="Auto-Assign Tables"
-        description="Automatic table assignment"
+        label={t('autoAssignTables')}
+        description={t('automaticTableAssignment')}
         settingKey="autoAssignTables"
       />
       <SettingToggle
-        label="Allow Overbooking"
-        description="Allow over capacity (not recommended)"
+        label={t('allowOverbooking')}
+        description={t('allowOverCapacity')}
         settingKey="allowOverbooking"
       />
       <SettingToggle
-        label="Show Capacity Warnings"
-        description="Alert when party exceeds capacity"
+        label={t('showCapacityWarnings')}
+        description={t('alertWhenPartyExceedsCapacity')}
         settingKey="showTableCapacityWarnings"
       />
     </div>
@@ -1628,7 +2573,7 @@ const renderGeneralTab = () => (
                   <div>
                     <h4 className="font-semibold text-gray-800 text-sm sm:text-base">{dayName}</h4>
                     <p className="text-xs text-gray-500">
-                      {isClosed ? 'Closed' : `${hours.openTime} - ${hours.closeTime}`}
+                      {isClosed ? t('closed') : `${hours.openTime} - ${hours.closeTime}`}
                     </p>
                   </div>
                   {!isClosed && (
@@ -1647,7 +2592,7 @@ const renderGeneralTab = () => (
                       <option value={60}>60 min</option>
                     </select>
                     <p className="text-[10px] text-gray-400 text-left sm:text-right max-w-[200px] leading-tight">
-                      Slot Interval: how often time slots are displayed
+                      {t('slotInterval')}
                     </p>
                   </div>
                   )}
@@ -1664,10 +2609,10 @@ const renderGeneralTab = () => (
                       }}
                       className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg"
                     >
-                      <option value={0}>No start buffer</option>
-                      <option value={15}>+15 min buffer</option>
-                      <option value={30}>+30 min buffer</option>
-                      <option value={60}>+60 min buffer</option>
+                      <option value={0}>{t('noStartBuffer')}</option>
+                      <option value={15}>+15 min {t('startBuffer')}</option>
+                      <option value={30}>+30 min {t('startBuffer')}</option>
+                      <option value={60}>+60 min {t('startBuffer')}</option>
                     </select>
                     <select
                       value={daySettings.endOffset || 0}
@@ -1678,17 +2623,17 @@ const renderGeneralTab = () => (
                       }}
                       className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg"
                     >
-                      <option value={0}>No end buffer</option>
-                      <option value={15}>-15 min buffer</option>
-                      <option value={30}>-30 min buffer</option>
-                      <option value={60}>-60 min buffer</option>
+                      <option value={0}>{t('noEndBuffer')}</option>
+                      <option value={15}>-15 min {t('endBuffer')}</option>
+                      <option value={30}>-30 min {t('endBuffer')}</option>
+                      <option value={60}>-60 min {t('endBuffer')}</option>
                     </select>
                   </div>
                 )}
                 
                 {isClosed && (
                   <div className="mt-2 text-center text-xs text-gray-400 bg-gray-50 rounded-lg py-2">
-                    Not accepting bookings
+                    {t('notAcceptingBookings')}
                   </div>
                 )}
               </div>
@@ -1699,9 +2644,9 @@ const renderGeneralTab = () => (
       
       {(!restaurantData?.customHours || restaurantData.customHours.length === 0) && !loadingRestaurantData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-xs font-medium text-yellow-800">⚠️ No operating hours set</p>
+          <p className="text-xs font-medium text-yellow-800">⚠️ {t('noOperatingHoursSet')}</p>
           <p className="text-xs text-yellow-700 mt-1">
-            Please configure restaurant hours in main settings first
+            {t('configureRestaurantHours')}
           </p>
         </div>
       )}
@@ -1710,7 +2655,6 @@ const renderGeneralTab = () => (
 
   // ✅ NEW TAB: Opening Hours with Time Slot Toggle Grid
   const renderOpeningHoursTab = () => {
-    // Generate time slots for a given day
     const generateTimeSlots = (openTime, closeTime, interval = 15) => {
       const slots = [];
       if (!openTime || !closeTime) return slots;
@@ -1720,7 +2664,6 @@ const renderGeneralTab = () => (
       const openMinutes = openH * 60 + openM;
       let closeMinutes = closeH * 60 + closeM;
       
-      // Handle past-midnight
       if (closeMinutes <= openMinutes) {
         closeMinutes += 24 * 60;
       }
@@ -1736,17 +2679,14 @@ const renderGeneralTab = () => (
       return slots;
     };
     
-    // Toggle a specific time slot on/off
     const toggleTimeSlot = (dayName, timeStr) => {
       const blocked = settings.blockedTimeSlots || {};
       const dayBlocked = blocked[dayName] || [];
       
       let newDayBlocked;
       if (dayBlocked.includes(timeStr)) {
-        // Remove from blocked list (turn ON)
         newDayBlocked = dayBlocked.filter(t => t !== timeStr);
       } else {
-        // Add to blocked list (turn OFF)
         newDayBlocked = [...dayBlocked, timeStr];
       }
       
@@ -1761,9 +2701,9 @@ const renderGeneralTab = () => (
     return (
       <div className="space-y-4">
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-3 sm:p-4 mb-4">
-          <h3 className="text-sm font-bold text-orange-900 mb-1">🕐 Individual Time Slot Control</h3>
+          <h3 className="text-sm font-bold text-orange-900 mb-1">🕐 {t('individualTimeSlotControl')}</h3>
           <p className="text-xs text-orange-700">
-            Toggle specific time slots on/off for each day. Green = available, Red = blocked.
+            {t('toggleSpecificTimeSlots')}
           </p>
         </div>
 
@@ -1793,7 +2733,6 @@ const renderGeneralTab = () => (
               const isClosed = !hours;
               const daySettings = settings?.dayIntervals?.[dayName] || { interval: 30, startOffset: 0, endOffset: 0 };
               
-              // Generate time slots for this day
               const interval = daySettings?.interval || settings?.timeSlotInterval || 30;
               const startOffset = daySettings?.startOffset || 0;
               const endOffset = daySettings?.endOffset || 0;
@@ -1823,37 +2762,35 @@ const renderGeneralTab = () => (
                           {dayName}
                         </h4>
                         <p className={`text-xs mt-1 ${isClosed ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {isClosed ? 'Closed - No bookings accepted' : `Restaurant hours: ${hours.openTime} - ${hours.closeTime}${startOffset || endOffset ? ` (bookings: ${effOpenTime} - ${effCloseTime})` : ''}`}
+                          {isClosed ? `${t('closed')} - ${t('notAcceptingBookings')}` : `${t('restaurantHours')}: ${hours.openTime} - ${hours.closeTime}${startOffset || endOffset ? ` (${t('bookings')}: ${effOpenTime} - ${effCloseTime})` : ''}`}
                         </p>
                       </div>
                       
-                      {/* Time interval info */}
                       {!isClosed && (
                         <div className="text-left sm:text-right">
                           <p className="text-xs font-semibold text-gray-700">
-                            {interval} min slots
+                            {interval} min {t('slots')}
                           </p>
                           <p className="text-[10px] text-gray-500">
-                            {timeSlots.length} total slots
+                            {timeSlots.length} {t('totalSlots')}
                           </p>
                         </div>
                       )}
                     </div>
                   </div>
                   
-                  {/* ✅ TIME SLOT GRID WITH ON/OFF TOGGLES */}
                   {!isClosed && timeSlots.length > 0 && (
                     <div className="p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
                         <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                          📅 Available Time Slots
+                          📅 {t('availableTimeSlots')}
                         </p>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-green-700 font-medium">
-                            ✓ {timeSlots.length - blockedSlots.length} Available
+                            ✓ {timeSlots.length - blockedSlots.length} {t('available')}
                           </span>
                           <span className="text-xs text-red-700 font-medium">
-                            ✕ {blockedSlots.length} Blocked
+                            ✕ {blockedSlots.length} {t('blocked')}
                           </span>
                         </div>
                       </div>
@@ -1873,7 +2810,7 @@ const renderGeneralTab = () => (
                                   ? 'bg-red-50 border-red-300 text-red-500 line-through hover:bg-red-100'
                                   : 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
                               }`}
-                              title={isBlocked ? 'Click to enable this slot' : 'Click to disable this slot'}
+                              title={isBlocked ? t('clickToEnableSlot') : t('clickToDisableSlot')}
                             >
                               {display}
                               {isBlocked && (
@@ -1886,7 +2823,6 @@ const renderGeneralTab = () => (
                         })}
                       </div>
                       
-                      {/* Quick actions */}
                       <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-3 border-t border-gray-100">
                         <button
                           onClick={() => {
@@ -1896,7 +2832,7 @@ const renderGeneralTab = () => (
                           }}
                           className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 border-2 border-green-300 rounded-lg transition-all shadow-sm hover:shadow"
                         >
-                          ✓ Enable All Slots
+                          ✓ {t('enableAllSlots')}
                         </button>
                         <button
                           onClick={() => {
@@ -1906,16 +2842,15 @@ const renderGeneralTab = () => (
                           }}
                           className="flex-1 px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 border-2 border-red-300 rounded-lg transition-all shadow-sm hover:shadow"
                         >
-                          ✕ Disable All Slots
+                          ✕ {t('disableAllSlots')}
                         </button>
                       </div>
                     </div>
                   )}
                   
-                  {/* Closed state */}
                   {isClosed && (
                     <div className="text-center text-xs text-gray-400 bg-gray-100 rounded-lg py-4">
-                      ⚠️ Restaurant is closed on {dayName}
+                      ⚠️ {t('restaurantClosedOn')} {dayName}
                     </div>
                   )}
                 </div>
@@ -1926,23 +2861,22 @@ const renderGeneralTab = () => (
         
         {(!restaurantData?.customHours || restaurantData.customHours.length === 0) && !loadingRestaurantData && (
           <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-            <p className="text-sm font-bold text-yellow-900 mb-1">⚠️ No operating hours configured</p>
+            <p className="text-sm font-bold text-yellow-900 mb-1">⚠️ {t('noOperatingHoursConfigured')}</p>
             <p className="text-xs text-yellow-700">
-              Please set your restaurant's operating hours in the main settings before configuring time slot availability.
+              {t('setOperatingHoursFirst')}
             </p>
           </div>
         )}
         
-        {/* Info box */}
         <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 sm:p-4">
-          <p className="text-xs font-bold text-blue-900 mb-2">💡 How this works</p>
+          <p className="text-xs font-bold text-blue-900 mb-2">💡 {t('howThisWorks')}</p>
           <ul className="text-xs text-blue-800 space-y-1.5 list-disc list-inside">
-            <li><span className="font-bold text-green-700">Green slots</span> are available for customer bookings</li>
-            <li><span className="font-bold text-red-700">Red crossed slots</span> are blocked and won't appear on booking pages</li>
-            <li>Click any time slot to toggle it between available and blocked</li>
-            <li>Use "Enable All" or "Disable All" for quick batch changes</li>
-            <li>Time slots are based on the interval setting in the "Hours" tab (15/30/60 min)</li>
-            <li>Don't forget to click <span className="font-bold text-orange-600">"Save Changes"</span> at the bottom!</li>
+            <li>{t('greenSlotsAvailable')}</li>
+            <li>{t('redSlotsBlocked')}</li>
+            <li>{t('clickToToggleSlot')}</li>
+            <li>{t('useEnableAllDisableAll')}</li>
+            <li>{t('slotsBasedOnInterval')}</li>
+            <li>{t('dontForgetToSave')}</li>
           </ul>
         </div>
       </div>
@@ -1952,18 +2886,18 @@ const renderGeneralTab = () => (
   const renderNotificationsTab = () => (
     <div className="space-y-4">
       <SettingToggle
-        label="Confirmation Email"
-        description="Send when booking confirmed"
+        label={t('confirmationEmail')}
+        description={t('sendWhenBookingConfirmed')}
         settingKey="sendConfirmationEmail"
       />
       <SettingToggle
-        label="Reminder Email"
-        description="Send before reservation"
+        label={t('reminderEmail')}
+        description={t('sendBeforeReservation')}
         settingKey="sendReminderEmail"
       />
       <SettingNumber
-        label="Reminder Time"
-        description="Hours before reservation"
+        label={t('reminderTime')}
+        description={t('hoursBeforeReservation')}
         settingKey="reminderHoursBefore"
         min={1}
         max={168}
@@ -1975,13 +2909,13 @@ const renderGeneralTab = () => (
 const renderDisplayTab = () => (
     <div className="space-y-4">
       <SettingToggle
-        label="Time Bar Start of Hour"
-        description="Show hour labels at beginning"
+        label={t('timeBarStartOfHour')}
+        description={t('showHourLabelsAtBeginning')}
         settingKey="timeBarShowsStartOfHour"
       />
       <SettingToggle
-        label="Highlight Current Time"
-        description="Show current time indicator"
+        label={t('highlightCurrentTime')}
+        description={t('showCurrentTimeIndicator')}
         settingKey="highlightCurrentTime"
       />
     </div>
@@ -2003,7 +2937,7 @@ const renderDisplayTab = () => (
         {/* Header */}
         <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-gradient-to-r from-orange-50 to-white">
           <div className="min-w-0">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 truncate">Reservation Settings</h2>
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 truncate">{t('reservationSettings')}</h2>
             <p className="text-[10px] sm:text-sm text-gray-500 mt-0.5 truncate max-w-[150px] sm:max-w-none">{selectedRestaurant?.name}</p>
           </div>
           <button 
@@ -2054,7 +2988,7 @@ const renderDisplayTab = () => (
             onClick={onClose}
             className="w-full sm:w-auto px-4 sm:px-5 py-2 sm:py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-white transition-colors text-sm"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             onClick={handleSave}
@@ -2072,7 +3006,7 @@ const renderDisplayTab = () => (
             ) : (
               <FiSave className="w-4 h-4 sm:w-5 sm:h-5" />
             )}
-            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+            {saving ? t('saving') : saved ? t('saved') : t('saveChanges')}
           </button>
         </div>
       </div>

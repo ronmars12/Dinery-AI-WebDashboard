@@ -6,6 +6,397 @@ import { firestore, auth } from '../../firebase';
 import { useTheme } from '../../ThemeContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    // Calendar
+    loading: 'Loading reservations...',
+    noTablesYet: 'No tables yet',
+    addTablesFirst: 'Add tables in Table Management first',
+    tableCombinations: 'Table Combinations',
+    unassigned: 'Unassigned',
+    capacity: 'Capacity',
+    table: 'Table',
+    reservations: 'reservations',
+    res: 'res',
+    guests: 'guests',
+    status: 'Status',
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    mobile: 'Mobile',
+    change: 'Change',
+    cancel: 'Cancel',
+    dragToMove: 'Drag to move',
+    resize: 'Resize',
+    clickSlot: 'Click slot',
+    today: 'Today',
+    sunday: 'Sunday',
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+    sun: 'Sun',
+    mon: 'Mon',
+    tue: 'Tue',
+    wed: 'Wed',
+    thu: 'Thu',
+    fri: 'Fri',
+    sat: 'Sat',
+    // Day view headers
+    day: 'Day',
+    week: 'Week',
+    month: 'Month',
+    // Meal status
+    mealStatus: 'Meal Status',
+    arrived: 'Arrived',
+    foodDelivered: 'Food delivered',
+    dessert: 'Dessert',
+    billDelivered: 'Bill delivered',
+    tableCleared: 'Table cleared',
+    noShow: 'No show',
+    clearOut: 'Clear out',
+    // Context menu
+    switchTables: 'Switch tables',
+    overlap: 'Overlap',
+    // Time change
+    confirmTimeChange: 'Confirm time change',
+    confirmTimeChangeMsg: 'Would you like to change this reservation from {oldTime} to {newTime}?',
+    // Notifications
+    reservationUpdated: 'Reservation Updated –',
+    manageMyReservation: 'Manage My Reservation',
+    restaurantContact: 'Restaurant Contact',
+    // Stats
+    totalGuests: 'guests',
+    more: 'more',
+    // Table view
+    hour: 'hour',
+    colons: ':',
+    // Status labels
+    confirmedLabel: 'Confirmed',
+    pendingLabel: 'Pending',
+    cancelledLabel: 'Cancelled',
+    completedLabel: 'Completed',
+    // Conflict
+    reservationConflict: 'Reservation Conflict',
+    // Touch
+    refreshCalendar: 'Refresh Calendar',
+    switchToLightMode: 'Switch to Light Mode',
+    switchToDarkMode: 'Switch to Dark Mode',
+    // Day names
+    sundayShort: 'Sun',
+    mondayShort: 'Mon',
+    tuesdayShort: 'Tue',
+    wednesdayShort: 'Wed',
+    thursdayShort: 'Thu',
+    fridayShort: 'Fri',
+    saturdayShort: 'Sat',
+  },
+  fi: {
+    loading: 'Ladataan varauksia...',
+    noTablesYet: 'Ei vielä pöytiä',
+    addTablesFirst: 'Lisää pöytiä Pöytähallinnassa ensin',
+    tableCombinations: 'Pöytäyhdistelmät',
+    unassigned: 'Määrittämättä',
+    capacity: 'Kapasiteetti',
+    table: 'Pöytä',
+    reservations: 'varaukset',
+    res: 'var',
+    guests: 'vierasta',
+    status: 'Tila',
+    pending: 'Odottaa',
+    confirmed: 'Vahvistettu',
+    completed: 'Valmis',
+    cancelled: 'Peruttu',
+    mobile: 'Mobiili',
+    change: 'Muutos',
+    cancel: 'Peruuta',
+    dragToMove: 'Vedä siirtääksesi',
+    resize: 'Muuta kokoa',
+    clickSlot: 'Napsauta aukkoa',
+    today: 'Tänään',
+    sunday: 'Sunnuntai',
+    monday: 'Maanantai',
+    tuesday: 'Tiistai',
+    wednesday: 'Keskiviikko',
+    thursday: 'Torstai',
+    friday: 'Perjantai',
+    saturday: 'Lauantai',
+    sun: 'Su',
+    mon: 'Ma',
+    tue: 'Ti',
+    wed: 'Ke',
+    thu: 'To',
+    fri: 'Pe',
+    sat: 'La',
+    day: 'Päivä',
+    week: 'Viikko',
+    month: 'Kuukausi',
+    mealStatus: 'Aterian tila',
+    arrived: 'Saapunut',
+    foodDelivered: 'Ruoka toimitettu',
+    dessert: 'Jälkiruoka',
+    billDelivered: 'Lasku toimitettu',
+    tableCleared: 'Pöytä tyhjennetty',
+    noShow: 'Ei saapunut',
+    clearOut: 'Tyhjennä',
+    switchTables: 'Vaihda pöydät',
+    overlap: 'Päällekkäin',
+    confirmTimeChange: 'Vahvista ajan muutos',
+    confirmTimeChangeMsg: 'Haluatko muuttaa varauksen ajasta {oldTime} aikaan {newTime}?',
+    reservationUpdated: 'Varaus päivitetty –',
+    manageMyReservation: 'Hallitse varaustani',
+    restaurantContact: 'Ravintolan yhteystiedot',
+    totalGuests: 'vierasta',
+    more: 'lisää',
+    hour: 'tunti',
+    colons: ':',
+    confirmedLabel: 'Vahvistettu',
+    pendingLabel: 'Odottaa',
+    cancelledLabel: 'Peruttu',
+    completedLabel: 'Valmis',
+    reservationConflict: 'Varausristiriita',
+    refreshCalendar: 'Päivitä kalenteri',
+    switchToLightMode: 'Vaihda vaaleaan tilaan',
+    switchToDarkMode: 'Vaihda tummaan tilaan',
+    sundayShort: 'Su',
+    mondayShort: 'Ma',
+    tuesdayShort: 'Ti',
+    wednesdayShort: 'Ke',
+    thursdayShort: 'To',
+    fridayShort: 'Pe',
+    saturdayShort: 'La',
+  },
+  no: {
+    loading: 'Laster reservasjoner...',
+    noTablesYet: 'Ingen bord ennå',
+    addTablesFirst: 'Legg til bord i Bordhåndtering først',
+    tableCombinations: 'Bordkombinasjoner',
+    unassigned: 'Ikke tildelt',
+    capacity: 'Kapasitet',
+    table: 'Bord',
+    reservations: 'reservasjoner',
+    res: 'res',
+    guests: 'gjester',
+    status: 'Status',
+    pending: 'Venter',
+    confirmed: 'Bekreftet',
+    completed: 'Fullført',
+    cancelled: 'Avbestilt',
+    mobile: 'Mobil',
+    change: 'Endring',
+    cancel: 'Avbryt',
+    dragToMove: 'Dra for å flytte',
+    resize: 'Endre størrelse',
+    clickSlot: 'Klikk på spor',
+    today: 'I dag',
+    sunday: 'Søndag',
+    monday: 'Mandag',
+    tuesday: 'Tirsdag',
+    wednesday: 'Onsdag',
+    thursday: 'Torsdag',
+    friday: 'Fredag',
+    saturday: 'Lørdag',
+    sun: 'Søn',
+    mon: 'Man',
+    tue: 'Tir',
+    wed: 'Ons',
+    thu: 'Tor',
+    fri: 'Fre',
+    sat: 'Lør',
+    day: 'Dag',
+    week: 'Uke',
+    month: 'Måned',
+    mealStatus: 'Måltidsstatus',
+    arrived: 'Ankommet',
+    foodDelivered: 'Mat levert',
+    dessert: 'Dessert',
+    billDelivered: 'Regning levert',
+    tableCleared: 'Bord ryddet',
+    noShow: 'Ikke møtt',
+    clearOut: 'Rydd ut',
+    switchTables: 'Bytt bord',
+    overlap: 'Overlapp',
+    confirmTimeChange: 'Bekreft tidsendring',
+    confirmTimeChangeMsg: 'Vil du endre denne reservasjonen fra {oldTime} til {newTime}?',
+    reservationUpdated: 'Reservasjon oppdatert –',
+    manageMyReservation: 'Administrer reservasjonen min',
+    restaurantContact: 'Restaurantkontakt',
+    totalGuests: 'gjester',
+    more: 'mer',
+    hour: 'time',
+    colons: ':',
+    confirmedLabel: 'Bekreftet',
+    pendingLabel: 'Venter',
+    cancelledLabel: 'Avbestilt',
+    completedLabel: 'Fullført',
+    reservationConflict: 'Reservasjonskonflikt',
+    refreshCalendar: 'Oppdater kalender',
+    switchToLightMode: 'Bytt til lys modus',
+    switchToDarkMode: 'Bytt til mørk modus',
+    sundayShort: 'Søn',
+    mondayShort: 'Man',
+    tuesdayShort: 'Tir',
+    wednesdayShort: 'Ons',
+    thursdayShort: 'Tor',
+    fridayShort: 'Fre',
+    saturdayShort: 'Lør',
+  },
+  sv: {
+    loading: 'Laddar bokningar...',
+    noTablesYet: 'Inga bord ännu',
+    addTablesFirst: 'Lägg till bord i Bordhantering först',
+    tableCombinations: 'Bordkombinationer',
+    unassigned: 'Ej tilldelad',
+    capacity: 'Kapacitet',
+    table: 'Bord',
+    reservations: 'bokningar',
+    res: 'bok',
+    guests: 'gäster',
+    status: 'Status',
+    pending: 'Väntar',
+    confirmed: 'Bekräftad',
+    completed: 'Slutförd',
+    cancelled: 'Avbokad',
+    mobile: 'Mobil',
+    change: 'Ändring',
+    cancel: 'Avbryt',
+    dragToMove: 'Dra för att flytta',
+    resize: 'Ändra storlek',
+    clickSlot: 'Klicka på plats',
+    today: 'Idag',
+    sunday: 'Söndag',
+    monday: 'Måndag',
+    tuesday: 'Tisdag',
+    wednesday: 'Onsdag',
+    thursday: 'Torsdag',
+    friday: 'Fredag',
+    saturday: 'Lördag',
+    sun: 'Sön',
+    mon: 'Mån',
+    tue: 'Tis',
+    wed: 'Ons',
+    thu: 'Tor',
+    fri: 'Fre',
+    sat: 'Lör',
+    day: 'Dag',
+    week: 'Vecka',
+    month: 'Månad',
+    mealStatus: 'Måltidsstatus',
+    arrived: 'Anländ',
+    foodDelivered: 'Mat levererad',
+    dessert: 'Efterrätt',
+    billDelivered: 'Nota levererad',
+    tableCleared: 'Bord rensat',
+    noShow: 'Ej anländ',
+    clearOut: 'Rensa ut',
+    switchTables: 'Byt bord',
+    overlap: 'Överlapp',
+    confirmTimeChange: 'Bekräfta tidsändring',
+    confirmTimeChangeMsg: 'Vill du ändra denna bokning från {oldTime} till {newTime}?',
+    reservationUpdated: 'Bokning uppdaterad –',
+    manageMyReservation: 'Hantera min bokning',
+    restaurantContact: 'Restaurangkontakt',
+    totalGuests: 'gäster',
+    more: 'mer',
+    hour: 'timme',
+    colons: ':',
+    confirmedLabel: 'Bekräftad',
+    pendingLabel: 'Väntar',
+    cancelledLabel: 'Avbokad',
+    completedLabel: 'Slutförd',
+    reservationConflict: 'Bokningskonflikt',
+    refreshCalendar: 'Uppdatera kalender',
+    switchToLightMode: 'Byt till ljust läge',
+    switchToDarkMode: 'Byt till mörkt läge',
+    sundayShort: 'Sön',
+    mondayShort: 'Mån',
+    tuesdayShort: 'Tis',
+    wednesdayShort: 'Ons',
+    thursdayShort: 'Tor',
+    fridayShort: 'Fre',
+    saturdayShort: 'Lör',
+  },
+  de: {
+    loading: 'Lade Reservierungen...',
+    noTablesYet: 'Noch keine Tische',
+    addTablesFirst: 'Füge zuerst Tische in der Tischverwaltung hinzu',
+    tableCombinations: 'Tischkombinationen',
+    unassigned: 'Nicht zugewiesen',
+    capacity: 'Kapazität',
+    table: 'Tisch',
+    reservations: 'Reservierungen',
+    res: 'Res.',
+    guests: 'Gäste',
+    status: 'Status',
+    pending: 'Ausstehend',
+    confirmed: 'Bestätigt',
+    completed: 'Abgeschlossen',
+    cancelled: 'Storniert',
+    mobile: 'Mobil',
+    change: 'Änderung',
+    cancel: 'Abbrechen',
+    dragToMove: 'Ziehen zum Verschieben',
+    resize: 'Größe ändern',
+    clickSlot: 'Auf Slot klicken',
+    today: 'Heute',
+    sunday: 'Sonntag',
+    monday: 'Montag',
+    tuesday: 'Dienstag',
+    wednesday: 'Mittwoch',
+    thursday: 'Donnerstag',
+    friday: 'Freitag',
+    saturday: 'Samstag',
+    sun: 'So',
+    mon: 'Mo',
+    tue: 'Di',
+    wed: 'Mi',
+    thu: 'Do',
+    fri: 'Fr',
+    sat: 'Sa',
+    day: 'Tag',
+    week: 'Woche',
+    month: 'Monat',
+    mealStatus: 'Mahlzeitstatus',
+    arrived: 'Angekommen',
+    foodDelivered: 'Essen geliefert',
+    dessert: 'Dessert',
+    billDelivered: 'Rechnung geliefert',
+    tableCleared: 'Tisch geräumt',
+    noShow: 'Nicht erschienen',
+    clearOut: 'Räumen',
+    switchTables: 'Tische tauschen',
+    overlap: 'Überlappung',
+    confirmTimeChange: 'Zeitänderung bestätigen',
+    confirmTimeChangeMsg: 'Möchten Sie diese Reservierung von {oldTime} auf {newTime} ändern?',
+    reservationUpdated: 'Reservierung aktualisiert –',
+    manageMyReservation: 'Meine Reservierung verwalten',
+    restaurantContact: 'Restaurant Kontakt',
+    totalGuests: 'Gäste',
+    more: 'mehr',
+    hour: 'Stunde',
+    colons: ':',
+    confirmedLabel: 'Bestätigt',
+    pendingLabel: 'Ausstehend',
+    cancelledLabel: 'Storniert',
+    completedLabel: 'Abgeschlossen',
+    reservationConflict: 'Reservierungskonflikt',
+    refreshCalendar: 'Kalender aktualisieren',
+    switchToLightMode: 'Zu hellem Modus wechseln',
+    switchToDarkMode: 'Zu dunklem Modus wechseln',
+    sundayShort: 'So',
+    mondayShort: 'Mo',
+    tuesdayShort: 'Di',
+    wednesdayShort: 'Mi',
+    thursdayShort: 'Do',
+    fridayShort: 'Fr',
+    saturdayShort: 'Sa',
+  },
+};
+
 // ─── Note Indicator Component ──────────────────────────────────────────────────
 const NoteIndicator = ({ publicNote, internalNote, isDark }) => {
   const hasPublic = publicNote && publicNote.trim().length > 0;
@@ -76,6 +467,25 @@ const CalendarView = ({
   onCreateReservation, selectedRestaurant, forceRender: externalForceRender = 0,
 }) => {
   const { isDarkMode, toggleTheme } = useTheme();
+  
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  React.useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const [currentDate, setCurrentDate] = useState(selectedDate);
   const [viewRange, setViewRange] = useState('day');
   const [localReservations, setLocalReservations] = useState(reservations);
@@ -419,7 +829,6 @@ const CalendarView = ({
       text: isDarkMode ? '#93c5fd' : '#1e40af', 
       shadow: '0 2px 4px rgba(59, 130, 246, 0.1)' 
     },
-    // add these two:
     table_cleared: {
       bg: isDarkMode ? 'linear-gradient(135deg, #1a3a1a 0%, #0f2410 100%)' : 'linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%)',
       border: '#84cc16',
@@ -438,26 +847,26 @@ const CalendarView = ({
 
   const getMealStatusConfig = (mealStatus) => {
     const map = {
-      'arrived':        { color: '#ef4444', label: 'Arrived', icon: '🔴', bg: isDarkMode ? '#7f1d1d' : '#fee2e2' },
-      'food_delivered': { color: '#3b82f6', label: 'Food', icon: '🔵', bg: isDarkMode ? '#1e3a5f' : '#dbeafe' },
-      'dessert':        { color: '#8b5cf6', label: 'Dessert', icon: '🟣', bg: isDarkMode ? '#2d1b4e' : '#f3e8ff' },
-      'bill_delivered': { color: '#eab308', label: 'Bill', icon: '🟡', bg: isDarkMode ? '#4d2408' : '#fefce8' },
-      'table_cleared':  { color: '#84cc16', label: 'Cleared', icon: '🟢', bg: isDarkMode ? '#0a3d2e' : '#ecfccb' },
-      'no_show':        { color: '#000000', label: 'No Show', icon: '⚫', bg: isDarkMode ? '#1f2937' : '#f5f5f5' },
-      'clear_out':      { color: '#6b7280', label: 'Clear Out', icon: '⚪', bg: isDarkMode ? '#374151' : '#f3f4f6' },
+      'arrived':        { color: '#ef4444', label: t('arrived'), icon: '🔴', bg: isDarkMode ? '#7f1d1d' : '#fee2e2' },
+      'food_delivered': { color: '#3b82f6', label: t('foodDelivered'), icon: '🔵', bg: isDarkMode ? '#1e3a5f' : '#dbeafe' },
+      'dessert':        { color: '#8b5cf6', label: t('dessert'), icon: '🟣', bg: isDarkMode ? '#2d1b4e' : '#f3e8ff' },
+      'bill_delivered': { color: '#eab308', label: t('billDelivered'), icon: '🟡', bg: isDarkMode ? '#4d2408' : '#fefce8' },
+      'table_cleared':  { color: '#84cc16', label: t('tableCleared'), icon: '🟢', bg: isDarkMode ? '#0a3d2e' : '#ecfccb' },
+      'no_show':        { color: '#000000', label: t('noShow'), icon: '⚫', bg: isDarkMode ? '#1f2937' : '#f5f5f5' },
+      'clear_out':      { color: '#6b7280', label: t('clearOut'), icon: '⚪', bg: isDarkMode ? '#374151' : '#f3f4f6' },
     };
     return map[mealStatus?.toLowerCase()] || null;
   };
 
   const MealStatusMenu = ({ position, reservation, onClose }) => {
     const menuItems = [
-      { status: 'arrived', color: '#ef4444', icon: '🔴', label: 'Arrived' },
-      { status: 'food_delivered', color: '#3b82f6', icon: '🔵', label: 'Food delivered' },
-      { status: 'dessert', color: '#8b5cf6', icon: '🟣', label: 'Dessert' },
-      { status: 'bill_delivered', color: '#eab308', icon: '🟡', label: 'Bill delivered' },
-      { status: 'table_cleared', color: '#84cc16', icon: '🟢', label: 'Table cleared' },
-      { status: 'no_show', color: '#000000', icon: '⚫', label: 'No show' },
-      { status: null, color: '#6b7280', icon: '⚪', label: 'Clear out' },
+      { status: 'arrived', color: '#ef4444', icon: '🔴', label: t('arrived') },
+      { status: 'food_delivered', color: '#3b82f6', icon: '🔵', label: t('foodDelivered') },
+      { status: 'dessert', color: '#8b5cf6', icon: '🟣', label: t('dessert') },
+      { status: 'bill_delivered', color: '#eab308', icon: '🟡', label: t('billDelivered') },
+      { status: 'table_cleared', color: '#84cc16', icon: '🟢', label: t('tableCleared') },
+      { status: 'no_show', color: '#000000', icon: '⚫', label: t('noShow') },
+      { status: null, color: '#6b7280', icon: '⚪', label: t('clearOut') },
     ];
 
     const handleSelect = async (status) => {
@@ -497,7 +906,7 @@ const CalendarView = ({
           onMouseDown={(e) => e.stopPropagation()}
         >
           <div className={`px-3 md:px-4 py-2 border-b ${isDarkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gradient-to-r from-gray-50 to-white'}`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>Meal Status</p>
+            <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>{t('mealStatus')}</p>
             <p className={`text-xs md:text-sm font-semibold truncate mt-0.5 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>{reservation.customer_name}</p>
           </div>
           
@@ -602,7 +1011,7 @@ const CalendarView = ({
         }}
         >
           <div className={`px-4 py-2 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>Reservation Conflict</p>
+            <p className={`text-[10px] font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>{t('reservationConflict')}</p>
             <p className={`text-xs font-semibold mt-0.5 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
               {draggedRes.customer_name} → {targetRes.customer_name}
             </p>
@@ -613,7 +1022,7 @@ const CalendarView = ({
             className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 min-h-[48px] ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}
           >
             <span>⇄</span>
-            <span className="text-sm font-medium">Switch tables</span>
+            <span className="text-sm font-medium">{t('switchTables')}</span>
           </button>
           <button
             onClick={handleOverlap}
@@ -621,7 +1030,7 @@ const CalendarView = ({
             className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 min-h-[48px] ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}
           >
             <span>⚠️</span>
-            <span className="text-sm font-medium">Overlap</span>
+            <span className="text-sm font-medium">{t('overlap')}</span>
           </button>
           <button
             onClick={onClose}
@@ -629,7 +1038,7 @@ const CalendarView = ({
             className={`w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 min-h-[48px] ${isDarkMode ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-50 text-gray-700'}`}
           >
             <span>✕</span>
-            <span className="text-sm font-medium">Cancel</span>
+            <span className="text-sm font-medium">{t('cancel')}</span>
           </button>
         </div>
       </>
@@ -667,7 +1076,7 @@ const CalendarView = ({
             const resDateFormatted = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             await sendEmailFn({
               to: reservation.customer_email.trim(),
-              subject: `Reservation Updated – ${reservation.restaurant_name || 'Restaurant'}`,
+              subject: `${t('reservationUpdated')} ${reservation.restaurant_name || 'Restaurant'}`,
               html: `
                 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
                   <h2 style="color:#22c55e;">Your reservation time has changed ✏️</h2>
@@ -680,11 +1089,11 @@ const CalendarView = ({
                   </table>
                   <a href="https://booking.dinery.ai/manage-reservation/${reservation.id}"
                     style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
-                    Manage My Reservation
+                    ${t('manageMyReservation')}
                   </a>
                   ${(settings?.contactEmail || settings?.contactPhone) ? `
                     <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
-                      <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 Restaurant Contact</p>
+                      <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 ${t('restaurantContact')}</p>
                       ${settings?.contactEmail ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">✉️ <a href="mailto:${settings.contactEmail}" style="color:#fe8a24;">${settings.contactEmail}</a></p>` : ''}
                       ${settings?.contactPhone ? `<p style="margin:0;font-size:13px;color:#555;">📱 <a href="tel:${settings.contactPhone}" style="color:#fe8a24;">${settings.contactPhone}</a></p>` : ''}
                     </div>
@@ -712,22 +1121,22 @@ const CalendarView = ({
       <>
         <div className="fixed inset-0 z-40 bg-black/30" onClick={() => !confirming && onClose()} />
         <div className={`fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl border p-5 w-[90vw] max-w-sm ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-          <p className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>Confirm time change</p>
+          <p className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{t('confirmTimeChange')}</p>
           <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Would you like to change this reservation from <strong>{pending.oldFromTime}</strong> to <strong>{pending.newFromTime}</strong>?
+            {t('confirmTimeChangeMsg').replace('{oldTime}', pending.oldFromTime).replace('{newTime}', pending.newFromTime)}
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => !confirming && onClose()}
               disabled={confirming}
               className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'} disabled:opacity-50`}>
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={handleConfirm}
               disabled={confirming}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-[#fe8a24] hover:bg-[#ff9d47] disabled:opacity-50">
-              {confirming ? 'Saving…' : 'Confirm'}
+              {confirming ? t('saving') : t('confirm')}
             </button>
           </div>
         </div>
@@ -806,10 +1215,8 @@ const CalendarView = ({
   const totalTableSlots = (closeHour - openHour) * 4;
 
   const handleMouseDownMove = (e, reservation) => {
-    // For touch events, prevent default but don't stop propagation
     if (e.type === 'touchstart' || e.type === 'touchmove') {
       e.preventDefault();
-      // Don't stop propagation for touch events to allow scrolling
     } else {
       e.preventDefault();
       e.stopPropagation();
@@ -859,7 +1266,6 @@ const CalendarView = ({
       clientX = touch.clientX;
       clientY = touch.clientY;
       
-      // Add haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(10);
       }
@@ -890,7 +1296,6 @@ const CalendarView = ({
     const d = dragRef.current;
     if (!d) return;
 
-    // Prevent default for touch events to avoid scrolling while dragging
     if (e.type === 'touchmove') {
       e.preventDefault();
     }
@@ -906,7 +1311,6 @@ const CalendarView = ({
       clientY = e.clientY;
     }
 
-    // For touch devices, use a larger threshold to prevent accidental drags
     const threshold = d.isTouch ? 8 : DRAG_THRESHOLD;
 
     if (d.type === 'table-move' || d.type === 'table-resize') {
@@ -929,7 +1333,6 @@ const CalendarView = ({
         return;
       }
 
-      // For touch devices, use a more robust method to find the target row
       const rows = document.querySelectorAll('[data-table-row]');
       let hoveredTableId = d.tableId;
       let closestRow = null;
@@ -940,7 +1343,6 @@ const CalendarView = ({
         const midY = (rect.top + rect.bottom) / 2;
         const distance = Math.abs(clientY - midY);
         
-        // Increase tolerance for touch devices
         const tolerance = d.isTouch ? 30 : 10;
         if (distance < closestDistance && clientY >= rect.top - tolerance && clientY <= rect.bottom + tolerance) {
           closestDistance = distance;
@@ -971,7 +1373,6 @@ const CalendarView = ({
       setDragState({ id: d.id, startMinutes: d.origStart, duration: d.origDuration });
     }
     
-    // Use smoother calculation for touch
     const rawMinutes = (dy / SLOT_HEIGHT) * 60;
     const snapIncrement = d.isTouch ? 5 : 5;
     const deltaMinutes = Math.round(rawMinutes / snapIncrement) * snapIncrement;
@@ -982,7 +1383,6 @@ const CalendarView = ({
       let hoveredDay = null;
       cols.forEach(col => {
         const rect = col.getBoundingClientRect();
-        // Increase tolerance for touch devices
         const tolerance = d.isTouch ? 20 : 0;
         if (clientX >= rect.left - tolerance && clientX <= rect.right + tolerance)
           hoveredDay = col.getAttribute('data-day-col');
@@ -1300,7 +1700,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
       ? (() => { const n = new Date(); return ((n.getHours() - openHour) * 60 + n.getMinutes()) / 15; })()
       : -1;
 
-    // Responsive table column width - improved for tablets
     const responsiveTableColWidth = isMobile ? 90 : (isTablet ? 110 : TABLE_COL_WIDTH);
     const responsiveHourWidth = isMobile ? 110 : (isTablet ? 150 : HOUR_WIDTH);
     const responsiveCellWidth = responsiveHourWidth / 4;
@@ -1521,7 +1920,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
               const touch = e.touches[0];
               if (!touch) return;
               
-              // Add haptic feedback if available
               if (navigator.vibrate) {
                 navigator.vibrate(10);
               }
@@ -1580,7 +1978,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             {isUnassigned ? (
               <div className="flex items-center gap-1 md:gap-2">
                 <FiMapPin className={`w-2.5 h-2.5 md:w-3 md:h-3 ${isDarkMode ? 'text-orange-400' : 'text-orange-400'}`} />
-                <span className={`text-[10px] md:text-xs font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-600'} italic`}>Unassigned</span>
+                <span className={`text-[10px] md:text-xs font-medium ${isDarkMode ? 'text-orange-300' : 'text-orange-600'} italic`}>{t('unassigned')}</span>
               </div>
             ) : (
               <div className="flex items-center gap-1 md:gap-2 min-w-0">
@@ -1601,7 +1999,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             className={`relative overflow-hidden transition-all duration-150 flex-1 ${isDragTarget ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50/20') : ''}`}
             style={{ position: 'relative', minWidth: (closeHour - openHour) * responsiveHourWidth }}
           >
-            {/* Vertical hour grid lines - absolute positioned relative to parent */}
             {Array.from({ length: closeHour - openHour + 1 }, (_, i) => (
               <div 
                 key={`hour-${i}`} 
@@ -1610,7 +2007,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
               />
             ))}
 
-            {/* Vertical quarter-hour grid lines */}
             {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => {
               const slotWidth = responsiveHourWidth / 4;
               return (
@@ -1622,7 +2018,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
               );
             })}
 
-            {/* Half-hour markers */}
             {Array.from({ length: (closeHour - openHour) * 2 }, (_, i) => {
               const halfWidth = responsiveHourWidth / 2;
               return (
@@ -1662,15 +2057,14 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             }}
           >
           <div className="w-full">
-            {/* Sticky header with enhanced design - Responsive */}
             <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : (isTablet ? 44 : 48) }}>
               <div className={`flex-shrink-0 ${isDarkMode ? 'bg-gradient-to-r from-gray-900 to-gray-800 border-r-2 border-gray-700' : 'bg-gradient-to-r from-gray-800 to-gray-900 border-r-2 border-gray-700'} flex items-center justify-center`}
                 style={{ width: responsiveTableColWidth }}>
                 <div className="text-center">
-                  <div className="text-[8px] md:text-xs font-bold text-gray-200 uppercase tracking-wider">Table</div>
+                  <div className="text-[8px] md:text-xs font-bold text-gray-200 uppercase tracking-wider">{t('table')}</div>
                   {!isMobile && !isTablet && (
                     <div className="flex items-center gap-1 justify-center text-gray-400 text-[10px] mt-0.5">
-                      <FiUsers className="w-2.5 h-2.5" /> Capacity
+                      <FiUsers className="w-2.5 h-2.5" /> {t('capacity')}
                     </div>
                   )}
                 </div>
@@ -1686,11 +2080,10 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                           <span className={`${isMobile ? 'text-[9px]' : 'text-[10px] md:text-sm'} font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                             {String(hour).padStart(2,'0')}
                           </span>
-                          <span className={`text-[8px] md:text-[10px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>:00</span>
+                          <span className={`text-[8px] md:text-[10px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t('colons')}00</span>
                         </div>
                       </div>
-                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] md:text-[9px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>:30</div>
-                      {/* Quarter hour markers in header */}
+                      <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] md:text-[9px] font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t('colons')}30</div>
                       <div className={`absolute top-0 bottom-0 left-1/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} style={{ zIndex: 1 }} />
                       <div className={`absolute top-0 bottom-0 left-2/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} style={{ zIndex: 1 }} />
                       <div className={`absolute top-0 bottom-0 left-3/4 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} style={{ zIndex: 1 }} />
@@ -1713,19 +2106,18 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                 <div className="flex items-center justify-center py-12 md:py-20 text-center">
                   <div className="animate-fade-in">
                     <div className="text-3xl md:text-5xl mb-3 md:mb-4">🪑</div>
-                    <p className={`font-semibold text-base md:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>No tables yet</p>
-                    <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Add tables in Table Management first</p>
+                    <p className={`font-semibold text-base md:text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t('noTablesYet')}</p>
+                    <p className={`text-xs md:text-sm mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t('addTablesFirst')}</p>
                   </div>
                 </div>
               ) : (
                 tables.map(t => renderRow(t))
               )}
 
-              {/* Combinations section */}
               {combinations.length > 0 && (
                 <>
                   <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 ${isDarkMode ? 'bg-purple-900/30 border-purple-800' : 'bg-gradient-to-r from-purple-50 to-purple-100/30 border-y border-purple-200'} border-y`}>
-                    <span className={`text-[9px] md:text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>⛓ Table Combinations</span>
+                    <span className={`text-[9px] md:text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>⛓ {t('tableCombinations')}</span>
                     <div className={`flex-1 h-px ${isDarkMode ? 'bg-purple-800' : 'bg-gradient-to-r from-purple-200 to-transparent'}`} />
                   </div>
                   {combinations.map(combo => {
@@ -1762,7 +2154,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                         </div>
                         <div className={`relative overflow-hidden flex-1 ${isDragTarget ? (isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50/30') : ''}`}
                           style={{ position: 'relative', minWidth: (closeHour - openHour) * responsiveHourWidth }}>
-                          {/* Grid lines for combinations */}
                           {Array.from({ length: closeHour - openHour + 1 }, (_, i) => (
                             <div 
                               key={`combo-hour-${i}`} 
@@ -1780,7 +2171,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                               />
                             );
                           })}
-                          {/* Rest of the combinations content */}
                           <div className={`absolute inset-0 cursor-crosshair z-0 ${isDarkMode ? 'hover:bg-purple-900/10' : 'hover:bg-purple-50/10'} transition-colors`}
                             onClick={(e) => {
                               if (dragging) return;
@@ -1822,7 +2212,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
     const days = getDaysToDisplay();
     const isWeek = viewRange === 'week';
 
-    // Responsive time column width
     const responsiveTimeColWidth = isMobile ? 40 : (isTablet ? 55 : TIME_COL_WIDTH);
 
     return (
@@ -1831,6 +2220,9 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
           <div className={`flex flex-shrink-0 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm overflow-x-auto`} style={{ paddingLeft: responsiveTimeColWidth }}>
             {days.map((day, i) => {
               const dayRes = getReservationsForDay(day);
+              const dayName = isMobile 
+                ? t(`${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][day.getDay()]}Short`)
+                : t(`${['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][day.getDay()]}`);
               return (
                 <div key={i} className={`flex-1 py-1 sm:py-2 md:py-4 text-center border-l transition-all duration-200 min-w-[40px] sm:min-w-[50px] md:min-w-[60px] ${
                   isToday(day) ? (isDarkMode ? 'bg-amber-900/30' : 'bg-gradient-to-b from-amber-50 to-amber-100/30') : (isDarkMode ? 'hover:bg-gray-800/50' : 'hover:bg-gray-50')
@@ -1838,7 +2230,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                   <div className={`text-[8px] sm:text-[9px] md:text-xs font-semibold uppercase tracking-wider mb-0.5 md:mb-1 ${
                     isToday(day) ? (isDarkMode ? 'text-amber-400' : 'text-amber-600') : (isDarkMode ? 'text-gray-400' : 'text-gray-500')
                   }`}>
-                    {isMobile ? day.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 1) : day.toLocaleDateString('en-US', { weekday: 'short' })}
+                    {dayName}
                   </div>
                   <div className={`text-sm sm:text-base md:text-2xl font-bold mt-0.5 ${
                     isToday(day) ? (isDarkMode ? 'text-amber-400' : 'text-amber-700') : (isDarkMode ? 'text-gray-300' : 'text-gray-800')
@@ -1847,7 +2239,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                   </div>
                   {!isMobile && (
                     <div className={`text-[8px] md:text-xs mt-0.5 md:mt-1 font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {dayRes.length} res
+                      {dayRes.length} {t('res')}
                     </div>
                   )}
                 </div>
@@ -1874,7 +2266,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                     <span className={`text-[8px] md:text-xs font-bold ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       {isMobile ? (hour === 12 ? '12' : hour > 12 ? `${hour-12}` : `${hour}`) : (hour === 12 ? '12 PM' : hour > 12 ? `${hour-12} PM` : `${hour} AM`)}
                     </span>
-                    {!isMobile && <span className={`text-[9px] mt-0.5 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>:00</span>}
+                    {!isMobile && <span className={`text-[9px] mt-0.5 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>{t('colons')}00</span>}
                   </div>
                 </div>
               ))}
@@ -1945,7 +2337,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                       const hasPublicNote = r.special_requests && r.special_requests.trim().length > 0;
                       const hasInternalNote = r.internal_notes && r.internal_notes.trim().length > 0;
 
-                      // Check if we should show compact view
                       const showCompact = height < 50 || isMobile;
 
                       return (
@@ -2140,11 +2531,14 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
     const weeks = [];
     for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
     
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].map(d => t(d));
+    const dayNamesShort = ['sundayShort', 'mondayShort', 'tuesdayShort', 'wednesdayShort', 'thursdayShort', 'fridayShort', 'saturdayShort'].map(d => t(d));
+    
     return (
       <div className={`flex-1 overflow-auto p-2 md:p-6 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
         <div className={`rounded-xl md:rounded-2xl border overflow-hidden shadow-lg md:shadow-xl ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className={`grid grid-cols-7 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200'}`}>
-            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
+            {dayNames.map(d => (
               <div key={d} className={`py-2 md:py-4 text-center text-[8px] md:text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 {isMobile ? d.slice(0, 1) : d.slice(0, 3)}
               </div>
@@ -2209,7 +2603,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                       })}
                       {dayRes.length > (isMobile ? 2 : 3) && (
                         <div className={`text-[7px] md:text-xs px-1 md:px-2 pt-0.5 md:pt-1 font-medium ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                          +{dayRes.length - (isMobile ? 2 : 3)} more
+                          +{dayRes.length - (isMobile ? 2 : 3)} {t('more')}
                         </div>
                       )}
                     </div>
@@ -2237,7 +2631,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
         <div className={`absolute inset-0 z-50 flex items-center justify-center ${isDarkMode ? 'bg-gray-900/80' : 'bg-white/80'} backdrop-blur-sm transition-opacity duration-300`}>
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin" />
-            <p className={`text-xs sm:text-sm font-medium animate-pulse ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading reservations...</p>
+            <p className={`text-xs sm:text-sm font-medium animate-pulse ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>{t('loading')}</p>
           </div>
         </div>
       )}
@@ -2263,7 +2657,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                 {(() => {
                   const dayRes = getReservationsForDay(currentDate);
                   const totalGuests = dayRes.reduce((sum, r) => sum + (r.number_of_guests || 0), 0);
-                  return `${dayRes.length} res · ${totalGuests} guests`;
+                  return `${dayRes.length} ${t('res')} · ${totalGuests} ${t('guests')}`;
                 })()}
               </span>
             </div>
@@ -2280,7 +2674,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                   style={{
                     background: viewRange === r ? 'linear-gradient(to right, #fe8a24, #e57a1a)' : (isDarkMode ? 'transparent' : '#ffffff'),
                   }}>
-                  {isMobile ? (r === 'day' ? 'D' : r === 'week' ? 'W' : 'M') : r}
+                  {isMobile ? (r === 'day' ? 'D' : r === 'week' ? 'W' : 'M') : t(r)}
                 </button>
               ))}
             </div>
@@ -2294,7 +2688,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                   setTimeout(() => setViewRange(viewRange), 50);
                 }}
                 className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'}`}
-                title="Refresh Calendar"
+                title={t('refreshCalendar')}
               >
                 <FiRefreshCw className="w-4 h-4" />
               </button>
@@ -2304,7 +2698,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             <button 
               onClick={toggleTheme}
               className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors border ${isDarkMode ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'}`}
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              title={isDarkMode ? t('switchToLightMode') : t('switchToDarkMode')}
             >
               {isDarkMode ? <FiSun className="w-4 h-4 text-amber-400" /> : <FiMoon className="w-4 h-4" />}
             </button>
@@ -2319,18 +2713,18 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
       <div className={`flex-shrink-0 border-t-2 px-2 md:px-6 py-2 md:py-3 shadow-inner overflow-x-auto ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex items-center justify-between flex-wrap gap-1 md:gap-2 min-w-[600px] md:min-w-0">
           <div className="flex items-center gap-2 md:gap-6 flex-wrap">
-            <span className={`text-[8px] md:text-[10px] font-bold uppercase tracking-wider hidden sm:inline ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>Status</span>
+            <span className={`text-[8px] md:text-[10px] font-bold uppercase tracking-wider hidden sm:inline ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>{t('status')}</span>
             {[
-              { color: '#f59e0b', label: 'Pending' },
-              { color: '#10b981', label: 'Confirmed' },
-              { color: '#3b82f6', label: 'Completed' },
-              { color: '#ef4444', label: 'Cancelled' },
-              { color: '#9333ea', label: 'Mobile' }
+              { color: '#f59e0b', label: t('pending') },
+              { color: '#10b981', label: t('confirmed') },
+              { color: '#3b82f6', label: t('completed') },
+              { color: '#ef4444', label: t('cancelled') },
+              { color: '#9333ea', label: t('mobile') }
             ].map(({color, label}) => (
               <div key={label} className="flex items-center gap-0.5 md:gap-1.5">
                 <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full shadow-sm" style={{ backgroundColor: color }} />
                 <span className={`text-[7px] md:text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {isMobile && label === 'Pending' ? 'P' : isMobile && label === 'Confirmed' ? 'C' : isMobile && label === 'Completed' ? 'D' : isMobile && label === 'Cancelled' ? 'X' : isMobile ? '📱' : label}
+                  {isMobile && label === t('pending') ? 'P' : isMobile && label === t('confirmed') ? 'C' : isMobile && label === t('completed') ? 'D' : isMobile && label === t('cancelled') ? 'X' : isMobile ? '📱' : label}
                 </span>
               </div>
             ))}
@@ -2340,23 +2734,23 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             <div className={`flex items-center gap-2 md:gap-5 text-[8px] md:text-xs flex-wrap ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
               <div className="flex items-center gap-0.5 md:gap-1.5">
                 <span className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[6px] md:text-[9px]" style={{ backgroundColor: COLORS.info }}>!</span>
-                <span className={isDarkMode ? 'text-gray-400' : ''}>Change</span>
+                <span className={isDarkMode ? 'text-gray-400' : ''}>{t('change')}</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1.5">
                 <span className="w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full flex items-center justify-center text-white font-bold text-[6px] md:text-[9px]" style={{ backgroundColor: COLORS.purple }}>✕</span>
-                <span className={isDarkMode ? 'text-gray-400' : ''}>Cancel</span>
+                <span className={isDarkMode ? 'text-gray-400' : ''}>{t('cancel')}</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1">
                 <span className="text-primary text-[10px] md:text-sm">🖱</span>
-                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>Drag to move</span>
+                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>{t('dragToMove')}</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1">
                 <span className="text-primary text-[10px] md:text-sm">↕</span>
-                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>Resize</span>
+                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>{t('resize')}</span>
               </div>
               <div className="flex items-center gap-0.5 md:gap-1">
                 <span className="text-primary text-[10px] md:text-sm">✚</span>
-                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>Click slot</span>
+                <span className={`hidden sm:inline ${isDarkMode ? 'text-gray-400' : ''}`}>{t('clickSlot')}</span>
               </div>
             </div>
           )}

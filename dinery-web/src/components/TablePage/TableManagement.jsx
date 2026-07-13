@@ -14,6 +14,375 @@ const CHAIR_W   = 18;
 const CHAIR_H   = 11;
 const CHAIR_GAP = 7;
 
+// ─── Language / i18n ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    tableManagement: 'Table Management',
+    selectRestaurant: 'Select a restaurant to manage its tables',
+    noRestaurantsFound: 'No restaurants found',
+    back: 'Back',
+    create: 'Create',
+    tables: 'Tables',
+    floorMap: 'Floor Map',
+    online: 'online',
+    internal: 'internal',
+    reserved: 'reserved',
+    seated: 'seated',
+    alertPax: 'Alert pax below min.',
+    combineTables: 'Combine Tables',
+    cancelCombine: 'Cancel Combine',
+    selectTablesToCombine: 'Select tables to combine',
+    pickAtLeast: 'Pick at least 2 tables to combine them into one bookable group',
+    combinedCapacity: 'Combined capacity',
+    createCombination: 'Create Combination',
+    noTablesYet: 'No tables yet',
+    addFirstTable: 'Click "+ Create" to add your first table',
+    name: 'Name',
+    min: 'Min.',
+    max: 'Max.',
+    priority: 'Priority',
+    status: 'Status',
+    actions: 'Actions',
+    edit: 'Edit',
+    delete: 'Delete',
+    partOfCombination: 'Part of a combination',
+    tableCombinations: 'Table Combinations',
+    tablesInCombo: 'tables',
+    paxTotal: 'pax total',
+    createTable: 'Create Table',
+    editTable: 'Edit Table',
+    tableName: 'Table Name / Number',
+    minCapacity: 'Min. Capacity',
+    maxCapacity: 'Max. Capacity',
+    tableAvailability: 'Table Availability',
+    onlineVisible: '🟢 Online - Visible to public',
+    internalOnly: '🟣 Internal - Waiters only',
+    notes: 'Notes (optional)',
+    cancel: 'Cancel',
+    saveChanges: 'Save Changes',
+    createTableBtn: 'Create Table',
+    saving: 'Saving…',
+    creating: 'Creating…',
+    createTableCombination: 'Create Table Combination',
+    tablesSelected: 'tables selected',
+    tablesInThisCombination: 'Tables in this combination',
+    totalCombinedCapacity: 'Total Combined Capacity',
+    avgPerTable: 'avg pax/table',
+    combinationName: 'Combination Name',
+    namePlaceholder: 'e.g. VIP Section, Large Party (7 tables), Terrace Group',
+    thisNameAppears: 'This name will appear when booking large groups',
+    saveCombination: 'Save Combination',
+    noTablesToMap: 'No tables to map',
+    addTablesFirst: 'Add tables in the Tables tab first',
+    deleteTable: 'Delete this table?',
+    removeCombination: 'Remove this table combination?',
+    accessDenied: 'Access denied.',
+    failedSave: 'Failed to save table. Please try again.',
+    failedCombination: 'Failed to save combination.',
+    lowerPriority: 'Lower = higher priority',
+    windowSeat: 'e.g. Window seat, wheelchair accessible',
+    active: 'Active',
+    inactive: 'Inactive',
+    editTableTitle: 'Edit Table',
+    createTableTitle: 'Create Table',
+    table: 'Table',
+    noTables: 'No tables',
+    addFirst: 'Add your first table',
+  },
+  fi: {
+    tableManagement: 'Pöytien hallinta',
+    selectRestaurant: 'Valitse ravintola, jonka pöytiä haluat hallita',
+    noRestaurantsFound: 'Ravintoloita ei löytynyt',
+    back: 'Takaisin',
+    create: 'Luo',
+    tables: 'Pöydät',
+    floorMap: 'Pohjapiirros',
+    online: 'julkinen',
+    internal: 'sisäinen',
+    reserved: 'varattu',
+    seated: 'istutettu',
+    alertPax: 'Varoita, jos pöytä on alle vähimmäiskapasiteetin',
+    combineTables: 'Yhdistä pöydät',
+    cancelCombine: 'Peru yhdistäminen',
+    selectTablesToCombine: 'Valitse pöydät yhdistettäväksi',
+    pickAtLeast: 'Valitse vähintään 2 pöytää yhdistääksesi ne yhdeksi varattavaksi ryhmäksi',
+    combinedCapacity: 'Yhdistetty kapasiteetti',
+    createCombination: 'Luo yhdistelmä',
+    noTablesYet: 'Ei vielä pöytiä',
+    addFirstTable: 'Napsauta "+ Luo" lisätäksesi ensimmäisen pöydän',
+    name: 'Nimi',
+    min: 'Min.',
+    max: 'Max.',
+    priority: 'Prioriteetti',
+    status: 'Tila',
+    actions: 'Toiminnot',
+    edit: 'Muokkaa',
+    delete: 'Poista',
+    partOfCombination: 'Osa yhdistelmää',
+    tableCombinations: 'Pöytäyhdistelmät',
+    tablesInCombo: 'pöytää',
+    paxTotal: 'henkilöä yhteensä',
+    createTable: 'Luo pöytä',
+    editTable: 'Muokkaa pöytää',
+    tableName: 'Pöydän nimi / numero',
+    minCapacity: 'Min. kapasiteetti',
+    maxCapacity: 'Max. kapasiteetti',
+    tableAvailability: 'Pöydän saatavuus',
+    onlineVisible: '🟢 Julkinen - Näkyy asiakkaille',
+    internalOnly: '🟣 Sisäinen - Vain tarjoilijoille',
+    notes: 'Muistiinpanot (valinnainen)',
+    cancel: 'Peruuta',
+    saveChanges: 'Tallenna muutokset',
+    createTableBtn: 'Luo pöytä',
+    saving: 'Tallennetaan…',
+    creating: 'Luodaan…',
+    createTableCombination: 'Luo pöytäyhdistelmä',
+    tablesSelected: 'pöytää valittu',
+    tablesInThisCombination: 'Pöydät tässä yhdistelmässä',
+    totalCombinedCapacity: 'Yhdistetty kokonaiskapasiteetti',
+    avgPerTable: 'keskim. henkilöä/pöytä',
+    combinationName: 'Yhdistelmän nimi',
+    namePlaceholder: 'esim. VIP-osasto, Iso seurue (7 pöytää), Terassiryhmä',
+    thisNameAppears: 'Tämä nimi näkyy varattaessa suuria ryhmiä',
+    saveCombination: 'Tallenna yhdistelmä',
+    noTablesToMap: 'Ei pöytiä kartoitettavaksi',
+    addTablesFirst: 'Lisää pöytiä Pöydät-välilehdellä ensin',
+    deleteTable: 'Poista tämä pöytä?',
+    removeCombination: 'Poista tämä pöytäyhdistelmä?',
+    accessDenied: 'Pääsy estetty.',
+    failedSave: 'Pöydän tallentaminen epäonnistui. Yritä uudelleen.',
+    failedCombination: 'Yhdistelmän tallentaminen epäonnistui.',
+    lowerPriority: 'Pienempi = korkeampi prioriteetti',
+    windowSeat: 'esim. Ikkunapaikka, esteetön',
+    active: 'Aktiivinen',
+    inactive: 'Epäaktiivinen',
+    editTableTitle: 'Muokkaa pöytää',
+    createTableTitle: 'Luo pöytä',
+    table: 'Pöytä',
+    noTables: 'Ei pöytiä',
+    addFirst: 'Lisää ensimmäinen pöytä',
+  },
+  no: {
+    tableManagement: 'Bordshåndtering',
+    selectRestaurant: 'Velg en restaurant for å administrere bordene',
+    noRestaurantsFound: 'Ingen restauranter funnet',
+    back: 'Tilbake',
+    create: 'Opprett',
+    tables: 'Bord',
+    floorMap: 'Plantegning',
+    online: 'offentlig',
+    internal: 'intern',
+    reserved: 'reservert',
+    seated: 'sittende',
+    alertPax: 'Varsle når under min. kapasitet',
+    combineTables: 'Kombiner bord',
+    cancelCombine: 'Avbryt kombinasjon',
+    selectTablesToCombine: 'Velg bord å kombinere',
+    pickAtLeast: 'Velg minst 2 bord for å kombinere dem til én bookbar gruppe',
+    combinedCapacity: 'Kombinert kapasitet',
+    createCombination: 'Opprett kombinasjon',
+    noTablesYet: 'Ingen bord ennå',
+    addFirstTable: 'Klikk "+ Opprett" for å legge til ditt første bord',
+    name: 'Navn',
+    min: 'Min.',
+    max: 'Maks.',
+    priority: 'Prioritet',
+    status: 'Status',
+    actions: 'Handlinger',
+    edit: 'Rediger',
+    delete: 'Slett',
+    partOfCombination: 'Del av kombinasjon',
+    tableCombinations: 'Bordkombinasjoner',
+    tablesInCombo: 'bord',
+    paxTotal: 'personer totalt',
+    createTable: 'Opprett bord',
+    editTable: 'Rediger bord',
+    tableName: 'Bordnavn / nummer',
+    minCapacity: 'Min. kapasitet',
+    maxCapacity: 'Maks. kapasitet',
+    tableAvailability: 'Bordtilgjengelighet',
+    onlineVisible: '🟢 Offentlig - Synlig for publikum',
+    internalOnly: '🟣 Intern - Kun for servitører',
+    notes: 'Notater (valgfritt)',
+    cancel: 'Avbryt',
+    saveChanges: 'Lagre endringer',
+    createTableBtn: 'Opprett bord',
+    saving: 'Lagrer…',
+    creating: 'Oppretter…',
+    createTableCombination: 'Opprett bordkombinasjon',
+    tablesSelected: 'bord valgt',
+    tablesInThisCombination: 'Bord i denne kombinasjonen',
+    totalCombinedCapacity: 'Total kombinert kapasitet',
+    avgPerTable: 'gj.sn. personer/bord',
+    combinationName: 'Kombinasjonsnavn',
+    namePlaceholder: 'f.eks. VIP-seksjon, Stor gruppe (7 bord), Terrassegruppe',
+    thisNameAppears: 'Dette navnet vises ved booking av store grupper',
+    saveCombination: 'Lagre kombinasjon',
+    noTablesToMap: 'Ingen bord å kartlegge',
+    addTablesFirst: 'Legg til bord i Bord-fanen først',
+    deleteTable: 'Slett dette bordet?',
+    removeCombination: 'Fjern denne bordkombinasjonen?',
+    accessDenied: 'Tilgang nektet.',
+    failedSave: 'Kunne ikke lagre bordet. Prøv igjen.',
+    failedCombination: 'Kunne ikke lagre kombinasjonen.',
+    lowerPriority: 'Lavere = høyere prioritet',
+    windowSeat: 'f.eks. Vindusplass, rullestoltilgjengelig',
+    active: 'Aktiv',
+    inactive: 'Inaktiv',
+    editTableTitle: 'Rediger bord',
+    createTableTitle: 'Opprett bord',
+    table: 'Bord',
+    noTables: 'Ingen bord',
+    addFirst: 'Legg til ditt første bord',
+  },
+  sv: {
+    tableManagement: 'Bordhantering',
+    selectRestaurant: 'Välj en restaurang för att hantera dess bord',
+    noRestaurantsFound: 'Inga restauranger hittades',
+    back: 'Tillbaka',
+    create: 'Skapa',
+    tables: 'Bord',
+    floorMap: 'Planlösning',
+    online: 'offentlig',
+    internal: 'intern',
+    reserved: 'reserverad',
+    seated: 'sittande',
+    alertPax: 'Varna om under min. kapacitet',
+    combineTables: 'Kombinera bord',
+    cancelCombine: 'Avbryt kombination',
+    selectTablesToCombine: 'Välj bord att kombinera',
+    pickAtLeast: 'Välj minst 2 bord för att kombinera dem till en bokningsbar grupp',
+    combinedCapacity: 'Kombinerad kapacitet',
+    createCombination: 'Skapa kombination',
+    noTablesYet: 'Inga bord ännu',
+    addFirstTable: 'Klicka på "+ Skapa" för att lägga till ditt första bord',
+    name: 'Namn',
+    min: 'Min.',
+    max: 'Max.',
+    priority: 'Prioritet',
+    status: 'Status',
+    actions: 'Åtgärder',
+    edit: 'Redigera',
+    delete: 'Ta bort',
+    partOfCombination: 'Del av kombination',
+    tableCombinations: 'Bordkombinationer',
+    tablesInCombo: 'bord',
+    paxTotal: 'personer totalt',
+    createTable: 'Skapa bord',
+    editTable: 'Redigera bord',
+    tableName: 'Bordsnamn / nummer',
+    minCapacity: 'Min. kapacitet',
+    maxCapacity: 'Max. kapacitet',
+    tableAvailability: 'Bordstillgänglighet',
+    onlineVisible: '🟢 Offentlig - Synlig för allmänheten',
+    internalOnly: '🟣 Intern - Endast för servitörer',
+    notes: 'Anteckningar (valfritt)',
+    cancel: 'Avbryt',
+    saveChanges: 'Spara ändringar',
+    createTableBtn: 'Skapa bord',
+    saving: 'Sparar…',
+    creating: 'Skapar…',
+    createTableCombination: 'Skapa bordkombination',
+    tablesSelected: 'bord valda',
+    tablesInThisCombination: 'Bord i denna kombination',
+    totalCombinedCapacity: 'Total kombinerad kapacitet',
+    avgPerTable: 'gen. personer/bord',
+    combinationName: 'Kombinationsnamn',
+    namePlaceholder: 't.ex. VIP-sektion, Stor grupp (7 bord), Terrassgrupp',
+    thisNameAppears: 'Detta namn visas vid bokning av stora grupper',
+    saveCombination: 'Spara kombination',
+    noTablesToMap: 'Inga bord att kartlägga',
+    addTablesFirst: 'Lägg till bord i Bord-fliken först',
+    deleteTable: 'Ta bort detta bord?',
+    removeCombination: 'Ta bort denna bordkombination?',
+    accessDenied: 'Åtkomst nekad.',
+    failedSave: 'Kunde inte spara bordet. Försök igen.',
+    failedCombination: 'Kunde inte spara kombinationen.',
+    lowerPriority: 'Lägre = högre prioritet',
+    windowSeat: 't.ex. Fönsterplats, rullstolsanpassad',
+    active: 'Aktiv',
+    inactive: 'Inaktiv',
+    editTableTitle: 'Redigera bord',
+    createTableTitle: 'Skapa bord',
+    table: 'Bord',
+    noTables: 'Inga bord',
+    addFirst: 'Lägg till ditt första bord',
+  },
+  de: {
+    tableManagement: 'Tischverwaltung',
+    selectRestaurant: 'Wähle ein Restaurant, um dessen Tische zu verwalten',
+    noRestaurantsFound: 'Keine Restaurants gefunden',
+    back: 'Zurück',
+    create: 'Erstellen',
+    tables: 'Tische',
+    floorMap: 'Grundriss',
+    online: 'öffentlich',
+    internal: 'intern',
+    reserved: 'reserviert',
+    seated: 'besetzt',
+    alertPax: 'Bei Unterschreitung der Mindestkapazität warnen',
+    combineTables: 'Tische kombinieren',
+    cancelCombine: 'Kombination abbrechen',
+    selectTablesToCombine: 'Wähle Tische zum Kombinieren',
+    pickAtLeast: 'Wähle mindestens 2 Tische, um sie zu einer buchbaren Gruppe zu kombinieren',
+    combinedCapacity: 'Kombinierte Kapazität',
+    createCombination: 'Kombination erstellen',
+    noTablesYet: 'Noch keine Tische',
+    addFirstTable: 'Klicke auf "+ Erstellen", um deinen ersten Tisch hinzuzufügen',
+    name: 'Name',
+    min: 'Min.',
+    max: 'Max.',
+    priority: 'Priorität',
+    status: 'Status',
+    actions: 'Aktionen',
+    edit: 'Bearbeiten',
+    delete: 'Löschen',
+    partOfCombination: 'Teil einer Kombination',
+    tableCombinations: 'Tischkombinationen',
+    tablesInCombo: 'Tische',
+    paxTotal: 'Personen gesamt',
+    createTable: 'Tisch erstellen',
+    editTable: 'Tisch bearbeiten',
+    tableName: 'Tischname / Nummer',
+    minCapacity: 'Min. Kapazität',
+    maxCapacity: 'Max. Kapazität',
+    tableAvailability: 'Tischverfügbarkeit',
+    onlineVisible: '🟢 Öffentlich - Für Gäste sichtbar',
+    internalOnly: '🟣 Intern - Nur für Kellner',
+    notes: 'Notizen (optional)',
+    cancel: 'Abbrechen',
+    saveChanges: 'Änderungen speichern',
+    createTableBtn: 'Tisch erstellen',
+    saving: 'Speichern…',
+    creating: 'Erstellen…',
+    createTableCombination: 'Tischkombination erstellen',
+    tablesSelected: 'Tische ausgewählt',
+    tablesInThisCombination: 'Tische in dieser Kombination',
+    totalCombinedCapacity: 'Gesamtkapazität',
+    avgPerTable: 'Ø Personen/Tisch',
+    combinationName: 'Kombinationsname',
+    namePlaceholder: 'z.B. VIP-Bereich, Große Gruppe (7 Tische), Terrassengruppe',
+    thisNameAppears: 'Dieser Name erscheint bei der Buchung großer Gruppen',
+    saveCombination: 'Kombination speichern',
+    noTablesToMap: 'Keine Tische zum Kartieren',
+    addTablesFirst: 'Füge zuerst Tische in der Tische-Tabelle hinzu',
+    deleteTable: 'Diesen Tisch löschen?',
+    removeCombination: 'Diese Tischkombination entfernen?',
+    accessDenied: 'Zugriff verweigert.',
+    failedSave: 'Speichern des Tisches fehlgeschlagen. Bitte erneut versuchen.',
+    failedCombination: 'Speichern der Kombination fehlgeschlagen.',
+    lowerPriority: 'Niedriger = höhere Priorität',
+    windowSeat: 'z.B. Fensterplatz, rollstuhlgerecht',
+    active: 'Aktiv',
+    inactive: 'Inaktiv',
+    editTableTitle: 'Tisch bearbeiten',
+    createTableTitle: 'Tisch erstellen',
+    table: 'Tisch',
+    noTables: 'Keine Tische',
+    addFirst: 'Füge deinen ersten Tisch hinzu',
+  },
+};
+
 const TABLE_SIZES = {
   square:    { w: 80,  h: 80  },
   rectangle: { w: 130, h: 70  },
@@ -392,6 +761,261 @@ function DecorElement({ d, isSelected }) {
 
 // ─── FloorPlanEditor ───────────────────────────────────────────────────────────
 function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setPositions, shapes, setShapes, zones, setZones, scales, setScales, rots, setRots }) {
+  // Language support for map editor
+  const [lang] = useState(localStorage.getItem('app_lang') || 'en');
+  
+  // ─── i18n for map editor ──────────────────────────────────────────────────────
+  const t = (key) => {
+    const mapEditorI18n = {
+      en: {
+        tools: 'Tools',
+        select: 'Select',
+        pan: 'Pan',
+        wall: 'Wall',
+        decor: 'Decor',
+        category: 'Category',
+        zoom: 'Zoom',
+        in: 'In',
+        out: 'Out',
+        reset: 'Reset',
+        snapGrid: 'Snap grid',
+        saveMap: 'Save Map',
+        saved: 'Saved!',
+        saving: 'Saving…',
+        canvas: 'Canvas',
+        shape: 'Shape',
+        zone: 'Zone',
+        size: 'Size',
+        rotate: 'Rotate',
+        resetTransform: 'Reset',
+        removeFromMap: 'Remove from map',
+        thickness: 'Thickness',
+        thin: 'Thin',
+        normal: 'Normal',
+        thick: 'Thick',
+        shorter: 'Shorter',
+        longer: 'Longer',
+        delete: 'Delete',
+        bg: 'BG',
+        grid: 'Grid',
+        dots: 'Dots',
+        lines: 'Lines',
+        none: 'None',
+        clickDragWall: 'Click & drag to draw a wall',
+        clickPlaceDecor: 'Click to place:',
+        dragPan: 'Drag to pan the canvas',
+        selectHint: 'Click to select · Drag to move · Del removes wall/decor · Scroll to zoom',
+        scrollZoom: 'Scroll to zoom · Pan tool to navigate · Select a table to change shape & zone color · Del removes wall/decor',
+        custom: 'Custom',
+        default: 'Default',
+        green: 'Green',
+        yellow: 'Yellow',
+        pink: 'Pink',
+        purple: 'Purple',
+        blue: 'Blue',
+        orange: 'Orange',
+        white: 'White',
+      },
+      fi: {
+        tools: 'Työkalut',
+        select: 'Valitse',
+        pan: 'Siirrä',
+        wall: 'Seinä',
+        decor: 'Sisustus',
+        category: 'Kategoria',
+        zoom: 'Zoomaus',
+        in: 'Sisään',
+        out: 'Ulos',
+        reset: 'Palauta',
+        snapGrid: 'Tartu ruudukkoon',
+        saveMap: 'Tallenna kartta',
+        saved: 'Tallennettu!',
+        saving: 'Tallennetaan…',
+        canvas: 'Kangas',
+        shape: 'Muoto',
+        zone: 'Vyöhyke',
+        size: 'Koko',
+        rotate: 'Kierrä',
+        resetTransform: 'Palauta',
+        removeFromMap: 'Poista kartalta',
+        thickness: 'Paksuus',
+        thin: 'Ohut',
+        normal: 'Normaali',
+        thick: 'Paksu',
+        shorter: 'Lyhyempi',
+        longer: 'Pidempi',
+        delete: 'Poista',
+        bg: 'Tausta',
+        grid: 'Ruudukko',
+        dots: 'Pisteet',
+        lines: 'Viivat',
+        none: 'Ei mitään',
+        clickDragWall: 'Napsauta & vedä piirtääksesi seinän',
+        clickPlaceDecor: 'Napsauta sijoittaaksesi:',
+        dragPan: 'Vedä siirtääksesi kangasta',
+        selectHint: 'Napsauta valitaksesi · Vedä siirtääksesi · Del poistaa seinän/sisustuksen · Rullaa zoomataksesi',
+        scrollZoom: 'Rullaa zoomataksesi · Siirrä-työkalu navigointiin · Valitse pöytä muuttaaksesi muotoa & vyöhykkeen väriä · Del poistaa seinän/sisustuksen',
+        custom: 'Mukautettu',
+        default: 'Oletus',
+        green: 'Vihreä',
+        yellow: 'Keltainen',
+        pink: 'Pinkki',
+        purple: 'Violetti',
+        blue: 'Sininen',
+        orange: 'Oranssi',
+        white: 'Valkoinen',
+      },
+      no: {
+        tools: 'Verktøy',
+        select: 'Velg',
+        pan: 'Panorer',
+        wall: 'Vegg',
+        decor: 'Dekor',
+        category: 'Kategori',
+        zoom: 'Zoom',
+        in: 'Inn',
+        out: 'Ut',
+        reset: 'Tilbakestill',
+        snapGrid: 'Fest til rutenett',
+        saveMap: 'Lagre kart',
+        saved: 'Lagret!',
+        saving: 'Lagrer…',
+        canvas: 'Lerret',
+        shape: 'Form',
+        zone: 'Sone',
+        size: 'Størrelse',
+        rotate: 'Roter',
+        resetTransform: 'Tilbakestill',
+        removeFromMap: 'Fjern fra kart',
+        thickness: 'Tykkelse',
+        thin: 'Tynn',
+        normal: 'Normal',
+        thick: 'Tyk',
+        shorter: 'Kortere',
+        longer: 'Lengre',
+        delete: 'Slett',
+        bg: 'Bakgrunn',
+        grid: 'Rutenett',
+        dots: 'Prikker',
+        lines: 'Linjer',
+        none: 'Ingen',
+        clickDragWall: 'Klikk & dra for å tegne en vegg',
+        clickPlaceDecor: 'Klikk for å plassere:',
+        dragPan: 'Dra for å panorer',
+        selectHint: 'Klikk for å velge · Dra for å flytte · Del fjerner vegg/dekor · Rull for å zoome',
+        scrollZoom: 'Rull for å zoome · Panoreringsverktøy for navigering · Velg et bord for å endre form & sonefarge · Del fjerner vegg/dekor',
+        custom: 'Egendefinert',
+        default: 'Standard',
+        green: 'Grønn',
+        yellow: 'Gul',
+        pink: 'Rosa',
+        purple: 'Lilla',
+        blue: 'Blå',
+        orange: 'Oransje',
+        white: 'Hvit',
+      },
+      sv: {
+        tools: 'Verktyg',
+        select: 'Välj',
+        pan: 'Panorera',
+        wall: 'Vägg',
+        decor: 'Dekor',
+        category: 'Kategori',
+        zoom: 'Zoom',
+        in: 'In',
+        out: 'Ut',
+        reset: 'Återställ',
+        snapGrid: 'Fäst till rutnät',
+        saveMap: 'Spara karta',
+        saved: 'Sparad!',
+        saving: 'Sparar…',
+        canvas: 'Duk',
+        shape: 'Form',
+        zone: 'Zon',
+        size: 'Storlek',
+        rotate: 'Rotera',
+        resetTransform: 'Återställ',
+        removeFromMap: 'Ta bort från karta',
+        thickness: 'Tjocklek',
+        thin: 'Tunn',
+        normal: 'Normal',
+        thick: 'Tjock',
+        shorter: 'Kortare',
+        longer: 'Längre',
+        delete: 'Ta bort',
+        bg: 'Bakgrund',
+        grid: 'Rutnät',
+        dots: 'Prickar',
+        lines: 'Linjer',
+        none: 'Ingen',
+        clickDragWall: 'Klicka & dra för att rita en vägg',
+        clickPlaceDecor: 'Klicka för att placera:',
+        dragPan: 'Dra för att panorera',
+        selectHint: 'Klicka för att välja · Dra för att flytta · Del tar bort vägg/dekor · Rulla för att zooma',
+        scrollZoom: 'Rulla för att zooma · Panorera-verktyg för navigering · Välj ett bord för att ändra form & zonfärg · Del tar bort vägg/dekor',
+        custom: 'Anpassad',
+        default: 'Standard',
+        green: 'Grön',
+        yellow: 'Gul',
+        pink: 'Rosa',
+        purple: 'Lila',
+        blue: 'Blå',
+        orange: 'Orange',
+        white: 'Vit',
+      },
+      de: {
+        tools: 'Werkzeuge',
+        select: 'Auswählen',
+        pan: 'Verschieben',
+        wall: 'Wand',
+        decor: 'Dekor',
+        category: 'Kategorie',
+        zoom: 'Zoom',
+        in: 'Rein',
+        out: 'Raus',
+        reset: 'Zurücksetzen',
+        snapGrid: 'Am Raster einrasten',
+        saveMap: 'Karte speichern',
+        saved: 'Gespeichert!',
+        saving: 'Speichern…',
+        canvas: 'Leinwand',
+        shape: 'Form',
+        zone: 'Zone',
+        size: 'Größe',
+        rotate: 'Drehen',
+        resetTransform: 'Zurücksetzen',
+        removeFromMap: 'Von Karte entfernen',
+        thickness: 'Dicke',
+        thin: 'Dünn',
+        normal: 'Normal',
+        thick: 'Dick',
+        shorter: 'Kürzer',
+        longer: 'Länger',
+        delete: 'Löschen',
+        bg: 'Hintergrund',
+        grid: 'Raster',
+        dots: 'Punkte',
+        lines: 'Linien',
+        none: 'Keine',
+        clickDragWall: 'Klicken & ziehen, um eine Wand zu zeichnen',
+        clickPlaceDecor: 'Klicken zum Platzieren:',
+        dragPan: 'Ziehen zum Verschieben',
+        selectHint: 'Klicken zum Auswählen · Ziehen zum Bewegen · Del entfernt Wand/Dekor · Scrollen zum Zoomen',
+        scrollZoom: 'Scrollen zum Zoomen · Verschieben-Werkzeug zum Navigieren · Wähle einen Tisch, um Form & Zonenfarbe zu ändern · Del entfernt Wand/Dekor',
+        custom: 'Benutzerdefiniert',
+        default: 'Standard',
+        green: 'Grün',
+        yellow: 'Gelb',
+        pink: 'Rosa',
+        purple: 'Lila',
+        blue: 'Blau',
+        orange: 'Orange',
+        white: 'Weiß',
+      },
+    };
+    return (mapEditorI18n[lang] && mapEditorI18n[lang][key]) || (mapEditorI18n.en && mapEditorI18n.en[key]) || key;
+  };
+
   const svgRef  = useRef(null);
   const wrapRef = useRef(null);
 
@@ -709,10 +1333,10 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
   const selectedDecor = selType === "decor" ? decors.find((d) => d.id === selectedId) : null;
 
   const modeButtons = [
-    { key: MODES.SELECT, label: "Select",  iconD: "M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" },
-    { key: MODES.PAN,    label: "Pan",     iconD: "M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" },
-    { key: MODES.WALL,   label: "Wall",    iconD: "M4 6h16M4 12h16M4 18h7" },
-    { key: MODES.DECOR,  label: "Decor",   iconD: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" },
+    { key: MODES.SELECT, label: t('select'),  iconD: "M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5" },
+    { key: MODES.PAN,    label: t('pan'),     iconD: "M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" },
+    { key: MODES.WALL,   label: t('wall'),    iconD: "M4 6h16M4 12h16M4 18h7" },
+    { key: MODES.DECOR,  label: t('decor'),   iconD: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" },
   ];
 
   const [showCanvasPanel, setShowCanvasPanel] = useState(false);
@@ -749,7 +1373,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
 
         {/* Tools */}
         <div className="bg-gray-900 rounded-xl border border-gray-700 p-2 flex flex-col gap-1">
-          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">Tools</p>
+          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">{t('tools')}</p>
           {modeButtons.map(({ key, label, iconD }) => (
             <button key={key} onClick={() => setMode(key)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
@@ -766,7 +1390,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
         {/* Decor picker — only shown in DECOR mode */}
         {mode === MODES.DECOR && (
           <div className="bg-gray-900 rounded-xl border border-gray-700 p-2 flex flex-col gap-1">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">Category</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">{t('category')}</p>
             {DECOR_CATEGORIES.map(({ id, label }) => (
               <button key={id} onClick={() => setDecorCat(id)}
                 className={`px-2 py-1.5 rounded-lg text-[11px] font-medium text-left transition-all ${
@@ -790,11 +1414,11 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
 
         {/* Zoom */}
         <div className="bg-gray-900 rounded-xl border border-gray-700 p-2 flex flex-col gap-1">
-          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">Zoom</p>
+          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-1 mb-1">{t('zoom')}</p>
           {[
-            { label: "In",    fn: () => setZoom((z) => Math.min(4, +(z+0.15).toFixed(2))), iconD: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" },
-            { label: "Out",   fn: () => setZoom((z) => Math.max(0.25, +(z-0.15).toFixed(2))), iconD: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6" },
-            { label: "Reset", fn: () => { setZoom(1); setPan({ x:0, y:0 }); }, iconD: "M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" },
+            { label: t('in'),    fn: () => setZoom((z) => Math.min(4, +(z+0.15).toFixed(2))), iconD: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" },
+            { label: t('out'),   fn: () => setZoom((z) => Math.max(0.25, +(z-0.15).toFixed(2))), iconD: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM7 10h6" },
+            { label: t('reset'), fn: () => { setZoom(1); setPan({ x:0, y:0 }); }, iconD: "M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" },
           ].map(({ label, fn, iconD }) => (
             <button key={label} onClick={fn}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:bg-gray-800 hover:text-white transition-all">
@@ -811,16 +1435,16 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
         <div className="bg-gray-900 rounded-xl border border-gray-700 p-2">
           <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer px-1">
             <input type="checkbox" checked={gridSnap} onChange={(e) => setGridSnap(e.target.checked)} className="accent-[#fe8a24] w-3.5 h-3.5" />
-            Snap grid
+            {t('snapGrid')}
           </label>
         </div>
 
         {/* Save */}
         <button onClick={handleSave} disabled={saving}
           className="bg-[#fe8a24] text-white px-3 py-2.5 rounded-xl font-medium hover:bg-[#e07a1f] transition-colors flex items-center justify-center gap-2 text-xs disabled:opacity-60">
-          {saving ? <><span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />Saving</>
-           : saved  ? <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>Saved!</>
-           : <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>Save Map</>}
+          {saving ? <><span className="animate-spin h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full" />{t('saving')}</>
+           : saved  ? <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>{t('saved')}</>
+           : <><svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>{t('saveMap')}</>}
         </button>
 
         {/* Canvas settings */}
@@ -831,11 +1455,8 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
           </svg>
-          Canvas
+          {t('canvas')}
         </button>
-
-        {/* Legend */}
-
       </div>
 
       {/* ── Canvas area ── */}
@@ -848,7 +1469,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
               <>
                 <span className="text-sm font-semibold text-white">{selectedTable.name}</span>
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Shape:</span>
+                <span className="text-xs text-gray-400">{t('shape')}:</span>
                 {Object.keys(TABLE_SIZES).map((s) => (
                   <button key={s} onClick={() => setShapes((p) => ({ ...p, [selectedId]: s }))}
                     className={`text-xs px-2.5 py-1 rounded-lg border capitalize font-medium transition-colors ${
@@ -856,20 +1477,32 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
                     }`}>{s}</button>
                 ))}
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Zone:</span>
-                {ZONE_COLORS.map((z) => (
-                  <button key={z.id} onClick={() => setZones((p) => ({ ...p, [selectedId]: z.id }))}
-                    title={z.label}
-                    style={{
-                      background: z.fill || "#374151",
-                      border: `2px solid ${(zones[selectedId]||"none") === z.id ? "#fe8a24" : (z.stroke||"#4b5563")}`,
-                      outline: (zones[selectedId]||"none") === z.id ? "2px solid #fe8a24" : "none",
-                      outlineOffset: 1,
-                    }}
-                    className="w-5 h-5 rounded-md transition-all" />
-                ))}
+                <span className="text-xs text-gray-400">{t('zone')}:</span>
+                {ZONE_COLORS.map((z) => {
+                  const labelMap = {
+                    none: t('default'),
+                    green: t('green'),
+                    yellow: t('yellow'),
+                    pink: t('pink'),
+                    purple: t('purple'),
+                    blue: t('blue'),
+                    orange: t('orange'),
+                    white: t('white'),
+                  };
+                  return (
+                    <button key={z.id} onClick={() => setZones((p) => ({ ...p, [selectedId]: z.id }))}
+                      title={labelMap[z.id] || z.label}
+                      style={{
+                        background: z.fill || "#374151",
+                        border: `2px solid ${(zones[selectedId]||"none") === z.id ? "#fe8a24" : (z.stroke||"#4b5563")}`,
+                        outline: (zones[selectedId]||"none") === z.id ? "2px solid #fe8a24" : "none",
+                        outlineOffset: 1,
+                      }}
+                      className="w-5 h-5 rounded-md transition-all" />
+                  );
+                })}
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Size:</span>
+                <span className="text-xs text-gray-400">{t('size')}:</span>
                 {[0.6, 0.8, 1, 1.25, 1.5, 2].map((s) => (
                   <button key={s} onClick={() => setScales((p) => ({ ...p, [selectedId]: s }))}
                     className={`text-xs px-2 py-1 rounded-lg border font-medium transition-colors ${
@@ -877,14 +1510,14 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
                     }`}>{s === 1 ? "1×" : `${s}×`}</button>
                 ))}
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Rotate:</span>
+                <span className="text-xs text-gray-400">{t('rotate')}:</span>
                 <button onClick={() => setRots((p) => ({ ...p, [selectedId]: ((p[selectedId]||0) - 45 + 360) % 360 }))}
                   className="w-7 h-7 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 flex items-center justify-center text-sm font-bold">↺</button>
                 <span className="text-xs text-gray-400 min-w-[32px] text-center">{rots[selectedId]||0}°</span>
                 <button onClick={() => setRots((p) => ({ ...p, [selectedId]: ((p[selectedId]||0) + 45) % 360 }))}
                   className="w-7 h-7 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 flex items-center justify-center text-sm font-bold">↻</button>
                 <button onClick={() => { setRots((p) => ({ ...p, [selectedId]: 0 })); setScales((p) => ({ ...p, [selectedId]: 1 })); }}
-                  className="text-xs px-2 py-1 rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-700">Reset</button>
+                  className="text-xs px-2 py-1 rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-700">{t('resetTransform')}</button>
                 <div className="ml-auto flex items-center gap-2">
                   <span className="text-xs text-gray-500">{selectedTable.minCapacity}–{selectedTable.maxCapacity} pax</span>
                   <span className="text-gray-600">|</span>
@@ -900,23 +1533,23 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
                       }
                     }}
                     className="text-xs px-2.5 py-1 rounded-lg border border-red-700 text-red-400 hover:bg-red-900 font-medium transition-colors"
-                  >Remove from map</button>
+                  >{t('removeFromMap')}</button>
                 </div>
               </>
             )}
             {selectedWall && (
               <>
-                <span className="text-sm font-semibold text-white">Wall</span>
+                <span className="text-sm font-semibold text-white">{t('wall')}</span>
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Thickness:</span>
-                {[4,8,14].map((t) => (
-                  <button key={t} onClick={() => setWalls((p) => p.map((w) => w.id===selectedId ? {...w,thick:t} : w))}
+                <span className="text-xs text-gray-400">{t('thickness')}:</span>
+                {[4,8,14].map((t2) => (
+                  <button key={t2} onClick={() => setWalls((p) => p.map((w) => w.id===selectedId ? {...w,thick:t2} : w))}
                     className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
-                      (selectedWall.thick||8)===t ? "bg-gray-200 text-gray-900 border-gray-200" : "border-gray-600 text-gray-400 hover:border-gray-400"
-                    }`}>{t===4?"Thin":t===8?"Normal":"Thick"}</button>
+                      (selectedWall.thick||8)===t2 ? "bg-gray-200 text-gray-900 border-gray-200" : "border-gray-600 text-gray-400 hover:border-gray-400"
+                    }`}>{t2===4?t('thin'):t2===8?t('normal'):t('thick')}</button>
                 ))}
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Rotate:</span>
+                <span className="text-xs text-gray-400">{t('rotate')}:</span>
                 {[-90,-45,45,90].map((deg) => (
                   <button key={deg} onClick={() => setWalls((p) => p.map((w) => {
                     if (w.id !== selectedId) return w;
@@ -935,7 +1568,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
                   </button>
                 ))}
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Length:</span>
+                <span className="text-xs text-gray-400">{t('size')}:</span>
                 {[0.5, 1.5, 2].map((factor) => (
                   <button key={factor} onClick={() => setWalls((p) => p.map((w) => {
                     if (w.id !== selectedId) return w;
@@ -944,17 +1577,17 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
                     return { ...w, x1: Math.round(mx - dx), y1: Math.round(my - dy), x2: Math.round(mx + dx), y2: Math.round(my + dy) };
                   }))}
                     className="text-xs px-2.5 py-1 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 font-medium transition-colors">
-                    {factor < 1 ? "Shorter" : factor === 1.5 ? "Longer" : "2×"}
+                    {factor < 1 ? t('shorter') : factor === 1.5 ? t('longer') : "2×"}
                   </button>
                 ))}
-                <button onClick={deleteSelected} className="ml-auto text-xs px-2.5 py-1 rounded-lg border border-red-700 text-red-400 hover:bg-red-900 font-medium">Delete</button>
+                <button onClick={deleteSelected} className="ml-auto text-xs px-2.5 py-1 rounded-lg border border-red-700 text-red-400 hover:bg-red-900 font-medium">{t('delete')}</button>
               </>
             )}
             {selectedDecor && (
               <>
                 <span className="text-sm font-semibold text-white capitalize">{selectedDecor.type.replace(/_/g," ")}</span>
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Size:</span>
+                <span className="text-xs text-gray-400">{t('size')}:</span>
                 {[40,60,80,100,140,180,220].map((v) => (
                   <button key={v} onClick={() => setDecors((p) => p.map((d) => d.id===selectedId ? {...d,w:v,h:Math.round(v*(d.h||60)/(d.w||60))} : d))}
                     className={`text-xs px-2 py-1 rounded-lg border font-medium transition-colors ${
@@ -962,15 +1595,15 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
                     }`}>{v}</button>
                 ))}
                 <span className="text-gray-600">|</span>
-                <span className="text-xs text-gray-400">Rotate:</span>
+                <span className="text-xs text-gray-400">{t('rotate')}:</span>
                 <button onClick={() => setDecors((p) => p.map((d) => d.id===selectedId ? {...d,rot:((d.rot||0)-45+360)%360} : d))}
                   className="w-7 h-7 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 flex items-center justify-center text-sm font-bold" title="Rotate -45°">↺</button>
                 <span className="text-xs text-gray-400 min-w-[32px] text-center">{selectedDecor.rot||0}°</span>
                 <button onClick={() => setDecors((p) => p.map((d) => d.id===selectedId ? {...d,rot:((d.rot||0)+45)%360} : d))}
                   className="w-7 h-7 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 flex items-center justify-center text-sm font-bold" title="Rotate +45°">↻</button>
                 <button onClick={() => setDecors((p) => p.map((d) => d.id===selectedId ? {...d,rot:0} : d))}
-                  className="text-xs px-2 py-1 rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-700">Reset</button>
-                <button onClick={deleteSelected} className="ml-auto text-xs px-2.5 py-1 rounded-lg border border-red-700 text-red-400 hover:bg-red-900 font-medium">Delete</button>
+                  className="text-xs px-2 py-1 rounded-lg border border-gray-600 text-gray-400 hover:bg-gray-700">{t('resetTransform')}</button>
+                <button onClick={deleteSelected} className="ml-auto text-xs px-2.5 py-1 rounded-lg border border-red-700 text-red-400 hover:bg-red-900 font-medium">{t('delete')}</button>
               </>
             )}
           </div>
@@ -978,10 +1611,10 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
 
         {/* Mode hint */}
         <div className="px-1 h-6 flex items-center">
-          {mode === MODES.WALL  && <span className="text-xs text-blue-400 bg-blue-950 px-3 py-0.5 rounded-full">Click & drag to draw a wall</span>}
-          {mode === MODES.DECOR && <span className="text-xs text-emerald-400 bg-emerald-950 px-3 py-0.5 rounded-full">Click to place: {DECOR_TYPES.find(d=>d.id===decorType)?.label}</span>}
-          {mode === MODES.PAN   && <span className="text-xs text-gray-400 bg-gray-800 px-3 py-0.5 rounded-full">Drag to pan the canvas</span>}
-          {mode === MODES.SELECT && <span className="text-xs text-gray-500">Click to select · Drag to move · Del removes wall/decor · Scroll to zoom</span>}
+          {mode === MODES.WALL  && <span className="text-xs text-blue-400 bg-blue-950 px-3 py-0.5 rounded-full">{t('clickDragWall')}</span>}
+          {mode === MODES.DECOR && <span className="text-xs text-emerald-400 bg-emerald-950 px-3 py-0.5 rounded-full">{t('clickPlaceDecor')} {DECOR_TYPES.find(d=>d.id===decorType)?.label}</span>}
+          {mode === MODES.PAN   && <span className="text-xs text-gray-400 bg-gray-800 px-3 py-0.5 rounded-full">{t('dragPan')}</span>}
+          {mode === MODES.SELECT && <span className="text-xs text-gray-500">{t('selectHint')}</span>}
         </div>
 
         {/* Canvas settings panel — shows when Canvas button clicked */}
@@ -989,7 +1622,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
           <div className="bg-gray-900 rounded-xl border border-gray-700 px-4 py-3 flex items-center gap-4 flex-wrap">
             {/* Size */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Size:</span>
+              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">{t('size')}:</span>
               {CANVAS_PRESETS.map(p => (
                 <button key={p.label} onClick={() => setCanvasSize({ w: p.w, h: p.h })}
                   className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
@@ -998,6 +1631,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
               ))}
               {/* Custom size */}
               <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500">{t('custom')}</span>
                 <input type="number" value={canvasSize.w} min={800} max={5000} step={100}
                   onChange={e => setCanvasSize(p => ({ ...p, w: Math.max(800, parseInt(e.target.value)||1600) }))}
                   className="w-16 bg-gray-800 border border-gray-600 text-gray-300 text-xs rounded px-1.5 py-1 focus:outline-none focus:border-[#fe8a24]" />
@@ -1011,7 +1645,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
             <div className="w-px h-5 bg-gray-700" />
             {/* Background presets */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">BG:</span>
+              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">{t('bg')}:</span>
               {BG_PRESETS.map(p => (
                 <button key={p.label} onClick={() => { setCanvasBg(p.color); setGridColor(p.grid); }}
                   title={p.label}
@@ -1028,8 +1662,8 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
             <div className="w-px h-5 bg-gray-700" />
             {/* Grid style */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Grid:</span>
-              {[["dots","Dots"],["lines","Lines"],["none","None"]].map(([val,lbl]) => (
+              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wider">{t('grid')}:</span>
+              {[["dots",t('dots')],["lines",t('lines')],["none",t('none')]].map(([val,lbl]) => (
                 <button key={val} onClick={() => setGridStyle(val)}
                   className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
                     gridStyle === val ? "bg-gray-600 text-white border-gray-500" : "border-gray-600 text-gray-400 hover:border-gray-400 hover:text-white"
@@ -1166,9 +1800,7 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
           </svg>
         </div>
 
-        <p className="text-xs text-gray-500 text-right">
-          Scroll to zoom · Pan tool to navigate · Select a table to change shape & zone color · Del removes wall/decor
-        </p>
+        <p className="text-xs text-gray-500 text-right">{t('scrollZoom')}</p>
       </div>
     </div>
   );
@@ -1176,6 +1808,24 @@ function FloorPlanEditor({ tables, restaurantId, collectionName, positions, setP
 
 // ─── Main TableManagement ───────────────────────────────────────────────────────
 export default function TableManagement() {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const [restaurants,        setRestaurants]        = useState([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [tables,             setTables]             = useState([]);
@@ -1205,6 +1855,7 @@ export default function TableManagement() {
   const staffRole         = sessionStorage.getItem("staffRole");
   const isStaff           = !!staffRestaurantId;
   const canManage         = !isStaff || staffRole === 'admin' || staffRole === 'manager';
+  
   useEffect(() => {
     const run = async () => {
       setLoadingRestaurants(true);
@@ -1284,9 +1935,9 @@ const fetchTables = async (id, r) => {
 
   const handleSelectRestaurant = (r) => {
     const user = auth.currentUser;
-    if (!user) { alert("Access denied."); return; }
+    if (!user) { alert(t('accessDenied')); return; }
     // Staff are pre-validated via sessionStorage — skip Owner_ID check
-    if (!isStaff && r.Owner_ID !== user.uid) { alert("Access denied."); return; }
+    if (!isStaff && r.Owner_ID !== user.uid) { alert(t('accessDenied')); return; }
     setSelectedRestaurant(r); setActiveTab("list");
     setMapPositions({}); setMapShapes({}); setMapZones({}); setMapScales({}); setMapRots({});
     fetchTables(r.id,r);
@@ -1298,8 +1949,8 @@ const fetchTables = async (id, r) => {
   const handleSave = async () => {
     if (!form.name.toString().trim()) return;
     const user = auth.currentUser;
-    if (!user) { alert("Access denied."); return; }
-    if (!isStaff && selectedRestaurant?.Owner_ID !== user.uid) { alert("Access denied."); return; }
+    if (!user) { alert(t('accessDenied')); return; }
+    if (!isStaff && selectedRestaurant?.Owner_ID !== user.uid) { alert(t('accessDenied')); return; }
     const col = selectedRestaurant?._collection||"restaurants";
     setSavingTable(true);
     try {
@@ -1327,7 +1978,7 @@ const fetchTables = async (id, r) => {
       setShowModal(false);
     } catch(e){
       console.error(e);
-      alert("Failed to save table. Please try again.");
+      alert(t('failedSave'));
     } finally {
       setSavingTable(false);
     }
@@ -1336,7 +1987,7 @@ const fetchTables = async (id, r) => {
   const handleSaveCombination = async () => {
     if (!combineName.trim() || selectedForCombine.length < 2) return;
     const user = auth.currentUser;
-    if (!user || selectedRestaurant?.Owner_ID !== user.uid) { alert("Access denied."); return; }
+    if (!user || selectedRestaurant?.Owner_ID !== user.uid) { alert(t('accessDenied')); return; }
     const col = selectedRestaurant?._collection || "restaurants";
     setSavingCombine(true);
     try {
@@ -1357,12 +2008,12 @@ const fetchTables = async (id, r) => {
       setCombineMode(false);
       setSelectedForCombine([]);
       setCombineName("");
-    } catch(e) { console.error(e); alert("Failed to save combination."); }
+    } catch(e) { console.error(e); alert(t('failedCombination')); }
     finally { setSavingCombine(false); }
   };
 
   const handleDeleteCombination = async (id) => {
-    if (!window.confirm("Remove this table combination?")) return;
+    if (!window.confirm(t('removeCombination'))) return;
     const user = auth.currentUser;
     if (!user || selectedRestaurant?.Owner_ID !== user.uid) return;
     const col = selectedRestaurant?._collection || "restaurants";
@@ -1379,10 +2030,10 @@ const fetchTables = async (id, r) => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this table?")) return;
+    if (!window.confirm(t('deleteTable'))) return;
     const user = auth.currentUser;
-    if (!user) { alert("Access denied."); return; }
-    if (!isStaff && selectedRestaurant?.Owner_ID !== user.uid) { alert("Access denied."); return; }
+    if (!user) { alert(t('accessDenied')); return; }
+    if (!isStaff && selectedRestaurant?.Owner_ID !== user.uid) { alert(t('accessDenied')); return; }
     const col = selectedRestaurant?._collection||"restaurants";
     try {
       await deleteDoc(doc(db,col,selectedRestaurant.id,"tables",id));
@@ -1416,29 +2067,29 @@ const fetchTables = async (id, r) => {
     } catch(e){ console.error(e); }
   };
 
-    const badge = (t) => {
+    const badge = (table) => {
       return (
         <button
-          onClick={() => toggleOnline(t)}
+          onClick={() => toggleOnline(table)}
           className={`text-xs font-semibold px-3 py-1 rounded-full transition-colors ${
-            t.online
+            table.online
               ? "bg-green-100 text-green-700 hover:bg-green-200"
               : "bg-purple-100 text-purple-700 hover:bg-purple-200"
           }`}
         >
-          {t.online ? "online" : "internal"}
+          {table.online ? t('online') : t('internal')}
         </button>
       );
     };
 
   if (!selectedRestaurant) return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-1">Table Management</h1>
-      <p className="text-gray-500 text-sm mb-6">Select a restaurant to manage its tables</p>
+      <h1 className="text-2xl font-bold text-gray-800 mb-1">{t('tableManagement')}</h1>
+      <p className="text-gray-500 text-sm mb-6">{t('selectRestaurant')}</p>
       {loadingRestaurants ? (
         <div className="flex justify-center items-center h-48"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#fe8a24]" /></div>
       ) : restaurants.length===0 ? (
-        <div className="text-center py-16 text-gray-400"><p className="text-lg font-medium">No restaurants found</p></div>
+        <div className="text-center py-16 text-gray-400"><p className="text-lg font-medium">{t('noRestaurantsFound')}</p></div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {restaurants.map((r)=>(
@@ -1456,7 +2107,7 @@ const fetchTables = async (id, r) => {
                 <p className="text-xs text-gray-400 mt-1">{r.Location}</p>
                 <div className="mt-3 flex items-center gap-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.restaurant_activation?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>
-                    {r.restaurant_activation?"Active":"Inactive"}
+                    {r.restaurant_activation ? t('active') : t('inactive')}
                   </span>
                   <span className="text-xs text-gray-400 capitalize">{r.serviceType}</span>
                 </div>
@@ -1475,19 +2126,19 @@ const fetchTables = async (id, r) => {
           <button onClick={()=>{setSelectedRestaurant(null);setTables([]);}}
             className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 hover:text-[#fe8a24] hover:border-[#fe8a24] px-3 py-2 rounded-xl shadow-sm transition-all text-sm font-medium group">
             <svg className="h-4 w-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-            Back
+            {t('back')}
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-800">{selectedRestaurant.name}</h1>
             <p className="text-gray-400 text-xs mt-0.5">{selectedRestaurant.Type} · {selectedRestaurant.Location}</p>
           </div>
         </div>
-        {activeTab==="list" && canManage && <button onClick={openAdd} className="bg-[#fe8a24] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#e07a1f] transition-colors text-sm">+ Create</button>}
+        {activeTab==="list" && canManage && <button onClick={openAdd} className="bg-[#fe8a24] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#e07a1f] transition-colors text-sm">+ {t('create')}</button>}
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
-        {[{key:"list",label:"Tables",d:"M4 6h16M4 10h16M4 14h16M4 18h16"},{key:"map",label:"Floor Map",d:"M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"}].map(({key,label,d})=>(
+        {[{key:"list",label:t('tables'),d:"M4 6h16M4 10h16M4 14h16M4 18h16"},{key:"map",label:t('floorMap'),d:"M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"}].map(({key,label,d})=>(
           <button key={key} onClick={()=>setActiveTab(key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab===key?"bg-white text-gray-800 shadow-sm":"text-gray-500 hover:text-gray-700"}`}>
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>
@@ -1501,15 +2152,15 @@ const fetchTables = async (id, r) => {
           {/* Top controls */}
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> online</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> internal</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> reserved</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> seated</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> {t('online')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> {t('internal')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> {t('reserved')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> {t('seated')}</span>
             </div>
             <div className="flex items-center gap-3">
               <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                 <input type="checkbox" checked={showAlertPax} onChange={(e)=>setShowAlertPax(e.target.checked)} className="accent-[#fe8a24] w-4 h-4" />
-                Alert pax below min.
+                {t('alertPax')}
               </label>
               {/* Combine mode toggle */}
               <button
@@ -1523,7 +2174,7 @@ const fetchTables = async (id, r) => {
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
-                {combineMode ? "Cancel Combine" : "Combine Tables"}
+                {combineMode ? t('cancelCombine') : t('combineTables')}
               </button>
             </div>
           </div>
@@ -1533,15 +2184,15 @@ const fetchTables = async (id, r) => {
             <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <p className="text-sm font-semibold text-orange-700">
-                  Select tables to combine
+                  {t('selectTablesToCombine')}
                   {selectedForCombine.length > 0 && (
-                    <span className="ml-2 bg-[#fe8a24] text-white text-xs px-2 py-0.5 rounded-full">{selectedForCombine.length} selected</span>
+                    <span className="ml-2 bg-[#fe8a24] text-white text-xs px-2 py-0.5 rounded-full">{selectedForCombine.length} {t('tablesSelected')}</span>
                   )}
                 </p>
                 <p className="text-xs text-orange-500 mt-0.5">
                   {selectedForCombine.length < 2
-                    ? "Pick at least 2 tables to combine them into one bookable group"
-                    : `Combined capacity: ${tables.filter(t=>selectedForCombine.includes(t.id)).reduce((s,t)=>s+(t.minCapacity||0),0)}–${tables.filter(t=>selectedForCombine.includes(t.id)).reduce((s,t)=>s+(t.maxCapacity||0),0)} pax`
+                    ? t('pickAtLeast')
+                    : `${t('combinedCapacity')}: ${tables.filter(t=>selectedForCombine.includes(t.id)).reduce((s,t)=>s+(t.minCapacity||0),0)}–${tables.filter(t=>selectedForCombine.includes(t.id)).reduce((s,t)=>s+(t.maxCapacity||0),0)} pax`
                   }
                 </p>
               </div>
@@ -1550,7 +2201,7 @@ const fetchTables = async (id, r) => {
                 disabled={selectedForCombine.length < 2}
                 className="px-4 py-2 bg-[#fe8a24] text-white rounded-lg text-sm font-medium hover:bg-[#e07a1f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                Create Combination →
+                {t('createCombination')} →
               </button>
             </div>
           )}
@@ -1560,7 +2211,7 @@ const fetchTables = async (id, r) => {
           ) : tables.length===0 ? (
             <div className="text-center py-16 text-gray-400">
               <svg className="mx-auto h-12 w-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h18M6 7v10M18 7v10M4 17h4M16 17h4" /></svg>
-              <p className="text-lg font-medium">No tables yet</p><p className="text-sm mt-1">Click "+ Create" to add your first table</p>
+              <p className="text-lg font-medium">{t('noTablesYet')}</p><p className="text-sm mt-1">{t('addFirstTable')}</p>
             </div>
           ) : (
             <>
@@ -1568,24 +2219,23 @@ const fetchTables = async (id, r) => {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
                 <div className="grid grid-cols-[28px_1fr_100px_100px_120px_130px_80px] gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   <span></span>
-                  <span>Name</span><span>Min.</span><span>Max.</span><span>Priority</span><span>Status</span><span>Actions</span>
+                  <span>{t('name')}</span><span>{t('min')}</span><span>{t('max')}</span><span>{t('priority')}</span><span>{t('status')}</span><span>{t('actions')}</span>
                 </div>
-                {tables.map((t) => {
-                  const isSelected = selectedForCombine.includes(t.id);
-                  const isInCombo  = combinations.some(c => c.tableIds.includes(t.id));
+                {tables.map((table) => {
+                  const isSelected = selectedForCombine.includes(table.id);
+                  const isInCombo  = combinations.some(c => c.tableIds.includes(table.id));
                   return (
                     <div
-                      key={t.id}
-                      onClick={() => combineMode && toggleSelectForCombine(t.id)}
+                      key={table.id}
+                      onClick={() => combineMode && toggleSelectForCombine(table.id)}
                       className={`grid grid-cols-[28px_1fr_100px_100px_120px_130px_80px] gap-2 px-4 py-3 border-b border-gray-100 items-center text-sm transition-colors
                         ${combineMode ? "cursor-pointer" : ""}
                         ${isSelected ? "bg-orange-50 border-l-4 border-l-[#fe8a24]" : ""}
-                        ${!isSelected && t.current_status==="seated" ? "bg-red-50/30" : ""}
+                        ${!isSelected && table.current_status==="seated" ? "bg-red-50/30" : ""}
                         ${!isSelected && combineMode ? "hover:bg-orange-50/40" : ""}
                         ${!combineMode ? "hover:bg-gray-50" : ""}
                       `}
                     >
-                      {/* Checkbox col */}
                       <div className="flex items-center justify-center">
                         {combineMode ? (
                           <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
@@ -1594,23 +2244,23 @@ const fetchTables = async (id, r) => {
                             {isSelected && <svg className="h-2.5 w-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                           </div>
                         ) : isInCombo ? (
-                          <span title="Part of a combination">
+                          <span title={t('partOfCombination')}>
                             <svg className="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                           </span>
                         ) : <span />}
                       </div>
-                      <span className="font-medium text-gray-800">{t.name}</span>
-                      <span className="text-gray-600">{t.minCapacity}</span>
-                      <span className="text-gray-600">{t.maxCapacity}</span>
+                      <span className="font-medium text-gray-800">{table.name}</span>
+                      <span className="text-gray-600">{table.minCapacity}</span>
+                      <span className="text-gray-600">{table.maxCapacity}</span>
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                        <button onClick={()=>updatePriority(t,Math.max(0,t.priority-1))} className="w-7 h-7 rounded-lg border border-gray-300 hover:bg-[#fe8a24] hover:text-white hover:border-[#fe8a24] transition-colors flex items-center justify-center font-medium">−</button>
-                        <span className="w-8 text-center font-semibold">{t.priority}</span>
-                        <button onClick={()=>updatePriority(t,t.priority+1)} className="w-7 h-7 rounded-lg border border-gray-300 hover:bg-[#fe8a24] hover:text-white hover:border-[#fe8a24] transition-colors flex items-center justify-center font-medium">+</button>
+                        <button onClick={()=>updatePriority(table,Math.max(0,table.priority-1))} className="w-7 h-7 rounded-lg border border-gray-300 hover:bg-[#fe8a24] hover:text-white hover:border-[#fe8a24] transition-colors flex items-center justify-center font-medium">−</button>
+                        <span className="w-8 text-center font-semibold">{table.priority}</span>
+                        <button onClick={()=>updatePriority(table,table.priority+1)} className="w-7 h-7 rounded-lg border border-gray-300 hover:bg-[#fe8a24] hover:text-white hover:border-[#fe8a24] transition-colors flex items-center justify-center font-medium">+</button>
                       </div>
-                      <div onClick={e => e.stopPropagation()}>{badge(t)}</div>
+                      <div onClick={e => e.stopPropagation()}>{badge(table)}</div>
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        <button onClick={()=>openEdit(t)} className="text-gray-400 hover:text-[#fe8a24]"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
-                        <button onClick={()=>handleDelete(t.id)} className="text-gray-400 hover:text-red-500"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        <button onClick={()=>openEdit(table)} className="text-gray-400 hover:text-[#fe8a24]" title={t('edit')}><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                        <button onClick={()=>handleDelete(table.id)} className="text-gray-400 hover:text-red-500" title={t('delete')}><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                       </div>
                     </div>
                   );
@@ -1622,7 +2272,7 @@ const fetchTables = async (id, r) => {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                    Table Combinations
+                    {t('tableCombinations')}
                   </h3>
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     {combinations.map((combo) => {
@@ -1634,14 +2284,14 @@ const fetchTables = async (id, r) => {
                             <div className="flex items-center gap-3 flex-wrap">
                               <span className="font-semibold text-gray-800 text-sm">{combo.name}</span>
                               <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                {combo.tableIds.length} tables
+                                {combo.tableIds.length} {t('tablesInCombo')}
                               </span>
                               <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">
-                                {combo.minCapacity}–{combo.maxCapacity} pax total
+                                {combo.minCapacity}–{combo.maxCapacity} {t('paxTotal')}
                               </span>
                             </div>
                             <button onClick={()=>handleDeleteCombination(combo.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0">
+                              className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0" title={t('delete')}>
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
@@ -1672,7 +2322,7 @@ const fetchTables = async (id, r) => {
 
       {activeTab==="map" && (
         loadingTables ? <div className="flex justify-center h-64 items-center"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#fe8a24]" /></div>
-        : tables.length===0 ? <div className="text-center py-16 text-gray-400"><p className="text-lg font-medium">No tables to map</p><p className="text-sm mt-1">Add tables in the Tables tab first</p></div>
+        : tables.length===0 ? <div className="text-center py-16 text-gray-400"><p className="text-lg font-medium">{t('noTablesToMap')}</p><p className="text-sm mt-1">{t('addTablesFirst')}</p></div>
         : <FloorPlanEditor
             tables={tables}
             restaurantId={selectedRestaurant.id}
@@ -1693,38 +2343,38 @@ const fetchTables = async (id, r) => {
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">{editingTable?"Edit Table":"Create Table"}</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-4">{editingTable ? t('editTable') : t('createTable')}</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700">Table Name / Number</label>
+                <label className="text-sm font-medium text-gray-700">{t('tableName')}</label>
                 <input type="text" value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})} placeholder="e.g. 1, VIP, Bar 1"
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Min. Capacity</label>
+                  <label className="text-sm font-medium text-gray-700">{t('minCapacity')}</label>
                   <input type="number" min={1} value={form.minCapacity} onChange={(e)=>setForm({...form,minCapacity:parseInt(e.target.value)})}
                     className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Max. Capacity</label>
+                  <label className="text-sm font-medium text-gray-700">{t('maxCapacity')}</label>
                   <input type="number" min={1} value={form.maxCapacity} onChange={(e)=>setForm({...form,maxCapacity:parseInt(e.target.value)})}
                     className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Priority</label>
+                <label className="text-sm font-medium text-gray-700">{t('priority')}</label>
                 <div className="mt-1 flex items-center gap-3">
                   <button type="button" onClick={()=>setForm({...form,priority:Math.max(0,form.priority-1)})} className="w-9 h-9 rounded-lg border border-gray-300 hover:bg-[#fe8a24] hover:text-white hover:border-[#fe8a24] transition-colors flex items-center justify-center text-lg font-medium">−</button>
                   <span className="w-10 text-center text-sm font-semibold text-gray-800">{form.priority}</span>
                   <button type="button" onClick={()=>setForm({...form,priority:form.priority+1})} className="w-9 h-9 rounded-lg border border-gray-300 hover:bg-[#fe8a24] hover:text-white hover:border-[#fe8a24] transition-colors flex items-center justify-center text-lg font-medium">+</button>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Lower = higher priority</p>
+                <p className="text-xs text-gray-400 mt-1">{t('lowerPriority')}</p>
               </div>
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Table Availability</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{form.online?"🟢 Online - Visible to public":"🟣 Internal - Waiters only"}</p>
+                  <p className="text-sm font-medium text-gray-700">{t('tableAvailability')}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{form.online ? t('onlineVisible') : t('internalOnly')}</p>
                 </div>
                 <button type="button" onClick={()=>setForm({...form,online:!form.online})}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.online?"bg-green-500":"bg-purple-500"}`}>
@@ -1732,25 +2382,25 @@ const fetchTables = async (id, r) => {
                 </button>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700">Notes (optional)</label>
-                <textarea value={form.notes} onChange={(e)=>setForm({...form,notes:e.target.value})} placeholder="e.g. Window seat, wheelchair accessible" rows={2}
+                <label className="text-sm font-medium text-gray-700">{t('notes')}</label>
+                <textarea value={form.notes} onChange={(e)=>setForm({...form,notes:e.target.value})} placeholder={t('windowSeat')} rows={2}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={()=>setShowModal(false)} disabled={savingTable}
                 className="flex-1 border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                Cancel
+                {t('cancel')}
               </button>
               <button onClick={handleSave} disabled={savingTable}
                 className="flex-1 bg-[#fe8a24] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#e07a1f] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                 {savingTable ? (
                   <>
                     <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block" />
-                    {editingTable ? "Saving…" : "Creating…"}
+                    {editingTable ? t('saving') : t('creating')}
                   </>
                 ) : (
-                  editingTable ? "Save Changes" : "Create Table"
+                  editingTable ? t('saveChanges') : t('createTableBtn')
                 )}
               </button>
             </div>
@@ -1762,23 +2412,23 @@ const fetchTables = async (id, r) => {
       {showCombineModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-800 mb-1">Create Table Combination</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-1">{t('createTableCombination')}</h2>
             <p className="text-sm text-gray-500 mb-4">
-              {selectedForCombine.length} tables selected
+              {selectedForCombine.length} {t('tablesSelected')}
             </p>
 
             {/* Selected tables grid — handles any number */}
             <div className="mb-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tables in this combination</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('tablesInThisCombination')}</p>
               <div className="flex flex-wrap gap-2">
-                {tables.filter(t => selectedForCombine.includes(t.id)).map(t => (
-                  <div key={t.id} className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
-                    <span className="text-sm font-bold text-blue-700">{t.name}</span>
-                    <span className="text-xs text-blue-400">{t.minCapacity}–{t.maxCapacity} pax</span>
+                {tables.filter(table => selectedForCombine.includes(table.id)).map(table => (
+                  <div key={table.id} className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                    <span className="text-sm font-bold text-blue-700">{table.name}</span>
+                    <span className="text-xs text-blue-400">{table.minCapacity}–{table.maxCapacity} pax</span>
                     <button
-                      onClick={() => toggleSelectForCombine(t.id)}
+                      onClick={() => toggleSelectForCombine(table.id)}
                       className="ml-1 text-blue-300 hover:text-red-400 transition-colors"
-                      title="Remove from combination"
+                      title={t('delete')}
                     >
                       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1788,7 +2438,7 @@ const fetchTables = async (id, r) => {
                 ))}
               </div>
               {selectedForCombine.length < 2 && (
-                <p className="text-xs text-red-400 mt-2">At least 2 tables required</p>
+                <p className="text-xs text-red-400 mt-2">{t('pickAtLeast')}</p>
               )}
             </div>
 
@@ -1796,7 +2446,7 @@ const fetchTables = async (id, r) => {
             <div className="bg-blue-50 rounded-xl p-4 mb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-blue-500 font-medium uppercase tracking-wide">Total Combined Capacity</p>
+                  <p className="text-xs text-blue-500 font-medium uppercase tracking-wide">{t('totalCombinedCapacity')}</p>
                   <p className="text-3xl font-bold text-blue-700 mt-0.5">
                     {tables.filter(t=>selectedForCombine.includes(t.id)).reduce((s,t)=>s+(t.minCapacity||0),0)}
                     <span className="text-lg mx-1 font-normal text-blue-400">–</span>
@@ -1805,27 +2455,27 @@ const fetchTables = async (id, r) => {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-blue-400">{selectedForCombine.length} tables</p>
+                  <p className="text-xs text-blue-400">{selectedForCombine.length} {t('tablesInCombo')}</p>
                   <p className="text-xs text-blue-400 mt-0.5">
-                    avg {selectedForCombine.length > 0
+                    {t('avgPerTable')} {selectedForCombine.length > 0
                       ? Math.round(tables.filter(t=>selectedForCombine.includes(t.id)).reduce((s,t)=>s+(t.maxCapacity||0),0) / selectedForCombine.length)
-                      : 0} pax/table
+                      : 0}
                   </p>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700">Combination Name</label>
+              <label className="text-sm font-medium text-gray-700">{t('combinationName')}</label>
               <input
                 type="text"
                 value={combineName}
                 onChange={(e)=>setCombineName(e.target.value)}
-                placeholder="e.g. VIP Section, Large Party (7 tables), Terrace Group"
+                placeholder={t('namePlaceholder')}
                 autoFocus
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]"
               />
-              <p className="text-xs text-gray-400 mt-1">This name will appear when booking large groups</p>
+              <p className="text-xs text-gray-400 mt-1">{t('thisNameAppears')}</p>
             </div>
 
             <div className="flex gap-3 mt-5">
@@ -1833,15 +2483,15 @@ const fetchTables = async (id, r) => {
                 onClick={() => { setShowCombineModal(false); setCombineName(""); }}
                 disabled={savingCombine}
                 className="flex-1 border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-              >Cancel</button>
+              >{t('cancel')}</button>
               <button
                 onClick={handleSaveCombination}
                 disabled={savingCombine || !combineName.trim() || selectedForCombine.length < 2}
                 className="flex-1 bg-[#fe8a24] text-white rounded-lg py-2 text-sm font-medium hover:bg-[#e07a1f] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {savingCombine
-                  ? <><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block" />Saving…</>
-                  : `Save Combination (${selectedForCombine.length} tables)`
+                  ? <><span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block" />{t('saving')}</>
+                  : `${t('saveCombination')} (${selectedForCombine.length} ${t('tablesInCombo')})`
                 }
               </button>
             </div>

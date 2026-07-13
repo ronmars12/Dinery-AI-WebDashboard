@@ -9,6 +9,542 @@ import {
   FiSearch, FiChevronDown,
 } from 'react-icons/fi';
 
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    // Page titles
+    reservationLink: 'Reservation Link',
+    selectRestaurant: 'Select a restaurant to set up its booking page',
+    yourReservationLink: 'Your Reservation Link',
+    shareWithCustomers: 'Share this link with your customers',
+    previewPage: 'Preview Page',
+    getLink: 'Get Link',
+    backToEditor: 'Back to Editor',
+    // Restaurant selector
+    searchRestaurants: 'Search restaurants...',
+    loadingRestaurants: 'Loading your restaurants...',
+    noRestaurantsFound: 'No restaurants found',
+    tryDifferentSearch: 'Try a different search term',
+    noRestaurantsLinked: 'No restaurants are linked to your account yet',
+    active: 'Active',
+    // Config page
+    customizeBookingPage: 'Customize your public booking page',
+    save: 'Save',
+    saved: 'Saved!',
+    saving: 'Saving...',
+    images: 'Images',
+    logoAndBackground: 'Logo and background photo',
+    restaurantLogo: 'Restaurant Logo',
+    remove: 'Remove',
+    change: 'Change',
+    uploadLogo: 'Upload logo',
+    pngJpgMax5MB: 'PNG, JPG · Max 5MB',
+    shape: 'Shape',
+    circle: 'Circle',
+    rounded: 'Round',
+    square: 'Square',
+    size: 'Size',
+    backgroundImage: 'Background Image',
+    uploadBackground: 'Upload background',
+    pngJpgMax10MB: 'PNG, JPG · Max 10MB',
+    darkOverlay: 'Dark overlay',
+    light: 'Light',
+    dark: 'Dark',
+    branding: 'Branding',
+    welcomeHeading: 'Welcome Heading',
+    subHeading: 'Sub-heading',
+    accentColor: 'Accent Color',
+    background: 'Background',
+    usingUploadedPhoto: 'Using uploaded photo. Remove it above to switch to a gradient.',
+    bookingOptionsMoved: 'Booking Options Moved',
+    bookingOptionsDescription: 'Time intervals, start/end buffers, and other booking settings are now configured in Reservation Settings (accessed from the calendar page).',
+    bookingOptionsNote: 'This allows you to set different booking intervals for each day of the week with custom start and end buffers.',
+    formFields: 'Form Fields',
+    requireEmail: 'Require Email',
+    requirePhone: 'Require Phone',
+    showCompanyField: 'Show Company Field',
+    showNotesField: 'Show Notes Field',
+    use24HourFormat: 'Use 24-Hour Time Format',
+    livePreview: 'Live Preview',
+    selectDate: 'Select Date',
+    selectTime: 'Select Time',
+    closedOnThisDay: 'Closed on this day',
+    loadingAvailability: 'Loading availability...',
+    noTimeSlotsAvailable: 'No time slots available',
+    contactUsDirectly: 'Please contact us directly to book.',
+    continue: 'Continue →',
+    // Link page
+    publicBookingPage: 'Public Booking Page',
+    shareLink: 'Share this link so guests can book directly from any device.',
+    copy: 'Copy',
+    copied: 'Copied!',
+    mobileReady: 'Mobile Ready',
+    worksOnAllDevices: 'Works on all devices',
+    instantBooking: 'Instant Booking',
+    savedToDashboard: 'Saved to your dashboard',
+    fullyBranded: 'Fully Branded',
+    yourColorsAndName: 'Your colors and name',
+    allTracked: 'All Tracked',
+    appearsInCalendar: 'Appears in your calendar',
+    // Preview page
+    youreBooked: "You're booked!",
+    reservationConfirmed: 'your reservation has been confirmed.',
+    makeAnotherReservation: 'Make Another Reservation',
+    summary: 'Summary',
+    guests: 'guests',
+    enterContactDetails: 'Enter your contact details',
+    firstName: 'First name',
+    lastName: 'Last name',
+    phone: 'Phone',
+    email: 'Email',
+    company: 'Company',
+    notes: 'Notes',
+    dietaryRequirements: 'Dietary requirements, special occasions...',
+    haveOfferCode: 'Have an offer code?',
+    agreeToNewsletters: 'I agree to receive newsletters in accordance with the declaration of consent.',
+    byCompletingBooking: 'By completing this booking you agree to our Terms',
+    makeReservation: 'Make reservation',
+    // Toast messages
+    pleaseEnterName: 'Please enter your name',
+    phoneRequired: 'Phone number is required',
+    emailRequired: 'Email address is required',
+    timeSlotFullyBooked: 'This time slot is fully booked. Please choose a different time.',
+    offerCodeReachedLimit: 'This offer code has reached its usage limit.',
+    offerCodeAlreadyUsed: 'You have already used this offer code.',
+    failedToSaveReservation: 'Failed to save reservation: ',
+    // Access restricted
+    accessRestricted: 'Access Restricted',
+    accessRestrictedMessage: 'Only Admin and Manager roles can access the Reservation Link page. Contact your manager for access.',
+    // Change restaurant
+    changeRestaurant: 'Change restaurant',
+    // Booking summary
+    selectADate: 'Select a date',
+    selectATime: 'Select a time',
+    // Time slot
+    moreSlots: 'more slots on full page',
+    // Offer code
+    offerCodePlaceholder: 'e.g. WELCOME10',
+    // Reservation settings note
+    reservationSettingsNote: 'Time intervals, start/end buffers, and other booking settings are now configured in Reservation Settings.',
+  },
+  fi: {
+    reservationLink: 'Varauslinkki',
+    selectRestaurant: 'Valitse ravintola, jonka varaussivu haluat määrittää',
+    yourReservationLink: 'Varauslinkkisi',
+    shareWithCustomers: 'Jaa tämä linkki asiakkaille',
+    previewPage: 'Esikatselu',
+    getLink: 'Hae linkki',
+    backToEditor: 'Takaisin muokkaukseen',
+    searchRestaurants: 'Hae ravintoloita...',
+    loadingRestaurants: 'Ladataan ravintoloitasi...',
+    noRestaurantsFound: 'Ravintoloita ei löytynyt',
+    tryDifferentSearch: 'Kokeile toista hakusanaa',
+    noRestaurantsLinked: 'Tililläsi ei ole vielä ravintoloita',
+    active: 'Aktiivinen',
+    customizeBookingPage: 'Muokkaa julkista varaussivuasi',
+    save: 'Tallenna',
+    saved: 'Tallennettu!',
+    saving: 'Tallennetaan...',
+    images: 'Kuvat',
+    logoAndBackground: 'Logo ja taustakuva',
+    restaurantLogo: 'Ravintolan logo',
+    remove: 'Poista',
+    change: 'Vaihda',
+    uploadLogo: 'Lataa logo',
+    pngJpgMax5MB: 'PNG, JPG · Max 5MB',
+    shape: 'Muoto',
+    circle: 'Ympyrä',
+    rounded: 'Pyöristetty',
+    square: 'Neliö',
+    size: 'Koko',
+    backgroundImage: 'Taustakuva',
+    uploadBackground: 'Lataa tausta',
+    pngJpgMax10MB: 'PNG, JPG · Max 10MB',
+    darkOverlay: 'Tumma peite',
+    light: 'Vaalea',
+    dark: 'Tumma',
+    branding: 'Brändäys',
+    welcomeHeading: 'Tervetuloa-otsikko',
+    subHeading: 'Alaotsikko',
+    accentColor: 'Korostusväri',
+    background: 'Tausta',
+    usingUploadedPhoto: 'Käytetään ladattua kuvaa. Poista se yllä vaihtaaksesi gradienttiin.',
+    bookingOptionsMoved: 'Varausten asetukset siirretty',
+    bookingOptionsDescription: 'Aikavälit, aloitus- ja lopetuspuskurit sekä muut varausasetukset on nyt määritetty Varausasetuksissa (saatavilla kalenterisivulta).',
+    bookingOptionsNote: 'Tämä mahdollistaa erilaisten varausvälien asettamisen jokaiselle viikonpäivälle mukautetuilla aloitus- ja lopetuspuskureilla.',
+    formFields: 'Lomakkeen kentät',
+    requireEmail: 'Vaadi sähköposti',
+    requirePhone: 'Vaadi puhelin',
+    showCompanyField: 'Näytä yrityskenttä',
+    showNotesField: 'Näytä muistiinpanokenttä',
+    use24HourFormat: 'Käytä 24 tunnin aikamuotoa',
+    livePreview: 'Esikatselu',
+    selectDate: 'Valitse päivä',
+    selectTime: 'Valitse aika',
+    closedOnThisDay: 'Suljettu tänä päivänä',
+    loadingAvailability: 'Ladataan saatavuutta...',
+    noTimeSlotsAvailable: 'Ei vapaita aikavälejä',
+    contactUsDirectly: 'Ota yhteyttä suoraan tehdäksesi varauksen.',
+    continue: 'Jatka →',
+    publicBookingPage: 'Julkinen varaussivu',
+    shareLink: 'Jaa tämä linkki, jotta asiakkaat voivat varata suoraan miltä tahansa laitteelta.',
+    copy: 'Kopioi',
+    copied: 'Kopioitu!',
+    mobileReady: 'Mobiilivalmis',
+    worksOnAllDevices: 'Toimii kaikilla laitteilla',
+    instantBooking: 'Välitön varaus',
+    savedToDashboard: 'Tallennettu kojelautaasi',
+    fullyBranded: 'Täysin brändätty',
+    yourColorsAndName: 'Sinun värit ja nimesi',
+    allTracked: 'Kaikki seurannassa',
+    appearsInCalendar: 'Näkyy kalenterissasi',
+    youreBooked: 'Varaus vahvistettu!',
+    reservationConfirmed: 'varauksesi on vahvistettu.',
+    makeAnotherReservation: 'Tee toinen varaus',
+    summary: 'Yhteenveto',
+    guests: 'vierasta',
+    enterContactDetails: 'Syötä yhteystietosi',
+    firstName: 'Etunimi',
+    lastName: 'Sukunimi',
+    phone: 'Puhelin',
+    email: 'Sähköposti',
+    company: 'Yritys',
+    notes: 'Muistiinpanot',
+    dietaryRequirements: 'Ruokavaliovaatimukset, erityistilaisuudet...',
+    haveOfferCode: 'Onko sinulla tarjouskoodi?',
+    agreeToNewsletters: 'Hyväksyn uutiskirjeiden vastaanottamisen suostumusilmoituksen mukaisesti.',
+    byCompletingBooking: 'Tekemällä tämän varauksen hyväksyt Ehdot',
+    makeReservation: 'Tee varaus',
+    pleaseEnterName: 'Syötä nimesi',
+    phoneRequired: 'Puhelinnumero vaaditaan',
+    emailRequired: 'Sähköpostiosoite vaaditaan',
+    timeSlotFullyBooked: 'Tämä aikaväli on täysin varattu. Valitse toinen aika.',
+    offerCodeReachedLimit: 'Tämä tarjouskoodi on saavuttanut käyttörajansa.',
+    offerCodeAlreadyUsed: 'Olet jo käyttänyt tämän tarjouskoodin.',
+    failedToSaveReservation: 'Varauksen tallennus epäonnistui: ',
+    accessRestricted: 'Pääsy rajoitettu',
+    accessRestrictedMessage: 'Vain Admin- ja Manager-roolit voivat käyttää Varauslinkki-sivua. Ota yhteyttä esihenkilöösi saadaksesi pääsyn.',
+    changeRestaurant: 'Vaihda ravintolaa',
+    selectADate: 'Valitse päivä',
+    selectATime: 'Valitse aika',
+    moreSlots: 'lisää aikaväliä',
+    offerCodePlaceholder: 'esim. TERVETULOA10',
+    reservationSettingsNote: 'Aikavälit, aloitus- ja lopetuspuskurit sekä muut varausasetukset on nyt määritetty Varausasetuksissa.',
+  },
+  no: {
+    reservationLink: 'Bestillingslenke',
+    selectRestaurant: 'Velg en restaurant for å sette opp bestillingssiden',
+    yourReservationLink: 'Din bestillingslenke',
+    shareWithCustomers: 'Del denne lenken med kundene dine',
+    previewPage: 'Forhåndsvisning',
+    getLink: 'Hent lenke',
+    backToEditor: 'Tilbake til redigering',
+    searchRestaurants: 'Søk restauranter...',
+    loadingRestaurants: 'Laster restaurantene dine...',
+    noRestaurantsFound: 'Ingen restauranter funnet',
+    tryDifferentSearch: 'Prøv et annet søkeord',
+    noRestaurantsLinked: 'Ingen restauranter er knyttet til kontoen din ennå',
+    active: 'Aktiv',
+    customizeBookingPage: 'Tilpass din offentlige bestillingsside',
+    save: 'Lagre',
+    saved: 'Lagret!',
+    saving: 'Lagrer...',
+    images: 'Bilder',
+    logoAndBackground: 'Logo og bakgrunnsbilde',
+    restaurantLogo: 'Restaurantlogo',
+    remove: 'Fjern',
+    change: 'Endre',
+    uploadLogo: 'Last opp logo',
+    pngJpgMax5MB: 'PNG, JPG · Maks 5MB',
+    shape: 'Form',
+    circle: 'Sirkel',
+    rounded: 'Avrundet',
+    square: 'Firkant',
+    size: 'Størrelse',
+    backgroundImage: 'Bakgrunnsbilde',
+    uploadBackground: 'Last opp bakgrunn',
+    pngJpgMax10MB: 'PNG, JPG · Maks 10MB',
+    darkOverlay: 'Mørkt overlegg',
+    light: 'Lys',
+    dark: 'Mørk',
+    branding: 'Merkevarebygging',
+    welcomeHeading: 'Velkomstoverskrift',
+    subHeading: 'Underoverskrift',
+    accentColor: 'Aksentfarge',
+    background: 'Bakgrunn',
+    usingUploadedPhoto: 'Bruker opplastet bilde. Fjern det over for å bytte til gradient.',
+    bookingOptionsMoved: 'Bestillingsalternativer flyttet',
+    bookingOptionsDescription: 'Tidsintervaller, start-/sluttbuffere og andre bestillingsinnstillinger konfigureres nå i Bestillingsinnstillinger (tilgjengelig fra kalendersiden).',
+    bookingOptionsNote: 'Dette lar deg sette forskjellige bestillingsintervaller for hver ukedag med tilpassede start- og sluttbuffere.',
+    formFields: 'Skjemafelt',
+    requireEmail: 'Krev e-post',
+    requirePhone: 'Krev telefon',
+    showCompanyField: 'Vis bedriftsfelt',
+    showNotesField: 'Vis notatfelt',
+    use24HourFormat: 'Bruk 24-timers format',
+    livePreview: 'Forhåndsvisning',
+    selectDate: 'Velg dato',
+    selectTime: 'Velg tid',
+    closedOnThisDay: 'Stengt på denne dagen',
+    loadingAvailability: 'Laster tilgjengelighet...',
+    noTimeSlotsAvailable: 'Ingen tilgjengelige tidspor',
+    contactUsDirectly: 'Kontakt oss direkte for å booke.',
+    continue: 'Fortsett →',
+    publicBookingPage: 'Offentlig bestillingsside',
+    shareLink: 'Del denne lenken så gjester kan booke direkte fra hvilken som helst enhet.',
+    copy: 'Kopier',
+    copied: 'Kopiert!',
+    mobileReady: 'Mobilklar',
+    worksOnAllDevices: 'Fungerer på alle enheter',
+    instantBooking: 'Umiddelbar bestilling',
+    savedToDashboard: 'Lagret i dashbordet ditt',
+    fullyBranded: 'Fullt merkevarebygget',
+    yourColorsAndName: 'Dine farger og navn',
+    allTracked: 'Alt spores',
+    appearsInCalendar: 'Vises i kalenderen din',
+    youreBooked: 'Du er booket!',
+    reservationConfirmed: 'reservasjonen din er bekreftet.',
+    makeAnotherReservation: 'Gjør en ny reservasjon',
+    summary: 'Sammendrag',
+    guests: 'gjester',
+    enterContactDetails: 'Skriv inn kontaktopplysningene dine',
+    firstName: 'Fornavn',
+    lastName: 'Etternavn',
+    phone: 'Telefon',
+    email: 'E-post',
+    company: 'Bedrift',
+    notes: 'Notater',
+    dietaryRequirements: 'Kostholdskrav, spesielle anledninger...',
+    haveOfferCode: 'Har du en tilbudskode?',
+    agreeToNewsletters: 'Jeg samtykker til å motta nyhetsbrev i samsvar med samtykkeerklæringen.',
+    byCompletingBooking: 'Ved å gjennomføre denne bestillingen godtar du Vilkårene',
+    makeReservation: 'Gjør reservasjon',
+    pleaseEnterName: 'Vennligst skriv inn navnet ditt',
+    phoneRequired: 'Telefonnummer er påkrevd',
+    emailRequired: 'E-postadresse er påkrevd',
+    timeSlotFullyBooked: 'Dette tidspunktet er fullbooket. Vennligst velg et annet tidspunkt.',
+    offerCodeReachedLimit: 'Denne tilbudskoden har nådd bruksgrensen.',
+    offerCodeAlreadyUsed: 'Du har allerede brukt denne tilbudskoden.',
+    failedToSaveReservation: 'Kunne ikke lagre reservasjon: ',
+    accessRestricted: 'Tilgang begrenset',
+    accessRestrictedMessage: 'Kun Admin- og Manager-roller har tilgang til Bestillingslenke-siden. Kontakt lederen din for tilgang.',
+    changeRestaurant: 'Bytt restaurant',
+    selectADate: 'Velg en dato',
+    selectATime: 'Velg en tid',
+    moreSlots: 'flere spor på full side',
+    offerCodePlaceholder: 'f.eks. VELKOMMEN10',
+    reservationSettingsNote: 'Tidsintervaller, start-/sluttbuffere og andre bestillingsinnstillinger konfigureres nå i Bestillingsinnstillinger.',
+  },
+  sv: {
+    reservationLink: 'Bokningslänk',
+    selectRestaurant: 'Välj en restaurang för att ställa in dess bokningssida',
+    yourReservationLink: 'Din bokningslänk',
+    shareWithCustomers: 'Dela den här länken med dina kunder',
+    previewPage: 'Förhandsgranska',
+    getLink: 'Hämta länk',
+    backToEditor: 'Tillbaka till redigering',
+    searchRestaurants: 'Sök restauranger...',
+    loadingRestaurants: 'Laddar dina restauranger...',
+    noRestaurantsFound: 'Inga restauranger hittades',
+    tryDifferentSearch: 'Prova ett annat sökord',
+    noRestaurantsLinked: 'Inga restauranger är kopplade till ditt konto ännu',
+    active: 'Aktiv',
+    customizeBookingPage: 'Anpassa din offentliga bokningssida',
+    save: 'Spara',
+    saved: 'Sparad!',
+    saving: 'Sparar...',
+    images: 'Bilder',
+    logoAndBackground: 'Logotyp och bakgrundsbild',
+    restaurantLogo: 'Restauranglogotyp',
+    remove: 'Ta bort',
+    change: 'Ändra',
+    uploadLogo: 'Ladda upp logotyp',
+    pngJpgMax5MB: 'PNG, JPG · Max 5MB',
+    shape: 'Form',
+    circle: 'Cirkel',
+    rounded: 'Rundad',
+    square: 'Fyrkant',
+    size: 'Storlek',
+    backgroundImage: 'Bakgrundsbild',
+    uploadBackground: 'Ladda upp bakgrund',
+    pngJpgMax10MB: 'PNG, JPG · Max 10MB',
+    darkOverlay: 'Mörkt överlägg',
+    light: 'Ljus',
+    dark: 'Mörk',
+    branding: 'Varumärke',
+    welcomeHeading: 'Välkomstrubrik',
+    subHeading: 'Underrubrik',
+    accentColor: 'Accentfärg',
+    background: 'Bakgrund',
+    usingUploadedPhoto: 'Använder uppladdad bild. Ta bort den ovan för att byta till gradient.',
+    bookingOptionsMoved: 'Bokningsalternativ flyttade',
+    bookingOptionsDescription: 'Tidsintervall, start-/slutbuffrar och andra bokningsinställningar konfigureras nu i Bokningsinställningar (tillgängligt från kalendersidan).',
+    bookingOptionsNote: 'Detta låter dig ställa in olika bokningsintervall för varje veckodag med anpassade start- och slutbuffrar.',
+    formFields: 'Formulärfält',
+    requireEmail: 'Kräv e-post',
+    requirePhone: 'Kräv telefon',
+    showCompanyField: 'Visa företagsfält',
+    showNotesField: 'Visa anteckningsfält',
+    use24HourFormat: 'Använd 24-timmarsformat',
+    livePreview: 'Liveförhandsvisning',
+    selectDate: 'Välj datum',
+    selectTime: 'Välj tid',
+    closedOnThisDay: 'Stängt på denna dag',
+    loadingAvailability: 'Laddar tillgänglighet...',
+    noTimeSlotsAvailable: 'Inga tillgängliga tider',
+    contactUsDirectly: 'Kontakta oss direkt för att boka.',
+    continue: 'Fortsätt →',
+    publicBookingPage: 'Offentlig bokningssida',
+    shareLink: 'Dela den här länken så att gäster kan boka direkt från vilken enhet som helst.',
+    copy: 'Kopiera',
+    copied: 'Kopierad!',
+    mobileReady: 'Mobilredo',
+    worksOnAllDevices: 'Fungerar på alla enheter',
+    instantBooking: 'Omedelbar bokning',
+    savedToDashboard: 'Sparad i din instrumentpanel',
+    fullyBranded: 'Fullt varumärkesanpassad',
+    yourColorsAndName: 'Dina färger och namn',
+    allTracked: 'Allt spåras',
+    appearsInCalendar: 'Syns i din kalender',
+    youreBooked: 'Du är bokad!',
+    reservationConfirmed: 'din bokning har bekräftats.',
+    makeAnotherReservation: 'Gör en ny bokning',
+    summary: 'Sammanfattning',
+    guests: 'gäster',
+    enterContactDetails: 'Ange dina kontaktuppgifter',
+    firstName: 'Förnamn',
+    lastName: 'Efternamn',
+    phone: 'Telefon',
+    email: 'E-post',
+    company: 'Företag',
+    notes: 'Anteckningar',
+    dietaryRequirements: 'Kostkrav, speciella tillfällen...',
+    haveOfferCode: 'Har du en erbjudandekod?',
+    agreeToNewsletters: 'Jag samtycker till att ta emot nyhetsbrev i enlighet med samtyckesförklaringen.',
+    byCompletingBooking: 'Genom att slutföra denna bokning godkänner du Villkor',
+    makeReservation: 'Gör bokning',
+    pleaseEnterName: 'Ange ditt namn',
+    phoneRequired: 'Telefonnummer krävs',
+    emailRequired: 'E-postadress krävs',
+    timeSlotFullyBooked: 'Denna tid är fullbokad. Vänligen välj en annan tid.',
+    offerCodeReachedLimit: 'Denna erbjudandekod har nått sin användningsgräns.',
+    offerCodeAlreadyUsed: 'Du har redan använt denna erbjudandekod.',
+    failedToSaveReservation: 'Kunde inte spara bokning: ',
+    accessRestricted: 'Åtkomst begränsad',
+    accessRestrictedMessage: 'Endast Admin- och Manager-roller kan komma åt Bokningslänk-sidan. Kontakta din chef för åtkomst.',
+    changeRestaurant: 'Byt restaurang',
+    selectADate: 'Välj ett datum',
+    selectATime: 'Välj en tid',
+    moreSlots: 'fler tider på full sida',
+    offerCodePlaceholder: 't.ex. VÄLKOMMEN10',
+    reservationSettingsNote: 'Tidsintervall, start-/slutbuffrar och andra bokningsinställningar konfigureras nu i Bokningsinställningar.',
+  },
+  de: {
+    reservationLink: 'Buchungslink',
+    selectRestaurant: 'Wählen Sie ein Restaurant, um dessen Buchungsseite einzurichten',
+    yourReservationLink: 'Ihr Buchungslink',
+    shareWithCustomers: 'Teilen Sie diesen Link mit Ihren Kunden',
+    previewPage: 'Vorschau',
+    getLink: 'Link abrufen',
+    backToEditor: 'Zurück zum Editor',
+    searchRestaurants: 'Restaurants suchen...',
+    loadingRestaurants: 'Lade Ihre Restaurants...',
+    noRestaurantsFound: 'Keine Restaurants gefunden',
+    tryDifferentSearch: 'Versuchen Sie einen anderen Suchbegriff',
+    noRestaurantsLinked: 'Es sind noch keine Restaurants mit Ihrem Konto verknüpft',
+    active: 'Aktiv',
+    customizeBookingPage: 'Passen Sie Ihre öffentliche Buchungsseite an',
+    save: 'Speichern',
+    saved: 'Gespeichert!',
+    saving: 'Speichere...',
+    images: 'Bilder',
+    logoAndBackground: 'Logo und Hintergrundbild',
+    restaurantLogo: 'Restaurant-Logo',
+    remove: 'Entfernen',
+    change: 'Ändern',
+    uploadLogo: 'Logo hochladen',
+    pngJpgMax5MB: 'PNG, JPG · Max 5MB',
+    shape: 'Form',
+    circle: 'Kreis',
+    rounded: 'Abgerundet',
+    square: 'Quadrat',
+    size: 'Größe',
+    backgroundImage: 'Hintergrundbild',
+    uploadBackground: 'Hintergrund hochladen',
+    pngJpgMax10MB: 'PNG, JPG · Max 10MB',
+    darkOverlay: 'Dunkle Überlagerung',
+    light: 'Hell',
+    dark: 'Dunkel',
+    branding: 'Markenbildung',
+    welcomeHeading: 'Begrüßungsüberschrift',
+    subHeading: 'Unterüberschrift',
+    accentColor: 'Akzentfarbe',
+    background: 'Hintergrund',
+    usingUploadedPhoto: 'Verwendet hochgeladenes Bild. Entfernen Sie es oben, um zu einem Farbverlauf zu wechseln.',
+    bookingOptionsMoved: 'Buchungsoptionen verschoben',
+    bookingOptionsDescription: 'Zeitintervalle, Start-/Endpuffer und andere Buchungseinstellungen werden jetzt in den Buchungseinstellungen konfiguriert (über die Kalenderseite zugänglich).',
+    bookingOptionsNote: 'Dies ermöglicht es Ihnen, verschiedene Buchungsintervalle für jeden Wochentag mit benutzerdefinierten Start- und Endpuffern festzulegen.',
+    formFields: 'Formularfelder',
+    requireEmail: 'E-Mail erforderlich',
+    requirePhone: 'Telefon erforderlich',
+    showCompanyField: 'Firmenfeld anzeigen',
+    showNotesField: 'Notizfeld anzeigen',
+    use24HourFormat: '24-Stunden-Format verwenden',
+    livePreview: 'Live-Vorschau',
+    selectDate: 'Datum auswählen',
+    selectTime: 'Uhrzeit auswählen',
+    closedOnThisDay: 'An diesem Tag geschlossen',
+    loadingAvailability: 'Lade Verfügbarkeit...',
+    noTimeSlotsAvailable: 'Keine verfügbaren Zeitslots',
+    contactUsDirectly: 'Bitte kontaktieren Sie uns direkt, um zu buchen.',
+    continue: 'Weiter →',
+    publicBookingPage: 'Öffentliche Buchungsseite',
+    shareLink: 'Teilen Sie diesen Link, damit Gäste direkt von jedem Gerät aus buchen können.',
+    copy: 'Kopieren',
+    copied: 'Kopiert!',
+    mobileReady: 'Mobil bereit',
+    worksOnAllDevices: 'Funktioniert auf allen Geräten',
+    instantBooking: 'Sofortige Buchung',
+    savedToDashboard: 'In Ihrem Dashboard gespeichert',
+    fullyBranded: 'Vollständig gebrandet',
+    yourColorsAndName: 'Ihre Farben und Ihr Name',
+    allTracked: 'Alles nachverfolgbar',
+    appearsInCalendar: 'Erscheint in Ihrem Kalender',
+    youreBooked: 'Sie sind gebucht!',
+    reservationConfirmed: 'Ihre Reservierung wurde bestätigt.',
+    makeAnotherReservation: 'Eine weitere Reservierung vornehmen',
+    summary: 'Zusammenfassung',
+    guests: 'Gäste',
+    enterContactDetails: 'Geben Sie Ihre Kontaktdaten ein',
+    firstName: 'Vorname',
+    lastName: 'Nachname',
+    phone: 'Telefon',
+    email: 'E-Mail',
+    company: 'Firma',
+    notes: 'Notizen',
+    dietaryRequirements: 'Ernährungsanforderungen, besondere Anlässe...',
+    haveOfferCode: 'Haben Sie einen Angebotscode?',
+    agreeToNewsletters: 'Ich stimme dem Erhalt von Newslettern gemäß der Einwilligungserklärung zu.',
+    byCompletingBooking: 'Mit Abschluss dieser Buchung stimmen Sie den AGB zu',
+    makeReservation: 'Reservierung vornehmen',
+    pleaseEnterName: 'Bitte geben Sie Ihren Namen ein',
+    phoneRequired: 'Telefonnummer ist erforderlich',
+    emailRequired: 'E-Mail-Adresse ist erforderlich',
+    timeSlotFullyBooked: 'Dieser Zeitslot ist ausgebucht. Bitte wählen Sie eine andere Uhrzeit.',
+    offerCodeReachedLimit: 'Dieser Angebotscode hat sein Nutzungslimit erreicht.',
+    offerCodeAlreadyUsed: 'Sie haben diesen Angebotscode bereits verwendet.',
+    failedToSaveReservation: 'Reservierung konnte nicht gespeichert werden: ',
+    accessRestricted: 'Zugriff eingeschränkt',
+    accessRestrictedMessage: 'Nur Admin- und Manager-Rollen können auf die Buchungslink-Seite zugreifen. Kontaktieren Sie Ihren Vorgesetzten für Zugang.',
+    changeRestaurant: 'Restaurant wechseln',
+    selectADate: 'Wählen Sie ein Datum',
+    selectATime: 'Wählen Sie eine Uhrzeit',
+    moreSlots: 'weitere Slots auf der vollständigen Seite',
+    offerCodePlaceholder: 'z.B. WILLKOMMEN10',
+    reservationSettingsNote: 'Zeitintervalle, Start-/Endpuffer und andere Buchungseinstellungen werden jetzt in den Buchungseinstellungen konfiguriert.',
+  },
+};
+
 const COUNTRY_CODES = [
   { code: '+1', flag: '🇺🇸', label: 'US' },
   { code: '+44', flag: '🇬🇧', label: 'UK' },
@@ -34,9 +570,7 @@ const generateTimeSlots = (openTime = '10:00', closeTime = '22:00', interval = 3
   const [cH, cM] = closeTime.split(':').map(Number);
   const oMin = oH * 60 + oM;
   let cMin = cH * 60 + cM;
-  // Past-midnight support
   if (cMin <= oMin) cMin += 24 * 60;
-  // Sanity cap: max 18h of slots
   const endMin = Math.min(cMin, oMin + 18 * 60);
   for (let m = oMin; m < endMin; m += interval) {
     const actualMin = m % (24 * 60);
@@ -44,10 +578,9 @@ const generateTimeSlots = (openTime = '10:00', closeTime = '22:00', interval = 3
     const min = actualMin % 60;
     const value = `${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
     
-    // Format label based on time format preference
     let label;
     if (use24Hour) {
-      label = value; // 24-hour format: "14:30"
+      label = value;
     } else {
       const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
       const ampm = h < 12 ? 'AM' : 'PM';
@@ -96,7 +629,7 @@ const getOpenDayNames = (customHours) => {
   return open.size > 0 ? open : new Set(ALL_DAYS);
 };
 
-const MiniCalendar = ({ selectedDate, onDateSelect, accentColor = '#fe8a24', openDayNames }) => {
+const MiniCalendar = ({ selectedDate, onDateSelect, accentColor = '#fe8a24', openDayNames, t }) => {
   const [view, setView] = useState(new Date());
   const yr = view.getFullYear(), mo = view.getMonth();
   const firstDay = new Date(yr, mo, 1).getDay();
@@ -146,7 +679,7 @@ const MiniCalendar = ({ selectedDate, onDateSelect, accentColor = '#fe8a24', ope
               key={i}
               disabled={isDisabled}
               onClick={() => onDateSelect(td)}
-              title={isClosed && !isPast ? 'Closed' : undefined}
+              title={isClosed && !isPast ? t('closedOnThisDay') : undefined}
               className={[
                 'aspect-square flex items-center justify-center text-xs font-medium rounded-lg transition-all relative',
                 isDisabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-white/10',
@@ -171,7 +704,7 @@ const MiniCalendar = ({ selectedDate, onDateSelect, accentColor = '#fe8a24', ope
         })}
       </div>
       {hasClosed && (
-        <p className="text-white/25 text-[10px] text-center mt-3">Dimmed dates are unavailable</p>
+        <p className="text-white/25 text-[10px] text-center mt-3">{t('dimmedDatesUnavailable')}</p>
       )}
     </div>
   );
@@ -181,6 +714,24 @@ const MiniCalendar = ({ selectedDate, onDateSelect, accentColor = '#fe8a24', ope
 //  RESTAURANT SELECTOR SCREEN
 // ════════════════════════════════════════════════════════════════════
 const RestaurantSelector = ({ onSelect }) => {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const db = firestore;
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -195,19 +746,17 @@ const RestaurantSelector = ({ onSelect }) => {
           const staffRestaurantId = sessionStorage.getItem("staffRestaurantId");
           const isStaff = !!staffRestaurantId;
 
-          // ── Staff: load only their assigned restaurant ────────────────
           if (isStaff) {
             const snap = await getDoc(doc(db, 'restaurants', staffRestaurantId));
           if (snap.exists()) {
             const restaurant = { docId: snap.id, ...snap.data(), _collection: 'restaurants' };
             setRestaurants([restaurant]);
-            onSelect(restaurant); // auto-select for staff, skip the selector screen
+            onSelect(restaurant);
           }
           setLoading(false);
           return;
           }
 
-          // ── Owner: load all owned restaurants ─────────────────────────
           const q1 = query(
             collection(db, 'restaurants'),
             where('Owner_ID', '==', currentUser.uid)
@@ -238,22 +787,19 @@ const RestaurantSelector = ({ onSelect }) => {
 
   return (
     <div className="h-full flex flex-col bg-gray-50 overflow-hidden">
-      {/* Header */}
       <div className="bg-white border-b-4 border-[#fe8a24] px-6 py-5 shadow-sm flex-shrink-0">
-        <h1 className="text-2xl font-bold text-gray-900">Reservation Link</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Select a restaurant to set up its booking page</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('reservationLink')}</h1>
+        <p className="text-gray-500 text-sm mt-0.5">{t('selectRestaurant')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-2xl mx-auto">
-
-          {/* Search */}
           <div className="relative mb-5">
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search restaurants..."
+              placeholder={t('searchRestaurants')}
               className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#fe8a24] bg-white"
             />
           </div>
@@ -261,14 +807,14 @@ const RestaurantSelector = ({ onSelect }) => {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400">
               <div className="w-10 h-10 border-4 border-[#fe8a24] border-t-transparent rounded-full animate-spin mb-4" />
-              <p className="text-sm font-medium">Loading your restaurants...</p>
+              <p className="text-sm font-medium">{t('loadingRestaurants')}</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
               <div className="text-5xl mb-4">🍽️</div>
-              <p className="text-base font-semibold text-gray-500">No restaurants found</p>
+              <p className="text-base font-semibold text-gray-500">{t('noRestaurantsFound')}</p>
               <p className="text-sm mt-1">
-                {search ? 'Try a different search term' : 'No restaurants are linked to your account yet'}
+                {search ? t('tryDifferentSearch') : t('noRestaurantsLinked')}
               </p>
             </div>
           ) : (
@@ -279,7 +825,6 @@ const RestaurantSelector = ({ onSelect }) => {
                   onClick={() => onSelect(restaurant)}
                   className="w-full bg-white rounded-2xl border-2 border-gray-200 hover:border-[#fe8a24] hover:shadow-md transition-all p-4 flex items-center gap-4 text-left group"
                 >
-                  {/* Restaurant image or placeholder */}
                   <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-200">
                     {restaurant.Image ? (
                       <img src={restaurant.Image} alt={restaurant.name} className="w-full h-full object-cover" />
@@ -288,12 +833,11 @@ const RestaurantSelector = ({ onSelect }) => {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-bold text-gray-900 text-base truncate">{restaurant.name || restaurant.docId}</p>
                       {restaurant.restaurant_activation && (
-                        <span className="flex-shrink-0 text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+                        <span className="flex-shrink-0 text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{t('active')}</span>
                       )}
                     </div>
                     {restaurant.Type && (
@@ -310,7 +854,6 @@ const RestaurantSelector = ({ onSelect }) => {
                     )}
                   </div>
 
-                  {/* Arrow */}
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 group-hover:bg-[#fe8a24] flex items-center justify-center transition-colors">
                     <FiChevronDown className="w-4 h-4 text-gray-400 group-hover:text-white -rotate-90 transition-colors" />
                   </div>
@@ -328,23 +871,38 @@ const RestaurantSelector = ({ onSelect }) => {
 //  MAIN COMPONENT
 // ════════════════════════════════════════════════════════════════════
 const ReservationLinkPage = ({ selectedRestaurant: propRestaurant }) => {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const db = firestore;
   const staffRole = sessionStorage.getItem("staffRole");
   const isStaff   = !!sessionStorage.getItem("staffRestaurantId");
   const canAccess = !isStaff || staffRole === 'admin' || staffRole === 'manager';
-  // Restaurant selection state
   const [activeRestaurant, setActiveRestaurant] = useState(propRestaurant || null);
   const [tablesLoaded, setTablesLoaded] = useState(false);
   const [allReservations, setAllReservations] = useState([]);
   const [restaurantTables, setRestaurantTables] = useState([]);
   const [slotAvailability, setSlotAvailability] = useState({});
 
-  // When prop changes (e.g. parent re-selects), sync it
   useEffect(() => {
     if (propRestaurant) setActiveRestaurant(propRestaurant);
   }, [propRestaurant]);
 
-  // Page mode: 'config' | 'preview' | 'link'
   const [pageMode, setPageMode] = useState('config');
 
 const [config, setConfig] = useState({
@@ -368,7 +926,6 @@ const [config, setConfig] = useState({
     requirePhone:       true,
   });
 
-  // Booking form state
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState('');
@@ -387,8 +944,6 @@ const [config, setConfig] = useState({
   const [offerCodeInput, setOfferCodeInput] = useState('');
   const [crmAvgRevenue, setCrmAvgRevenue] = useState(0);
 
-
-  // Resolved restaurant document ID — docId is the Firestore document ID
   const restaurantId = activeRestaurant?.docId || activeRestaurant?.id || activeRestaurant?.name || null;
 
   const logoUpload = useImageUpload(restaurantId, 'logo');
@@ -396,7 +951,6 @@ const [config, setConfig] = useState({
   const logoInputRef = useRef();
   const bgInputRef   = useRef();
 
-  // When a restaurant is selected, pre-fill config from its data
   useEffect(() => {
     if (!activeRestaurant) return;
     setConfig(prev => ({
@@ -405,13 +959,11 @@ const [config, setConfig] = useState({
     }));
   }, [activeRestaurant]);
 
-  // Load saved reservationConfig from Firestore when restaurant is selected
   useEffect(() => {
     const load = async () => {
       if (!restaurantId) return;
       console.log('[ReservationLink] Loading config for:', restaurantId);
       try {
-        // Try both collections
         let snap = await getDoc(doc(db, 'restaurants', restaurantId, 'reservationConfig', 'config'));
         if (!snap.exists()) {
           snap = await getDoc(doc(db, 'TestRestaurant', restaurantId, 'reservationConfig', 'config'));
@@ -429,7 +981,6 @@ const [config, setConfig] = useState({
     load();
   }, [restaurantId]);
 
-  // Load tables and reservations for availability checking
   useEffect(() => {
     const loadTablesAndReservations = async () => {
       if (!restaurantId || !activeRestaurant) return;
@@ -437,13 +988,11 @@ const [config, setConfig] = useState({
       const collectionName = activeRestaurant._collection || 'restaurants';
       
       try {
-        // Load tables
         const tablesSnap = await getDocs(collection(db, collectionName, restaurantId, 'tables'));
         const tablesData = tablesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setRestaurantTables(tablesData);
         setTablesLoaded(true);
         
-        // Load existing reservations for this restaurant
         const reservationsQuery = query(
           collection(db, 'reservations'),
           where('restaurant_id', '==', restaurantId),
@@ -506,16 +1055,14 @@ const [config, setConfig] = useState({
     loadReservationSettings();
   }, [restaurantId, activeRestaurant]);
 
-  // Calculate slot availability based on tables and reservations
   useEffect(() => {
     if (!selectedDate || !restaurantId || !tablesLoaded || restaurantTables.length === 0) {
       return;
     }
     
     const availability = {};
-    const defaultDuration = 120; // Default 2 hours
+    const defaultDuration = 120;
     
-    // Get open/close times for selected date from restaurant data
     const customHours = activeRestaurant?.customHours || [];
     let previewOpenTime = '10:00';
     let previewCloseTime = '22:00';
@@ -537,11 +1084,9 @@ const [config, setConfig] = useState({
       const daySettings = reservationSettings?.dayIntervals?.[dayName];
       const dayInterval = daySettings?.interval || 30;
       
-      // ✅ Apply start/end offsets
       const startOffset = daySettings?.startOffset || 0;
       const endOffset = daySettings?.endOffset || 0;
       
-      // Calculate effective open/close times with offsets
       const [openHour, openMin] = previewOpenTime.split(':').map(Number);
       const [closeHour, closeMin] = previewCloseTime.split(':').map(Number);
       const effectiveOpenMin = openHour * 60 + openMin + startOffset;
@@ -558,7 +1103,6 @@ const [config, setConfig] = useState({
       
       const slotEndTime = new Date(slotDateTime.getTime() + defaultDuration * 60000);
       
-      // Find suitable tables for this party size
       const suitableTables = restaurantTables.filter(t => 
         t.online === true &&
         (t.sessions === 'Reservation' || t.sessions === 'Both') &&
@@ -571,7 +1115,6 @@ const [config, setConfig] = useState({
         continue;
       }
       
-      // Find booked tables
       const bookedTableIds = new Set();
       
       allReservations.forEach(res => {
@@ -595,7 +1138,6 @@ const [config, setConfig] = useState({
     setSlotAvailability(availability);
   }, [selectedDate, guests, restaurantId, restaurantTables, allReservations, config.timeInterval, config.use24HourFormat, activeRestaurant, tablesLoaded]);
 
-  // Resolve preview hours from customHours (same logic as PublicReservationPage)
   const previewCustomHours = activeRestaurant?.customHours || [];
   const previewOpenDayNames = getOpenDayNames(previewCustomHours);
   const previewDayName = selectedDate
@@ -628,7 +1170,6 @@ const generateTimeSlotsForSelectedDate = () => {
     const startOffset = daySettings?.startOffset || 0;
     const endOffset = daySettings?.endOffset || 0;
     
-    // Calculate effective times
     const [openHour, openMin] = previewOpenTime.split(':').map(Number);
     const [closeHour, closeMin] = previewCloseTime.split(':').map(Number);
     const effectiveOpenMin = openHour * 60 + openMin + startOffset;
@@ -638,7 +1179,6 @@ const generateTimeSlotsForSelectedDate = () => {
     
     const allSlots = generateTimeSlots(effectiveOpenTime, effectiveCloseTime, dayInterval, config.use24HourFormat);
     
-    // ✅ Filter out blocked time slots
     const blockedSlots = reservationSettings?.blockedTimeSlots?.[dayName] || [];
     const availableSlots = allSlots.filter(slot => !blockedSlots.includes(slot.value));
     
@@ -654,9 +1194,7 @@ const generateTimeSlotsForSelectedDate = () => {
   
   const allTimeSlots = generateTimeSlotsForSelectedDate();
   
-  // Filter time slots based on availability
   const timeSlots = allTimeSlots.filter(slot => {
-    // Only show slots that have table availability
     if (slotAvailability[slot.value] === false) {
       return false;
     }
@@ -666,7 +1204,6 @@ const generateTimeSlotsForSelectedDate = () => {
   const maxGuests = reservationSettings?.maxGuestsOnline || reservationSettings?.maxGuestsPerReservation || 20;
   const guestOptions = Array.from({ length: Math.min(maxGuests, 10) }, (_, i) => i + 1);
   
-  // Use restaurant NAME in URL (more user-friendly), PublicReservationPage will query by name
   const getBaseUrl = () => {
     if (process.env.NODE_ENV === 'development') {
       return 'http://localhost:5173';
@@ -683,7 +1220,6 @@ const generateTimeSlotsForSelectedDate = () => {
       return;
     }
     
-    // Determine collection from activeRestaurant
     const collectionName = activeRestaurant?._collection || 'restaurants';
     const path = `${collectionName}/${restaurantId}/reservationConfig/config`;
     console.log('[ReservationLink] Saving to:', path, updates);
@@ -705,7 +1241,6 @@ const generateTimeSlotsForSelectedDate = () => {
     }
   };
 
-  // Save entire config with visual feedback
   const handleSaveAll = async () => {
     setConfigSaving(true);
     await saveConfig(config);
@@ -714,7 +1249,6 @@ const generateTimeSlotsForSelectedDate = () => {
     setTimeout(() => setConfigSaved(false), 2500);
   };
 
-  // ── Upload handlers ──────────────────────────────────────────────────
   const handleLogoFile = async (file) => {
     if (!file) return;
     const url = await logoUpload.upload(file);
@@ -740,9 +1274,9 @@ const generateTimeSlotsForSelectedDate = () => {
   };
 
   const handleSaveReservation = async () => {
-    if (!form.firstName || !form.lastName) { setToast('Please enter your name'); return; }
-    if (config.requirePhone && !form.phone)  { setToast('Phone number is required'); return; }
-    if (config.requireEmail && !form.email)  { setToast('Email address is required'); return; }
+    if (!form.firstName || !form.lastName) { setToast(t('pleaseEnterName')); return; }
+    if (config.requirePhone && !form.phone)  { setToast(t('phoneRequired')); return; }
+    if (config.requireEmail && !form.email)  { setToast(t('emailRequired')); return; }
 
     try {
       setSaving(true);
@@ -750,7 +1284,6 @@ const generateTimeSlotsForSelectedDate = () => {
       const currentUser  = auth.currentUser;
       const collectionName = activeRestaurant?._collection || 'restaurants';
 
-      // Build reservation datetime
       const resDate = new Date(selectedDate);
       const [h, m] = selectedTime.split(':').map(Number);
       resDate.setHours(h, m, 0, 0);
@@ -760,7 +1293,6 @@ const generateTimeSlotsForSelectedDate = () => {
       const totalDuration   = diningDuration + cleanupDuration;
       const resEndTime      = new Date(resDate.getTime() + totalDuration * 60000);
 
-      // ── 1. Live conflict check ────────────────────────────────────────────────
       const liveSnap = await getDocs(query(
         collection(db, 'reservations'),
         where('restaurant_id', '==', restaurantId),
@@ -778,7 +1310,6 @@ const generateTimeSlotsForSelectedDate = () => {
         }
       });
 
-      // ── 2. Auto-assign best free table ───────────────────────────────────────
       const eligible = restaurantTables
         .filter(t =>
           t.online === true &&
@@ -794,14 +1325,13 @@ const generateTimeSlotsForSelectedDate = () => {
         });
 
       if (restaurantTables.length > 0 && eligible.length === 0) {
-        setToast('This time slot is fully booked. Please choose a different time.');
+        setToast(t('timeSlotFullyBooked'));
         setSaving(false);
         return;
       }
 
 const assignedTable = eligible[0] || null;
 
-      // ── Validate offer code against real Offer doc + usage limits ──────────
       let validatedOffer = null;
       if (reservationSettings?.enableOfferCode && offerCodeInput) {
         try {
@@ -815,7 +1345,7 @@ const assignedTable = eligible[0] || null;
 
             if (offerData.usage_limit_type === 'max_uses' &&
                 (offerData.times_redeemed || 0) >= (offerData.max_uses || 0)) {
-              setToast('This offer code has reached its usage limit.');
+              setToast(t('offerCodeReachedLimit'));
               setSaving(false);
               return;
             }
@@ -828,7 +1358,7 @@ const assignedTable = eligible[0] || null;
                 where('customer_email', '==', form.email)
               ));
               if (!priorUse.empty) {
-                setToast('You have already used this offer code.');
+                setToast(t('offerCodeAlreadyUsed'));
                 setSaving(false);
                 return;
               }
@@ -840,7 +1370,6 @@ const assignedTable = eligible[0] || null;
         }
       }
 
-      // ── Estimate campaign revenue ────────────────────────────────────────
       let estimatedRevenue = null;
       if (validatedOffer && crmAvgRevenue > 0) {
         const baseRevenue = guests * crmAvgRevenue;
@@ -848,7 +1377,6 @@ const assignedTable = eligible[0] || null;
         estimatedRevenue = Math.round(baseRevenue * (1 - discountPct / 100));
       }
 
-      // ── 3. Save reservation ───────────────────────────────────────────────────
       const newRes = await addDoc(collection(db, 'reservations'), {
         offer_code_applied: (reservationSettings?.enableOfferCode && offerCodeInput) ? offerCodeInput : null,
         offer_doc_id: validatedOffer?.id || null,
@@ -868,11 +1396,11 @@ const assignedTable = eligible[0] || null;
         company:          form.company,
         restaurant_id:    restaurantId || null,
         restaurant_name:  activeRestaurant?.name || config.restaurantName,
-        restaurant_collection: collectionName,           // ✅ FIX 3 — was missing
+        restaurant_collection: collectionName,
         restaurant_owner_id: currentUser?.uid || null,
         is_walkin:        false,
-        table_id:         assignedTable?.id   || null,   // ✅ FIX 1 — was hardcoded null
-        table_name:       assignedTable?.name || '',     // ✅ FIX 1
+        table_id:         assignedTable?.id   || null,
+        table_name:       assignedTable?.name || '',
         table_ids:        assignedTable ? [assignedTable.id]   : [],
         table_names:      assignedTable ? [assignedTable.name] : [],
         agree_newsletter: agreeNewsletter,
@@ -905,8 +1433,7 @@ const assignedTable = eligible[0] || null;
         } catch (e) { console.warn('offer times_redeemed increment failed', e); }
       }
 
-      // ── 4. Mark table as reserved ─────────────────────────────────────────────
-      if (assignedTable) {                                // ✅ FIX 2 — was not done at all
+      if (assignedTable) {
         await updateDoc(
           doc(db, collectionName, restaurantId, 'tables', assignedTable.id),
           {
@@ -922,7 +1449,7 @@ const assignedTable = eligible[0] || null;
 
       setSaved(true);
     } catch (err) {
-      setToast('Failed to save reservation: ' + err.message);
+      setToast(t('failedToSaveReservation') + err.message);
       console.error(err);
     } finally {
       setSaving(false);
@@ -960,10 +1487,9 @@ const assignedTable = eligible[0] || null;
         <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mb-4">
           <span className="text-3xl">🔒</span>
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">{t('accessRestricted')}</h2>
         <p className="text-gray-500 text-sm max-w-sm">
-          Only Admin and Manager roles can access the Reservation Link page. 
-          Contact your manager for access.
+          {t('accessRestrictedMessage')}
         </p>
       </div>
     );
@@ -983,16 +1509,14 @@ const assignedTable = eligible[0] || null;
         {/* Header */}
         <div className="bg-white border-b-4 border-[#fe8a24] px-6 py-4 flex items-center justify-between shadow-sm flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Change restaurant button */}
             <button
               onClick={() => setActiveRestaurant(null)}
               className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-xl transition-colors"
-              title="Change restaurant"
+              title={t('changeRestaurant')}
             >
               <FiChevronLeft className="w-5 h-5 text-gray-500" />
             </button>
 
-            {/* Restaurant pill */}
             <button
               onClick={() => setActiveRestaurant(null)}
               className="flex items-center gap-2.5 bg-gray-100 hover:bg-[#fe8a24]/10 border-2 border-transparent hover:border-[#fe8a24]/30 rounded-xl px-3 py-2 transition-all group min-w-0"
@@ -1006,17 +1530,16 @@ const assignedTable = eligible[0] || null;
                 <p className="text-sm font-bold text-gray-800 truncate leading-tight">{activeRestaurant.name}</p>
                 {activeRestaurant.Type && <p className="text-[10px] text-gray-400 truncate leading-tight">{activeRestaurant.Type}</p>}
               </div>
-              <span className="text-[10px] font-semibold text-[#fe8a24] flex-shrink-0 group-hover:underline">Change</span>
+              <span className="text-[10px] font-semibold text-[#fe8a24] flex-shrink-0 group-hover:underline">{t('changeRestaurant')}</span>
             </button>
 
             <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">Reservation Link</h1>
-              <p className="text-gray-400 text-xs">Customize your public booking page</p>
+              <h1 className="text-lg font-bold text-gray-900 leading-tight">{t('reservationLink')}</h1>
+              <p className="text-gray-400 text-xs">{t('customizeBookingPage')}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Save all button */}
             <button
               onClick={handleSaveAll}
               disabled={configSaving}
@@ -1031,15 +1554,15 @@ const assignedTable = eligible[0] || null;
               ) : configSaved ? (
                 <FiCheck className="w-4 h-4" />
               ) : null}
-              {configSaving ? 'Saving...' : configSaved ? 'Saved!' : 'Save'}
+              {configSaving ? t('saving') : configSaved ? t('saved') : t('save')}
             </button>
             <button onClick={() => setPageMode('preview')}
               className="flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-sm font-semibold transition-colors">
-              <FiExternalLink className="w-4 h-4" /> Preview
+              <FiExternalLink className="w-4 h-4" /> {t('previewPage')}
             </button>
             <button onClick={() => setPageMode('link')}
               className="flex items-center gap-2 px-4 py-2.5 bg-[#fe8a24] hover:bg-[#ff9d47] text-white rounded-xl text-sm font-semibold transition-colors">
-              <FiCopy className="w-4 h-4" /> Get Link
+              <FiCopy className="w-4 h-4" /> {t('getLink')}
             </button>
           </div>
         </div>
@@ -1052,19 +1575,19 @@ const assignedTable = eligible[0] || null;
               <div className="bg-white rounded-2xl border-2 border-[#fe8a24]/30 shadow-sm overflow-hidden">
                 <div className="bg-[#fe8a24]/5 px-5 py-4 border-b border-[#fe8a24]/20 flex items-center gap-2">
                   <FiImage className="w-4 h-4 text-[#fe8a24]" />
-                  <h3 className="font-bold text-gray-800 text-sm">Images</h3>
-                  <span className="text-xs text-gray-400 ml-1">Logo and background photo</span>
+                  <h3 className="font-bold text-gray-800 text-sm">{t('images')}</h3>
+                  <span className="text-xs text-gray-400 ml-1">{t('logoAndBackground')}</span>
                 </div>
                 <div className="p-5 grid grid-cols-2 gap-4">
 
                   {/* LOGO */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-700">Restaurant Logo</span>
+                      <span className="text-xs font-bold text-gray-700">{t('restaurantLogo')}</span>
                       {config.logoUrl && (
                         <button onClick={() => { setConfig(p => ({ ...p, logoUrl: '' })); saveConfig({ logoUrl: '' }); }}
                           className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-0.5">
-                          <FiX className="w-2.5 h-2.5" /> Remove
+                          <FiX className="w-2.5 h-2.5" /> {t('remove')}
                         </button>
                       )}
                     </div>
@@ -1075,7 +1598,7 @@ const assignedTable = eligible[0] || null;
                         </div>
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <div className="bg-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-700 shadow">
-                            <FiUpload className="w-3 h-3" /> Change
+                            <FiUpload className="w-3 h-3" /> {t('change')}
                           </div>
                         </div>
                       </div>
@@ -1093,8 +1616,8 @@ const assignedTable = eligible[0] || null;
                               <FiUpload className="w-5 h-5 text-gray-400 group-hover:text-[#fe8a24]" />
                             </div>
                             <div className="text-center">
-                              <p className="text-xs font-semibold text-gray-500 group-hover:text-[#fe8a24]">Upload logo</p>
-                              <p className="text-[10px] text-gray-400">PNG, JPG · Max 5MB</p>
+                              <p className="text-xs font-semibold text-gray-500 group-hover:text-[#fe8a24]">{t('uploadLogo')}</p>
+                              <p className="text-[10px] text-gray-400">{t('pngJpgMax5MB')}</p>
                             </div>
                           </>
                         )}
@@ -1105,9 +1628,9 @@ const assignedTable = eligible[0] || null;
                     {config.logoUrl && (
                       <div className="mt-2 space-y-2">
                         <div>
-                          <p className="text-[10px] font-semibold text-gray-500 mb-1">Shape</p>
+                          <p className="text-[10px] font-semibold text-gray-500 mb-1">{t('shape')}</p>
                           <div className="flex gap-1">
-                            {[{v:'circle',l:'Circle'},{v:'rounded',l:'Round'},{v:'square',l:'Square'}].map(o => (
+                            {[{v:'circle',l:t('circle')},{v:'rounded',l:t('rounded')},{v:'square',l:t('square')}].map(o => (
                               <button key={o.v} onClick={() => setConfig(p => ({ ...p, logoShape: o.v }))}
                                 className={`flex-1 py-1 rounded-lg text-[10px] font-semibold transition-all ${config.logoShape === o.v ? 'bg-[#fe8a24] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                                 {o.l}
@@ -1116,7 +1639,7 @@ const assignedTable = eligible[0] || null;
                           </div>
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-gray-500 mb-1">Size</p>
+                          <p className="text-[10px] font-semibold text-gray-500 mb-1">{t('size')}</p>
                           <div className="flex gap-1">
                             {[{v:'sm',l:'S'},{v:'md',l:'M'},{v:'lg',l:'L'}].map(o => (
                               <button key={o.v} onClick={() => setConfig(p => ({ ...p, logoSize: o.v }))}
@@ -1133,11 +1656,11 @@ const assignedTable = eligible[0] || null;
                   {/* BACKGROUND IMAGE */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-700">Background Image</span>
+                      <span className="text-xs font-bold text-gray-700">{t('backgroundImage')}</span>
                       {config.backgroundImageUrl && (
                         <button onClick={() => { setConfig(p => ({ ...p, backgroundImageUrl: '', backgroundMode: 'gradient' })); saveConfig({ backgroundImageUrl: '', backgroundMode: 'gradient' }); }}
                           className="text-[10px] text-red-400 hover:text-red-600 flex items-center gap-0.5">
-                          <FiX className="w-2.5 h-2.5" /> Remove
+                          <FiX className="w-2.5 h-2.5" /> {t('remove')}
                         </button>
                       )}
                     </div>
@@ -1148,7 +1671,7 @@ const assignedTable = eligible[0] || null;
                         </div>
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
                           <div className="bg-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 text-xs font-semibold text-gray-700 shadow">
-                            <FiUpload className="w-3 h-3" /> Change
+                            <FiUpload className="w-3 h-3" /> {t('change')}
                           </div>
                         </div>
                       </div>
@@ -1166,8 +1689,8 @@ const assignedTable = eligible[0] || null;
                               <FiImage className="w-5 h-5 text-gray-400 group-hover:text-[#fe8a24]" />
                             </div>
                             <div className="text-center">
-                              <p className="text-xs font-semibold text-gray-500 group-hover:text-[#fe8a24]">Upload background</p>
-                              <p className="text-[10px] text-gray-400">PNG, JPG · Max 10MB</p>
+                              <p className="text-xs font-semibold text-gray-500 group-hover:text-[#fe8a24]">{t('uploadBackground')}</p>
+                              <p className="text-[10px] text-gray-400">{t('pngJpgMax10MB')}</p>
                             </div>
                           </>
                         )}
@@ -1178,7 +1701,7 @@ const assignedTable = eligible[0] || null;
                     {config.backgroundImageUrl && (
                       <div className="mt-2">
                         <p className="text-[10px] font-semibold text-gray-500 mb-1">
-                          Dark overlay: {Math.round((config.overlayOpacity ?? 0) * 100)}%
+                          {t('darkOverlay')}: {Math.round((config.overlayOpacity ?? 0) * 100)}%
                         </p>
                         <input type="range" min={0} max={1} step={0.05} value={config.overlayOpacity}
                           onChange={e => {
@@ -1188,7 +1711,7 @@ const assignedTable = eligible[0] || null;
                           }}
                           className="w-full accent-[#fe8a24]" />
                         <div className="flex justify-between text-[9px] text-gray-400">
-                          <span>Light</span><span>Dark</span>
+                          <span>{t('light')}</span><span>{t('dark')}</span>
                         </div>
                       </div>
                     )}
@@ -1198,20 +1721,20 @@ const assignedTable = eligible[0] || null;
 
               {/* ── BRANDING ── */}
               <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider">Branding</h3>
+                <h3 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider">{t('branding')}</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Welcome Heading</label>
+                    <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t('welcomeHeading')}</label>
                     <input value={config.welcomeMessage} onChange={e => setConfig(p => ({ ...p, welcomeMessage: e.target.value }))}
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#fe8a24]" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Sub-heading</label>
+                    <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t('subHeading')}</label>
                     <input value={config.subMessage} onChange={e => setConfig(p => ({ ...p, subMessage: e.target.value }))}
                       className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#fe8a24]" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Accent Color</label>
+                    <label className="text-xs font-semibold text-gray-600 mb-1.5 block">{t('accentColor')}</label>
                     <div className="flex items-center gap-3">
                       <input type="color" value={config.accentColor} onChange={e => setConfig(p => ({ ...p, accentColor: e.target.value }))}
                         className="w-10 h-10 rounded-lg border-2 border-gray-200 cursor-pointer" />
@@ -1223,9 +1746,9 @@ const assignedTable = eligible[0] || null;
 
               {/* ── BACKGROUND GRADIENT ── */}
               <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-1 text-sm uppercase tracking-wider">Background</h3>
+                <h3 className="font-bold text-gray-800 mb-1 text-sm uppercase tracking-wider">{t('background')}</h3>
                 {config.backgroundImageUrl ? (
-                  <p className="text-xs text-gray-400 mt-2">Using uploaded photo. Remove it above to switch to a gradient.</p>
+                  <p className="text-xs text-gray-400 mt-2">{t('usingUploadedPhoto')}</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     {gradientOptions.map(g => (
@@ -1246,26 +1769,25 @@ const assignedTable = eligible[0] || null;
                     <span className="text-white text-lg">ℹ️</span>
                   </div>
                   <div>
-                    <h3 className="font-bold text-blue-900 mb-1 text-sm">Booking Options Moved</h3>
+                    <h3 className="font-bold text-blue-900 mb-1 text-sm">{t('bookingOptionsMoved')}</h3>
                     <p className="text-xs text-blue-700 leading-relaxed mb-2">
-                      Time intervals, start/end buffers, and other booking settings are now configured in 
-                      <strong> Reservation Settings</strong> (accessed from the calendar page).
+                      {t('bookingOptionsDescription')}
                     </p>
                     <p className="text-xs text-blue-600">
-                      This allows you to set different booking intervals for each day of the week with custom start and end buffers.
+                      {t('bookingOptionsNote')}
                     </p>
                   </div>
                 </div>
               </div>               
               <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                <h3 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider">Form Fields</h3>
+                <h3 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider">{t('formFields')}</h3>
                 <div className="space-y-3">
                   {[
-                    { key: 'requireEmail', label: 'Require Email' },
-                    { key: 'requirePhone', label: 'Require Phone' },
-                    { key: 'showCompany',  label: 'Show Company Field' },
-                    { key: 'showNotes',    label: 'Show Notes Field' },
-                    { key: 'use24HourFormat', label: 'Use 24-Hour Time Format' },
+                    { key: 'requireEmail', label: t('requireEmail') },
+                    { key: 'requirePhone', label: t('requirePhone') },
+                    { key: 'showCompany',  label: t('showCompanyField') },
+                    { key: 'showNotes',    label: t('showNotesField') },
+                    { key: 'use24HourFormat', label: t('use24HourFormat') },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center justify-between cursor-pointer">
                       <span className="text-sm text-gray-700">{label}</span>
@@ -1282,7 +1804,7 @@ const assignedTable = eligible[0] || null;
             {/* ── LIVE PREVIEW ── */}
             <div className="lg:sticky lg:top-0">
               <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Live Preview</p>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t('livePreview')}</p>
                 <div className={`rounded-xl overflow-hidden relative ${previewBgClass}`} style={{ ...previewBgStyle, minHeight: 480 }}>
                   {config.backgroundImageUrl && (
                     <div
@@ -1304,35 +1826,34 @@ const assignedTable = eligible[0] || null;
                       <h2 className="text-xl font-bold text-white">{config.welcomeMessage}</h2>
                       <p className="text-white/60 text-xs mt-1">{config.subMessage}</p>
                     </div>
-                    {/* Calendar — same as PublicReservationPage */}
                     <div className="bg-white/10 backdrop-blur rounded-xl p-3 w-full">
                       <MiniCalendar
                         selectedDate={selectedDate}
                         onDateSelect={d => { setSelectedDate(d); setSelectedTime(''); }}
                         accentColor={config.accentColor}
                         openDayNames={previewOpenDayNames}
+                        t={t}
                       />
                     </div>
-                    {/* Time slots — filtered by availability */}
                     {selectedDate && (
                       <div className="mt-3 w-full">
                         {!previewIsOpen ? (
                           <div className="bg-red-500/15 border border-red-500/25 rounded-xl p-3 text-center">
-                            <p className="text-red-300 text-xs font-bold">Closed on this day</p>
+                            <p className="text-red-300 text-xs font-bold">{t('closedOnThisDay')}</p>
                           </div>
                         ) : !tablesLoaded ? (
                           <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
                             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-2" />
-                            <p className="text-white/60 text-sm">Loading availability...</p>
+                            <p className="text-white/60 text-sm">{t('loadingAvailability')}</p>
                           </div>
                         ) : timeSlots.length === 0 ? (
                           <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
-                            <p className="text-white/60 text-xs font-bold">No time slots available</p>
+                            <p className="text-white/60 text-xs font-bold">{t('noTimeSlotsAvailable')}</p>
                           </div>
                         ) : (
                           <>
                             <p className="text-white/45 text-[10px] font-semibold uppercase tracking-wider mb-2">
-                              Select Time
+                              {t('selectTime')}
                               <span className="text-white/25 normal-case font-normal ml-1">({previewOpenTime} – {previewCloseTime})</span>
                             </p>
                             <div className="grid grid-cols-3 gap-1.5">
@@ -1345,7 +1866,7 @@ const assignedTable = eligible[0] || null;
                               ))}
                             </div>
                             {timeSlots.length > 9 && (
-                              <p className="text-white/30 text-[10px] text-center mt-1.5">+{timeSlots.length - 9} more slots on full page</p>
+                              <p className="text-white/30 text-[10px] text-center mt-1.5">+{timeSlots.length - 9} {t('moreSlots')}</p>
                             )}
                           </>
                         )}
@@ -1373,17 +1894,16 @@ const assignedTable = eligible[0] || null;
               <FiChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Your Reservation Link</h1>
-              <p className="text-gray-500 text-sm">Share this link with your customers</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('yourReservationLink')}</h1>
+              <p className="text-gray-500 text-sm">{t('shareWithCustomers')}</p>
             </div>
           </div>
           <button onClick={() => setPageMode('preview')} className="flex items-center gap-2 px-5 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-sm font-semibold transition-colors">
-            <FiExternalLink className="w-4 h-4" /> Preview Page
+            <FiExternalLink className="w-4 h-4" /> {t('previewPage')}
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-lg w-full space-y-4">
-            {/* Restaurant context */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex items-center gap-3">
               {activeRestaurant.Image
                 ? <img src={activeRestaurant.Image} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
@@ -1399,21 +1919,21 @@ const assignedTable = eligible[0] || null;
               <div className="w-16 h-16 bg-[#fe8a24]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <FiCopy className="w-8 h-8 text-[#fe8a24]" />
               </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">Public Booking Page</h2>
-              <p className="text-gray-500 text-sm mb-5">Share this link so guests can book directly from any device.</p>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">{t('publicBookingPage')}</h2>
+              <p className="text-gray-500 text-sm mb-5">{t('shareLink')}</p>
               <div className="flex items-center gap-2 bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3">
                 <span className="flex-1 text-sm text-gray-700 font-mono truncate">{reservationUrl}</span>
                 <button onClick={copyLink} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${copied ? 'bg-green-500 text-white' : 'bg-[#fe8a24] text-white hover:bg-[#ff9d47]'}`}>
-                  {copied ? <><FiCheck className="w-3 h-3" /> Copied!</> : <><FiCopy className="w-3 h-3" /> Copy</>}
+                  {copied ? <><FiCheck className="w-3 h-3" /> {t('copied')}</> : <><FiCopy className="w-3 h-3" /> {t('copy')}</>}
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: '📱', title: 'Mobile Ready',    desc: 'Works on all devices' },
-                { icon: '⚡', title: 'Instant Booking', desc: 'Saved to your dashboard' },
-                { icon: '🎨', title: 'Fully Branded',   desc: 'Your colors and name' },
-                { icon: '📊', title: 'All Tracked',     desc: 'Appears in your calendar' },
+                { icon: '📱', title: t('mobileReady'), desc: t('worksOnAllDevices') },
+                { icon: '⚡', title: t('instantBooking'), desc: t('savedToDashboard') },
+                { icon: '🎨', title: t('fullyBranded'), desc: t('yourColorsAndName') },
+                { icon: '📊', title: t('allTracked'), desc: t('appearsInCalendar') },
               ].map(item => (
                 <div key={item.title} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
                   <div className="text-2xl mb-2">{item.icon}</div>
@@ -1438,7 +1958,7 @@ const assignedTable = eligible[0] || null;
       )}
       <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 40%)' }} />
       <button onClick={() => setPageMode('config')} className="absolute top-4 left-4 z-50 flex items-center gap-2 px-3 py-2 bg-black/30 backdrop-blur-sm rounded-xl text-white/70 hover:text-white text-xs font-semibold transition-colors">
-        <FiChevronLeft className="w-3.5 h-3.5" /> Back to Editor
+        <FiChevronLeft className="w-3.5 h-3.5" /> {t('backToEditor')}
       </button>
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-red-500 text-white rounded-2xl text-sm font-semibold shadow-2xl">{toast}</div>
@@ -1464,20 +1984,18 @@ const assignedTable = eligible[0] || null;
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 shadow-2xl" style={{ backgroundColor: config.accentColor }}>
                   <FiCheck className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-white mb-2">You're booked!</h2>
+                <h2 className="text-2xl font-black text-white mb-2">{t('youreBooked')}</h2>
                 <p className="text-white/60 text-sm mb-6">
-                  {form.firstName}, your reservation for {guests} guests on{' '}
-                  {selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at{' '}
-                  {allTimeSlots.find(t => t.value === selectedTime)?.label} has been confirmed.
+                  {form.firstName}, {t('reservationConfirmed')}
                 </p>
                 <div className="space-y-2 text-left bg-white/5 rounded-2xl p-4 text-sm">
-                  <div className="flex items-center gap-3 text-white/70"><FiUsers className="w-4 h-4" style={{ color: config.accentColor }} /><span>{guests} guests</span></div>
+                  <div className="flex items-center gap-3 text-white/70"><FiUsers className="w-4 h-4" style={{ color: config.accentColor }} /><span>{guests} {t('guests')}</span></div>
                   <div className="flex items-center gap-3 text-white/70"><FiCalendar className="w-4 h-4" style={{ color: config.accentColor }} /><span>{selectedDate?.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span></div>
                   <div className="flex items-center gap-3 text-white/70"><FiClock className="w-4 h-4" style={{ color: config.accentColor }} /><span>{allTimeSlots.find(t => t.value === selectedTime)?.label}</span></div>
                 </div>
                 <button onClick={() => { setSaved(false); setStep(1); setSelectedDate(null); setSelectedTime(''); setForm({ firstName:'', lastName:'', phone:'', email:'', company:'', notes:'' }); }}
                   className="mt-6 w-full py-3 rounded-2xl text-sm font-bold text-white transition-all hover:opacity-90" style={{ backgroundColor: config.accentColor }}>
-                  Make Another Reservation
+                  {t('makeAnotherReservation')}
                 </button>
               </div>
             </div>
@@ -1485,9 +2003,9 @@ const assignedTable = eligible[0] || null;
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <div className="lg:col-span-2">
                 <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20 sticky top-6">
-                  <h3 className="text-white font-black text-lg mb-5">Summary</h3>
+                  <h3 className="text-white font-black text-lg mb-5">{t('summary')}</h3>
                   <div className="mb-4">
-                    <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-2">Guests</p>
+                    <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-2">{t('guests')}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {guestOptions.map(g => (
                         <button key={g} onClick={() => setGuests(g)}
@@ -1500,10 +2018,10 @@ const assignedTable = eligible[0] || null;
                   </div>
                   <div className="space-y-2">
                     {[
-                      { icon: FiUsers,    label: `${guests} guests`,    editable: false },
-                      { icon: FiCalendar, label: selectedDate ? selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select a date', editable: !!selectedDate },
+                      { icon: FiUsers,    label: `${guests} ${t('guests')}`,    editable: false },
+                      { icon: FiCalendar, label: selectedDate ? selectedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : t('selectADate'), editable: !!selectedDate },
                       { icon: FiMapPin,   label: config.restaurantName, editable: false },
-                      { icon: FiClock,    label: selectedTime ? allTimeSlots.find(t => t.value === selectedTime)?.label || selectedTime : 'Select a time', editable: !!selectedTime },
+                      { icon: FiClock,    label: selectedTime ? allTimeSlots.find(t => t.value === selectedTime)?.label || selectedTime : t('selectATime'), editable: !!selectedTime },
                     ].map(({ icon: Icon, label, editable }) => (
                       <div key={label} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -1520,34 +2038,35 @@ const assignedTable = eligible[0] || null;
                 <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20">
                   {step === 1 ? (
                     <>
-                      <p className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-5">Select Date</p>
+                      <p className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-5">{t('selectDate')}</p>
                       <MiniCalendar
                         selectedDate={selectedDate}
                         onDateSelect={d => { setSelectedDate(d); setSelectedTime(''); }}
                         accentColor={config.accentColor}
                         openDayNames={previewOpenDayNames}
+                        t={t}
                       />
                       {selectedDate && (
                         <div className="mt-6">
                           {!previewIsOpen ? (
                             <div className="bg-red-500/15 border border-red-500/25 rounded-2xl p-5 text-center">
-                              <p className="text-red-300 text-sm font-bold mb-1">Closed on this day</p>
-                              <p className="text-red-300/60 text-xs">Please choose a different date</p>
+                              <p className="text-red-300 text-sm font-bold mb-1">{t('closedOnThisDay')}</p>
+                              <p className="text-red-300/60 text-xs">{t('selectDifferentDate')}</p>
                             </div>
                           ) : !tablesLoaded ? (
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
                               <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-2" />
-                              <p className="text-white/60 text-sm">Loading availability...</p>
+                              <p className="text-white/60 text-sm">{t('loadingAvailability')}</p>
                             </div>
                           ) : timeSlots.length === 0 ? (
                             <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-                              <p className="text-white/60 text-sm font-bold mb-1">No time slots available</p>
-                              <p className="text-white/30 text-xs">Please contact us directly to book.</p>
+                              <p className="text-white/60 text-sm font-bold mb-1">{t('noTimeSlotsAvailable')}</p>
+                              <p className="text-white/30 text-xs">{t('contactUsDirectly')}</p>
                             </div>
                           ) : (
                             <>
                               <p className="text-white/45 text-xs font-semibold uppercase tracking-wider mb-3">
-                                Select Time
+                                {t('selectTime')}
                                 <span className="text-white/25 normal-case font-normal ml-1">({previewOpenTime} – {previewCloseTime})</span>
                               </p>
                               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -1565,7 +2084,7 @@ const assignedTable = eligible[0] || null;
                       )}
                       {selectedDate && selectedTime && previewIsOpen && (
                         <button onClick={() => setStep(2)} className="mt-7 w-full py-4 rounded-2xl text-sm font-black text-white transition-all hover:opacity-90 hover:scale-[1.01] shadow-xl" style={{ backgroundColor: config.accentColor }}>
-                          Continue →
+                          {t('continue')}
                         </button>
                       )}
                     </>
@@ -1575,22 +2094,22 @@ const assignedTable = eligible[0] || null;
                         <button onClick={() => setStep(1)} className="p-2 rounded-xl bg-white/10 hover:bg-white/20">
                           <FiChevronLeft className="w-4 h-4 text-white" />
                         </button>
-                        <h3 className="text-white font-black text-lg">Enter your contact details</h3>
+                        <h3 className="text-white font-black text-lg">{t('enterContactDetails')}</h3>
                       </div>
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">First name</label>
+                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('firstName')}</label>
                             <input value={form.firstName} onChange={e => setForm(p => ({ ...p, firstName: e.target.value }))} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all" placeholder="Juan" />
                           </div>
                           <div>
-                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">Last name</label>
+                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('lastName')}</label>
                             <input value={form.lastName} onChange={e => setForm(p => ({ ...p, lastName: e.target.value }))} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all" placeholder="dela Cruz" />
                           </div>
                         </div>
                         <div>
                           <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
-                            Phone {config.requirePhone && <span style={{ color: config.accentColor }}>*</span>}
+                            {t('phone')} {config.requirePhone && <span style={{ color: config.accentColor }}>*</span>}
                           </label>
                           <div className="flex gap-2">
                             <select value={phoneCode} onChange={e => setPhoneCode(e.target.value)} className="bg-white/10 border border-white/20 rounded-xl px-3 py-3 text-white text-sm focus:outline-none focus:border-white/50 w-24">
@@ -1601,32 +2120,32 @@ const assignedTable = eligible[0] || null;
                         </div>
                         <div>
                           <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
-                            Email {config.requireEmail && <span style={{ color: config.accentColor }}>*</span>}
+                            {t('email')} {config.requireEmail && <span style={{ color: config.accentColor }}>*</span>}
                           </label>
                           <input value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} type="email" className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all" placeholder="juan@email.com" />
                         </div>
                         {config.showCompany && (
                           <div>
-                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">Company</label>
-                            <input value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all" placeholder="Company name" />
+                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('company')}</label>
+                            <input value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all" placeholder={t('companyNamePlaceholder')} />
                           </div>
                         )}
                         {config.showNotes && (
                           <div>
-                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">Notes</label>
-                            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} maxLength={360} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all resize-none" placeholder="Dietary requirements, special occasions..." />
+                            <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">{t('notes')}</label>
+                            <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} maxLength={360} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white/50 transition-all resize-none" placeholder={t('dietaryRequirements')} />
                             <p className="text-white/30 text-xs text-right mt-1">({form.notes.length}/360)</p>
                           </div>
                         )}
                         {reservationSettings?.enableOfferCode && (
                           <div>
                             <label className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-1.5 block">
-                              {reservationSettings.offerCodeFieldLabel || 'Have an offer code?'}
+                              {reservationSettings.offerCodeFieldLabel || t('haveOfferCode')}
                             </label>
                             <input
                               value={offerCodeInput}
                               onChange={e => setOfferCodeInput(e.target.value.toUpperCase())}
-                              placeholder="e.g. WELCOME10"
+                              placeholder={t('offerCodePlaceholder')}
                               className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-white/30 focus:outline-none focus:border-white/50 transition-all"
                             />
                           </div>
@@ -1634,12 +2153,12 @@ const assignedTable = eligible[0] || null;
                         <label className="flex items-start gap-3 cursor-pointer">
                           <input type="checkbox" checked={agreeNewsletter} onChange={e => setAgreeNewsletter(e.target.checked)} className="mt-0.5 w-4 h-4 rounded" style={{ accentColor: config.accentColor }} />
                           <span className="text-white/50 text-xs leading-relaxed">
-                            I agree to receive newsletters in accordance with the <span className="underline cursor-pointer" style={{ color: config.accentColor }}>declaration of consent</span>.
+                            {t('agreeToNewsletters')}
                           </span>
                         </label>
-                        <p className="text-white/30 text-xs">By completing this booking you agree to our <span className="underline cursor-pointer" style={{ color: config.accentColor }}>Terms</span></p>
+                        <p className="text-white/30 text-xs">{t('byCompletingBooking')}</p>
                         <button onClick={handleSaveReservation} disabled={saving} className="w-full py-4 rounded-2xl text-sm font-black text-white transition-all hover:opacity-90 hover:scale-[1.01] shadow-xl disabled:opacity-50" style={{ backgroundColor: config.accentColor }}>
-                          {saving ? 'Saving...' : 'Make reservation'}
+                          {saving ? t('saving') : t('makeReservation')}
                         </button>
                       </div>
                     </>

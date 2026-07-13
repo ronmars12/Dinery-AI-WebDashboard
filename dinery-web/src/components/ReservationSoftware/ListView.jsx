@@ -6,6 +6,145 @@ import {
   FiArrowRight, FiTag, FiPercent, FiX, FiSearch
 } from 'react-icons/fi';
 
+// ─── i18n Translations ──────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    search: 'Search...',
+    searchBy: 'Search by name, email, phone...',
+    all: 'All',
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    timeAsc: 'Time ↑',
+    timeDesc: 'Time ↓',
+    name: 'Name',
+    most: 'Most',
+    least: 'Least',
+    noReservations: 'No reservations found',
+    noResults: 'No results matching "{term}"',
+    noStatusResults: 'No {status} reservations for this date.',
+    noReservationsScheduled: 'No reservations scheduled for this date.',
+    date: 'Date',
+    time: 'Time',
+    guests: 'Guests',
+    phone: 'Phone',
+    total: 'Total',
+    mobile: 'Mobile',
+    guest: 'Guest',
+    searchPlaceholder: 'Search...',
+    searchPlaceholderDesktop: 'Search by name, email, phone...',
+  },
+  fi: {
+    search: 'Hae...',
+    searchBy: 'Hae nimellä, sähköpostilla tai puhelimella...',
+    all: 'Kaikki',
+    pending: 'Odottaa',
+    confirmed: 'Vahvistettu',
+    completed: 'Valmis',
+    cancelled: 'Peruttu',
+    timeAsc: 'Aika ↑',
+    timeDesc: 'Aika ↓',
+    name: 'Nimi',
+    most: 'Eniten',
+    least: 'Vähiten',
+    noReservations: 'Ei varauksia',
+    noResults: 'Ei tuloksia haulla "{term}"',
+    noStatusResults: 'Ei {status} varauksia tälle päivälle.',
+    noReservationsScheduled: 'Ei varauksia tälle päivälle.',
+    date: 'Päivä',
+    time: 'Aika',
+    guests: 'Vieraat',
+    phone: 'Puhelin',
+    total: 'Yhteensä',
+    mobile: 'Mobiili',
+    guest: 'Vieras',
+    searchPlaceholder: 'Hae...',
+    searchPlaceholderDesktop: 'Hae nimellä, sähköpostilla tai puhelimella...',
+  },
+  no: {
+    search: 'Søk...',
+    searchBy: 'Søk etter navn, e-post eller telefon...',
+    all: 'Alle',
+    pending: 'Venter',
+    confirmed: 'Bekreftet',
+    completed: 'Fullført',
+    cancelled: 'Avbestilt',
+    timeAsc: 'Tid ↑',
+    timeDesc: 'Tid ↓',
+    name: 'Navn',
+    most: 'Flest',
+    least: 'Færrest',
+    noReservations: 'Ingen reservasjoner',
+    noResults: 'Ingen resultater for "{term}"',
+    noStatusResults: 'Ingen {status} reservasjoner for denne datoen.',
+    noReservationsScheduled: 'Ingen reservasjoner for denne datoen.',
+    date: 'Dato',
+    time: 'Tid',
+    guests: 'Gjester',
+    phone: 'Telefon',
+    total: 'Totalt',
+    mobile: 'Mobil',
+    guest: 'Gjest',
+    searchPlaceholder: 'Søk...',
+    searchPlaceholderDesktop: 'Søk etter navn, e-post eller telefon...',
+  },
+  sv: {
+    search: 'Sök...',
+    searchBy: 'Sök efter namn, e-post eller telefon...',
+    all: 'Alla',
+    pending: 'Väntar',
+    confirmed: 'Bekräftad',
+    completed: 'Slutförd',
+    cancelled: 'Avbokad',
+    timeAsc: 'Tid ↑',
+    timeDesc: 'Tid ↓',
+    name: 'Namn',
+    most: 'Flest',
+    least: 'Färst',
+    noReservations: 'Inga bokningar',
+    noResults: 'Inga resultat för "{term}"',
+    noStatusResults: 'Inga {status} bokningar för detta datum.',
+    noReservationsScheduled: 'Inga bokningar för detta datum.',
+    date: 'Datum',
+    time: 'Tid',
+    guests: 'Gäster',
+    phone: 'Telefon',
+    total: 'Totalt',
+    mobile: 'Mobil',
+    guest: 'Gäst',
+    searchPlaceholder: 'Sök...',
+    searchPlaceholderDesktop: 'Sök efter namn, e-post eller telefon...',
+  },
+  de: {
+    search: 'Suchen...',
+    searchBy: 'Suche nach Name, E-Mail oder Telefon...',
+    all: 'Alle',
+    pending: 'Ausstehend',
+    confirmed: 'Bestätigt',
+    completed: 'Abgeschlossen',
+    cancelled: 'Storniert',
+    timeAsc: 'Zeit ↑',
+    timeDesc: 'Zeit ↓',
+    name: 'Name',
+    most: 'Meiste',
+    least: 'Wenigste',
+    noReservations: 'Keine Reservierungen',
+    noResults: 'Keine Ergebnisse für "{term}"',
+    noStatusResults: 'Keine {status} Reservierungen für dieses Datum.',
+    noReservationsScheduled: 'Keine Reservierungen für dieses Datum.',
+    date: 'Datum',
+    time: 'Uhrzeit',
+    guests: 'Gäste',
+    phone: 'Telefon',
+    total: 'Gesamt',
+    mobile: 'Mobil',
+    guest: 'Gast',
+    searchPlaceholder: 'Suchen...',
+    searchPlaceholderDesktop: 'Suche nach Name, E-Mail oder Telefon...',
+  },
+};
+
 const ListView = ({ 
   reservations, 
   selectedDate, 
@@ -16,6 +155,24 @@ const ListView = ({
   onEndDateChange,
   onReservationClick, 
 }) => {
+  // ── Language ──────────────────────────────────────────────────────────────────
+  const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
+  
+  // ── Translation helper ────────────────────────────────────────────────────────
+  const t = (key) => {
+    return (i18n[lang] && i18n[lang][key]) || (i18n.en && i18n.en[key]) || key;
+  };
+
+  // ── Listen for language changes ──────────────────────────────────────────────
+  React.useEffect(() => {
+    const handler = (e) => {
+      const code = e?.detail;
+      if (typeof code === 'string') setLang(code);
+    };
+    window.addEventListener('app:setLanguage', handler);
+    return () => window.removeEventListener('app:setLanguage', handler);
+  }, []);
+
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('time');
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,7 +192,7 @@ const ListView = ({
       return (
         <span className="px-1.5 sm:px-3 py-0.5 rounded-full text-[8px] sm:text-xs font-semibold border bg-purple-50 text-purple-700 border-purple-200 flex items-center gap-0.5 sm:gap-1">
           📱
-          <span className="hidden xs:inline">Mobile</span>
+          <span className="hidden xs:inline">{t('mobile')}</span>
         </span>
       );
     }
@@ -48,25 +205,25 @@ const ListView = ({
         bg: 'bg-green-50', 
         text: 'text-green-700', 
         border: 'border-green-200',
-        label: 'Confirmed' 
+        label: t('confirmed') 
       },
       pending: { 
         bg: 'bg-orange-50', 
         text: 'text-orange-700', 
         border: 'border-orange-200',
-        label: 'Pending' 
+        label: t('pending') 
       },
       cancelled: { 
         bg: 'bg-red-50', 
         text: 'text-red-700', 
         border: 'border-red-200',
-        label: 'Cancelled' 
+        label: t('cancelled') 
       },
       completed: { 
         bg: 'bg-blue-50', 
         text: 'text-blue-700', 
         border: 'border-blue-200',
-        label: 'Completed' 
+        label: t('completed') 
       },
     };
 
@@ -180,7 +337,7 @@ const ListView = ({
             <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
-              placeholder={isMobile ? "Search..." : "Search by name, email, phone..."}
+              placeholder={isMobile ? t('searchPlaceholder') : t('searchPlaceholderDesktop')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-8 pr-8 py-1.5 sm:py-2 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 transition-all text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
@@ -214,11 +371,11 @@ const ListView = ({
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t('all')}</option>
+              <option value="pending">{t('pending')}</option>
+              <option value="confirmed">{t('confirmed')}</option>
+              <option value="completed">{t('completed')}</option>
+              <option value="cancelled">{t('cancelled')}</option>
             </select>
 
             <select
@@ -226,11 +383,11 @@ const ListView = ({
               onChange={(e) => setSortBy(e.target.value)}
               className="px-2 sm:px-3 py-1 sm:py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-[10px] sm:text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
-              <option value="time">Time ↑</option>
-              <option value="time-desc">Time ↓</option>
-              <option value="name">Name</option>
-              <option value="guests">Most</option>
-              <option value="guests-asc">Least</option>
+              <option value="time">{t('timeAsc')}</option>
+              <option value="time-desc">{t('timeDesc')}</option>
+              <option value="name">{t('name')}</option>
+              <option value="guests">{t('most')}</option>
+              <option value="guests-asc">{t('least')}</option>
             </select>
 
             {/* Date Range Display */}
@@ -258,14 +415,14 @@ const ListView = ({
               <FiCalendar className="w-8 h-8 sm:w-12 sm:h-12 text-orange-600 dark:text-orange-400" />
             </div>
             <h3 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1 sm:mb-2">
-              No reservations found
+              {t('noReservations')}
             </h3>
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-md">
               {searchTerm 
-                ? `No results matching "${searchTerm}"`
+                ? t('noResults').replace('{term}', searchTerm)
                 : filterStatus !== 'all' 
-                  ? `No ${filterStatus} reservations for this date.`
-                  : 'No reservations scheduled for this date.'}
+                  ? t('noStatusResults').replace('{status}', filterStatus)
+                  : t('noReservationsScheduled')}
             </p>
           </div>
         ) : (
@@ -299,7 +456,7 @@ const ListView = ({
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                              {reservation.customer_name || 'Guest'}
+                              {reservation.customer_name || t('guest')}
                             </h3>
                             {getStatusBadge(reservation.status)}
                             {getSourceBadge(reservation.source)}
@@ -325,7 +482,7 @@ const ListView = ({
                         <div className="flex items-center gap-1.5 sm:gap-2">
                           <FiCalendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Date</p>
+                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">{t('date')}</p>
                             <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
                               {formatDate(reservation.reservation_date)}
                             </p>
@@ -336,7 +493,7 @@ const ListView = ({
                         <div className="flex items-center gap-1.5 sm:gap-2">
                           <FiClock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                           <div>
-                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Time</p>
+                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">{t('time')}</p>
                             <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
                               {formatTime(reservation.reservation_date)}
                             </p>
@@ -347,7 +504,7 @@ const ListView = ({
                         <div className="flex items-center gap-1.5 sm:gap-2">
                           <FiUsers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                           <div>
-                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Guests</p>
+                            <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">{t('guests')}</p>
                             <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300">
                               {reservation.number_of_guests}
                             </p>
@@ -359,7 +516,7 @@ const ListView = ({
                           <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 col-span-2 sm:col-span-1">
                             <FiPhone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-500 dark:text-orange-400 flex-shrink-0" />
                             <div className="min-w-0">
-                              <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">Phone</p>
+                              <p className="text-[8px] sm:text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase">{t('phone')}</p>
                               <a 
                                 href={`tel:${reservation.customer_phone}`}
                                 onClick={(e) => e.stopPropagation()}
@@ -420,10 +577,17 @@ const ListView = ({
                 cancelled: 'bg-red-500'
               };
               
+              const labels = {
+                pending: t('pending'),
+                confirmed: t('confirmed'),
+                completed: t('completed'),
+                cancelled: t('cancelled')
+              };
+              
               return (
                 <div key={status} className="flex items-center gap-0.5 sm:gap-1">
                   <div className={`w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 ${colors[status]} rounded-full`}></div>
-                  <span className="text-[8px] sm:text-xs text-gray-600 dark:text-gray-400 font-medium capitalize hidden xs:inline">{status}</span>
+                  <span className="text-[8px] sm:text-xs text-gray-600 dark:text-gray-400 font-medium capitalize hidden xs:inline">{labels[status]}</span>
                   <span className="text-[9px] sm:text-xs text-gray-800 dark:text-gray-200 font-bold">{count}</span>
                 </div>
               );
@@ -431,7 +595,7 @@ const ListView = ({
           </div>
           
           <div className="text-[9px] sm:text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-1.5 sm:px-2.5 py-0.5 rounded-lg whitespace-nowrap">
-            Total: {sortedReservations.reduce((sum, r) => sum + (r.number_of_guests || 0), 0)}
+            {t('total')}: {sortedReservations.reduce((sum, r) => sum + (r.number_of_guests || 0), 0)}
           </div>
         </div>
       )}
