@@ -1216,7 +1216,7 @@ const CalendarView = ({
 
   const handleMouseDownMove = (e, reservation) => {
     if (e.type === 'touchstart' || e.type === 'touchmove') {
-      e.preventDefault();
+      // no preventDefault — touchAction:'none' on the element handles this
     } else {
       e.preventDefault();
       e.stopPropagation();
@@ -1256,23 +1256,23 @@ const CalendarView = ({
   };
 
   const handleMouseDownResize = (e, reservation) => {
-    e.preventDefault(); 
-    e.stopPropagation();
-    
-    let clientX, clientY;
-    if (e.type === 'touchstart') {
-      const touch = e.touches[0];
-      if (!touch) return;
-      clientX = touch.clientX;
-      clientY = touch.clientY;
-      
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
+      e.stopPropagation();
+
+      let clientX, clientY;
+      if (e.type === 'touchstart') {
+        const touch = e.touches[0];
+        if (!touch) return;
+        clientX = touch.clientX;
+        clientY = touch.clientY;
+        
+        if (navigator.vibrate) {
+          navigator.vibrate(10);
+        }
+      } else {
+        e.preventDefault();
+        clientX = e.clientX;
+        clientY = e.clientY;
       }
-    } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
     
     const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
     const origStart = minutesFromOpen(resDate);
@@ -1743,49 +1743,28 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             touchAction: 'none',
             opacity: isNoShow ? 0.4 : 1,
           }}
-          onMouseDown={(e) => {
-            if (e.button !== 0) return;
-            e.preventDefault();
-            e.stopPropagation();
-            const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-            const origSlot = minutesToSlot(resDate, r.from_time);
-            const origDuration = r.duration_minutes || 75;
-            const dragTableId = isMultiTable ? null : tableId;
-            const info = {
-              id: r.id, type: 'table-move',
-              startX: e.clientX,
-              startY: e.clientY,
-              origSlot, origStart: origSlot * 15, origDuration,
-              tableId: dragTableId, reservation: r, hasMoved: false,
-              isMultiTable, originalTableIds: r.table_ids,
-              startClientX: e.clientX,
-            };
-            dragRef.current = info;
-            setDragging(info);
-          }}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const touch = e.touches[0];
-            if (!touch) return;
-            
-            const resDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
-            const origSlot = minutesToSlot(resDate, r.from_time);
-            const origDuration = r.duration_minutes || 75;
-            const dragTableId = isMultiTable ? null : tableId;
-            const info = {
-              id: r.id, type: 'table-move',
-              startX: touch.clientX,
-              startY: touch.clientY,
-              origSlot, origStart: origSlot * 15, origDuration,
-              tableId: dragTableId, reservation: r, hasMoved: false,
-              isMultiTable, originalTableIds: r.table_ids,
-              startClientX: touch.clientX,
-              isTouch: true,
-            };
-            dragRef.current = info;
-            setDragging(info);
-          }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              const touch = e.touches[0];
+              if (!touch) return;
+              
+              if (navigator.vibrate) {
+                navigator.vibrate(10);
+              }
+              
+              const origSlot = minutesToSlot(resDate);
+              const origDuration = r.duration_minutes || 75;
+              const info = {
+                id: r.id, type: 'table-resize',
+                startX: touch.clientX,
+                startY: touch.clientY,
+                origSlot, origStart: origSlot * 15, origDuration,
+                tableId, reservation: r, hasMoved: false,
+                isTouch: true,
+              };
+              dragRef.current = info;
+              setDragging(info);
+            }}
           onMouseUp={(e) => {
             if (dragRef.current && !dragRef.current.hasMoved) {
               dragRef.current = null;
@@ -2359,7 +2338,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                             handleMouseDownMove(e, r);
                           }}
                           onTouchStart={(e) => {
-                            e.preventDefault();
                             e.stopPropagation();
                             handleMouseDownMove(e, r);
                           }}
