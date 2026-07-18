@@ -462,6 +462,108 @@ const COLORS = {
   }
 };
 
+const TimeChangeConfirmModal = ({ pending, onClose, settings, setLocalReservations, reservations, t }) => {
+  const { isDarkMode } = useTheme();
+  const db = firestore;
+  const [confirming, setConfirming] = useState(false);
+
+  const handleConfirm = async () => {
+    if (confirming) return;
+    setConfirming(true);
+    const { reservation, newDate, newFromTime, duration, tableUpdate } = pending;
+
+    setLocalReservations(rs => rs.map(r =>
+      r.id === reservation.id
+        ? { ...r, reservation_date: newDate, from_time: newFromTime, duration_minutes: duration, ...(tableUpdate || {}) }
+        : r
+    ));
+
+    try {
+      await updateDoc(doc(db, 'reservations', reservation.id), {
+        reservation_date: newDate,
+        from_time: newFromTime,
+        duration_minutes: duration,
+        ...(tableUpdate || {}),
+        updated_at: serverTimestamp(),
+      });
+
+      if (reservation.customer_email?.trim() && !['cancelled','completed'].includes(reservation.status)) {
+        try {
+          const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
+          const resDateFormatted = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+          await sendEmailFn({
+            to: reservation.customer_email.trim(),
+            subject: `${t('reservationUpdated')} ${reservation.restaurant_name || 'Restaurant'}`,
+            html: `
+              <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+                <h2 style="color:#22c55e;">Your reservation time has changed ✏️</h2>
+                <p>Hi ${reservation.customer_name?.split(' ')[0] || 'there'},</p>
+                <p>Your booking at <strong>${reservation.restaurant_name || 'Restaurant'}</strong> was moved from <strong>${pending.oldFromTime}</strong> to <strong>${newFromTime}</strong>.</p>
+                <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                  <tr><td style="padding:8px 0;color:#888;">Date</td><td><strong>${resDateFormatted}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">New Time</td><td><strong>${newFromTime}</strong></td></tr>
+                  <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${reservation.number_of_guests}</strong></td></tr>
+                </table>
+                <a href="https://booking.dinery.ai/manage-reservation/${reservation.id}"
+                  style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
+                  ${t('manageMyReservation')}
+                </a>
+                ${(settings?.contactEmail || settings?.contactPhone) ? `
+                  <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
+                    <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 ${t('restaurantContact')}</p>
+                    ${settings?.contactEmail ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">✉️ <a href="mailto:${settings.contactEmail}" style="color:#fe8a24;">${settings.contactEmail}</a></p>` : ''}
+                    ${settings?.contactPhone ? `<p style="margin:0;font-size:13px;color:#555;">📱 <a href="tel:${settings.contactPhone}" style="color:#fe8a24;">${settings.contactPhone}</a></p>` : ''}
+                  </div>
+                ` : ''}
+                <p style="color:#888;font-size:12px;margin-top:16px;">
+                  Questions or feedback? Reach us at <a href="mailto:feedback@yayas.no" style="color:#fe8a24;">feedback@yayas.no</a>
+                </p>
+              </div>
+            `,
+          });
+        } catch (emailErr) {
+          console.error('❌ Time-change notification email failed:', emailErr?.message || emailErr);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update time:', err);
+      setLocalReservations(reservations);
+    }
+
+    setConfirming(false);
+    onClose();
+  };
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/30"
+        onPointerUp={(e) => { e.preventDefault(); if (!confirming) onClose(); }}
+      />
+      <div className={`fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl border p-5 w-[90vw] max-w-sm ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
+        <p className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{t('confirmTimeChange')}</p>
+        <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          {t('confirmTimeChangeMsg').replace('{oldTime}', pending.oldFromTime).replace('{newTime}', pending.newFromTime)}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); if (!confirming) onClose(); }}
+            disabled={confirming}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'} disabled:opacity-50`}>
+            {t('cancel')}
+          </button>
+          <button
+            onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); handleConfirm(); }}
+            disabled={confirming}
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-[#fe8a24] hover:bg-[#ff9d47] disabled:opacity-50">
+            {confirming ? t('saving') : t('confirm')}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
 const CalendarView = ({
   reservations, selectedDate, onDateChange, onReservationClick,
   onCreateReservation, selectedRestaurant, forceRender: externalForceRender = 0,
@@ -1040,105 +1142,6 @@ const CalendarView = ({
             <span>✕</span>
             <span className="text-sm font-medium">{t('cancel')}</span>
           </button>
-        </div>
-      </>
-    );
-  };
-
-  const TimeChangeConfirmModal = ({ pending, onClose, settings, setLocalReservations, reservations }) => {
-    const { isDarkMode } = useTheme();
-    const db = firestore;
-    const [confirming, setConfirming] = useState(false);
-
-    const handleConfirm = async () => {
-      if (confirming) return;
-      setConfirming(true);
-      const { reservation, newDate, newFromTime, duration, tableUpdate } = pending;
-
-      setLocalReservations(rs => rs.map(r =>
-        r.id === reservation.id
-          ? { ...r, reservation_date: newDate, from_time: newFromTime, duration_minutes: duration, ...(tableUpdate || {}) }
-          : r
-      ));
-
-      try {
-        await updateDoc(doc(db, 'reservations', reservation.id), {
-          reservation_date: newDate,
-          from_time: newFromTime,
-          duration_minutes: duration,
-          ...(tableUpdate || {}),
-          updated_at: serverTimestamp(),
-        });
-
-        if (reservation.customer_email?.trim() && !['cancelled','completed'].includes(reservation.status)) {
-          try {
-            const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
-            const resDateFormatted = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-            await sendEmailFn({
-              to: reservation.customer_email.trim(),
-              subject: `${t('reservationUpdated')} ${reservation.restaurant_name || 'Restaurant'}`,
-              html: `
-                <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-                  <h2 style="color:#22c55e;">Your reservation time has changed ✏️</h2>
-                  <p>Hi ${reservation.customer_name?.split(' ')[0] || 'there'},</p>
-                  <p>Your booking at <strong>${reservation.restaurant_name || 'Restaurant'}</strong> was moved from <strong>${pending.oldFromTime}</strong> to <strong>${newFromTime}</strong>.</p>
-                  <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                    <tr><td style="padding:8px 0;color:#888;">Date</td><td><strong>${resDateFormatted}</strong></td></tr>
-                    <tr><td style="padding:8px 0;color:#888;">New Time</td><td><strong>${newFromTime}</strong></td></tr>
-                    <tr><td style="padding:8px 0;color:#888;">Guests</td><td><strong>${reservation.number_of_guests}</strong></td></tr>
-                  </table>
-                  <a href="https://booking.dinery.ai/manage-reservation/${reservation.id}"
-                    style="display:inline-block;margin-top:8px;padding:10px 20px;background:#fe8a24;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:13px;">
-                    ${t('manageMyReservation')}
-                  </a>
-                  ${(settings?.contactEmail || settings?.contactPhone) ? `
-                    <div style="margin-top:24px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:8px;">
-                      <p style="margin:0 0 8px;font-weight:bold;color:#fe8a24;font-size:13px;">📞 ${t('restaurantContact')}</p>
-                      ${settings?.contactEmail ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">✉️ <a href="mailto:${settings.contactEmail}" style="color:#fe8a24;">${settings.contactEmail}</a></p>` : ''}
-                      ${settings?.contactPhone ? `<p style="margin:0;font-size:13px;color:#555;">📱 <a href="tel:${settings.contactPhone}" style="color:#fe8a24;">${settings.contactPhone}</a></p>` : ''}
-                    </div>
-                  ` : ''}
-                  <p style="color:#888;font-size:12px;margin-top:16px;">
-                    Questions or feedback? Reach us at <a href="mailto:feedback@yayas.no" style="color:#fe8a24;">feedback@yayas.no</a>
-                  </p>
-                </div>
-              `,
-            });
-          } catch (emailErr) {
-            console.error('❌ Time-change notification email failed:', emailErr?.message || emailErr);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to update time:', err);
-        setLocalReservations(reservations);
-      }
-
-      setConfirming(false);
-      onClose();
-    };
-
-    return (
-      <>
-        <div className="fixed inset-0 z-40 bg-black/30" onClick={() => !confirming && onClose()} />
-        <div className={`fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl border p-5 w-[90vw] max-w-sm ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`}>
-          <p className={`text-sm font-bold mb-1 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>{t('confirmTimeChange')}</p>
-          <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            {t('confirmTimeChangeMsg').replace('{oldTime}', pending.oldFromTime).replace('{newTime}', pending.newFromTime)}
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => !confirming && onClose()}
-              disabled={confirming}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 ${isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'} disabled:opacity-50`}>
-              {t('cancel')}
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={confirming}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-[#fe8a24] hover:bg-[#ff9d47] disabled:opacity-50">
-              {confirming ? t('saving') : t('confirm')}
-            </button>
-          </div>
         </div>
       </>
     );
@@ -1743,23 +1746,42 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             touchAction: 'none',
             opacity: isNoShow ? 0.4 : 1,
           }}
+            onMouseDown={(e) => {
+              if (e.button === 2) return;
+              e.preventDefault();
+              e.stopPropagation();
+
+              const origSlot = minutesToSlot(resDate, r.from_time);
+              const origDuration = r.duration_minutes || 75;
+              const dragTableId = isMultiTable ? null : tableId;
+              const info = {
+                id: r.id, type: 'table-move',
+                startX: e.clientX,
+                startY: e.clientY,
+                origSlot, origStart: origSlot * 15, origDuration,
+                tableId: dragTableId, reservation: r, hasMoved: false,
+                isMultiTable, originalTableIds: r.table_ids,
+                startClientX: e.clientX,
+              };
+              dragRef.current = info;
+              setDragging(info);
+            }}
             onTouchStart={(e) => {
               e.stopPropagation();
               const touch = e.touches[0];
               if (!touch) return;
-              
-              if (navigator.vibrate) {
-                navigator.vibrate(10);
-              }
-              
-              const origSlot = minutesToSlot(resDate);
+
+              const origSlot = minutesToSlot(resDate, r.from_time);
               const origDuration = r.duration_minutes || 75;
+              const dragTableId = isMultiTable ? null : tableId;
               const info = {
-                id: r.id, type: 'table-resize',
+                id: r.id, type: 'table-move',
                 startX: touch.clientX,
                 startY: touch.clientY,
                 origSlot, origStart: origSlot * 15, origDuration,
-                tableId, reservation: r, hasMoved: false,
+                tableId: dragTableId, reservation: r, hasMoved: false,
+                isMultiTable, originalTableIds: r.table_ids,
+                startClientX: touch.clientX,
                 isTouch: true,
               };
               dragRef.current = info;
@@ -1881,7 +1903,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             className={`absolute top-0 right-0 bottom-0 w-3 md:w-4 flex items-center justify-center cursor-ew-resize opacity-0 group-hover/res:opacity-100 transition-opacity ${isDarkMode ? 'hover:bg-gray-700/20' : 'hover:bg-black/5'}`}
             onMouseDown={(e) => {
               e.preventDefault(); e.stopPropagation();
-              const origSlot = minutesToSlot(resDate);
+              const origSlot = minutesToSlot(resDate, r.from_time);
               const origDuration = r.duration_minutes || 75;
               const info = {
                 id: r.id, type: 'table-resize',
@@ -1903,7 +1925,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                 navigator.vibrate(10);
               }
               
-              const origSlot = minutesToSlot(resDate);
+              const origSlot = minutesToSlot(resDate, r.from_time);
               const origDuration = r.duration_minutes || 75;
               const info = {
                 id: r.id, type: 'table-resize',
@@ -2752,6 +2774,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
           settings={settings}
           setLocalReservations={setLocalReservations}
           reservations={reservations}
+          t={t}
         />
       )}
     </div>
