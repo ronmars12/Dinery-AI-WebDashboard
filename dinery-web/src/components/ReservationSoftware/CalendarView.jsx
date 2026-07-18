@@ -467,31 +467,35 @@ const TimeChangeConfirmModal = ({ pending, onClose, settings, setLocalReservatio
   const db = firestore;
   const [confirming, setConfirming] = useState(false);
 
-  const handleConfirm = async () => {
+const handleConfirm = () => {
     if (confirming) return;
     setConfirming(true);
     const { reservation, newDate, newFromTime, duration, tableUpdate } = pending;
 
+    // Optimistic local update — instant UI feedback
     setLocalReservations(rs => rs.map(r =>
       r.id === reservation.id
         ? { ...r, reservation_date: newDate, from_time: newFromTime, duration_minutes: duration, ...(tableUpdate || {}) }
         : r
     ));
 
-    try {
-      await updateDoc(doc(db, 'reservations', reservation.id), {
-        reservation_date: newDate,
-        from_time: newFromTime,
-        duration_minutes: duration,
-        ...(tableUpdate || {}),
-        updated_at: serverTimestamp(),
-      });
+    // Close immediately — don't make the user wait on the network
+    setConfirming(false);
+    onClose();
 
-      if (reservation.customer_email?.trim() && !['cancelled','completed'].includes(reservation.status)) {
-        try {
+    // Fire the Firestore write + email in the background
+    updateDoc(doc(db, 'reservations', reservation.id), {
+      reservation_date: newDate,
+      from_time: newFromTime,
+      duration_minutes: duration,
+      ...(tableUpdate || {}),
+      updated_at: serverTimestamp(),
+    })
+      .then(() => {
+        if (reservation.customer_email?.trim() && !['cancelled','completed'].includes(reservation.status)) {
           const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
           const resDateFormatted = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-          await sendEmailFn({
+          sendEmailFn({
             to: reservation.customer_email.trim(),
             subject: `${t('reservationUpdated')} ${reservation.restaurant_name || 'Restaurant'}`,
             html: `
@@ -520,18 +524,15 @@ const TimeChangeConfirmModal = ({ pending, onClose, settings, setLocalReservatio
                 </p>
               </div>
             `,
+          }).catch(emailErr => {
+            console.error('❌ Time-change notification email failed:', emailErr?.message || emailErr);
           });
-        } catch (emailErr) {
-          console.error('❌ Time-change notification email failed:', emailErr?.message || emailErr);
         }
-      }
-    } catch (err) {
-      console.error('Failed to update time:', err);
-      setLocalReservations(reservations);
-    }
-
-    setConfirming(false);
-    onClose();
+      })
+      .catch(err => {
+        console.error('Failed to update time:', err);
+        setLocalReservations(reservations);
+      });
   };
 
   return (
@@ -1040,7 +1041,7 @@ const CalendarView = ({
   const OverlapMenu = ({ overlapMenu, onClose }) => {
     const { draggedRes, targetRes, originalTableId, newTableId, newFromTime, newDate, snapDuration, movedTable } = overlapMenu;
 
-    const handleSwitchTables = async () => {
+const handleSwitchTables = async () => {
       try {
         const aTableUpdate = {
           table_id: newTableId,
@@ -1049,6 +1050,9 @@ const CalendarView = ({
           table_names: [movedTable?.name || ''],
           combination_id: null,
           combination_name: null,
+          reservation_date: newDate,
+          from_time: newFromTime,
+          duration_minutes: snapDuration,
         };
         const originalTable = tables.find(t => t.id === originalTableId);
         const bTableUpdate = {
@@ -1082,6 +1086,9 @@ const CalendarView = ({
         table_names: [movedTable?.name || ''],
         combination_id: null,
         combination_name: null,
+        reservation_date: newDate,
+        from_time: newFromTime,
+        duration_minutes: snapDuration,
       };
       setLocalReservations(rs => rs.map(r =>
         r.id === draggedRes.id ? { ...r, ...aTableUpdate } : r
@@ -1295,7 +1302,7 @@ const CalendarView = ({
     setDragging(info);
   };
 
-  const handleMouseMove = useCallback((e) => {
+const handleMouseMove = useCallback((e) => {
     const d = dragRef.current;
     if (!d) return;
 
@@ -1312,6 +1319,29 @@ const CalendarView = ({
     } else {
       clientX = e.clientX;
       clientY = e.clientY;
+    }
+
+    // ── Auto-scroll the calendar when dragging near its edges ──
+    if (scrollRef.current) {
+      const rect = scrollRef.current.getBoundingClientRect();
+      const edge = 60;
+      const maxSpeed = 18;
+
+      if (clientY < rect.top + edge) {
+        const speed = Math.ceil(((rect.top + edge) - clientY) / edge * maxSpeed);
+        scrollRef.current.scrollTop -= speed;
+      } else if (clientY > rect.bottom - edge) {
+        const speed = Math.ceil((clientY - (rect.bottom - edge)) / edge * maxSpeed);
+        scrollRef.current.scrollTop += speed;
+      }
+
+      if (clientX < rect.left + edge) {
+        const speed = Math.ceil(((rect.left + edge) - clientX) / edge * maxSpeed);
+        scrollRef.current.scrollLeft -= speed;
+      } else if (clientX > rect.right - edge) {
+        const speed = Math.ceil((clientX - (rect.right - edge)) / edge * maxSpeed);
+        scrollRef.current.scrollLeft += speed;
+      }
     }
 
     const threshold = d.isTouch ? 8 : DRAG_THRESHOLD;
@@ -1971,7 +2001,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
           }}
         >
           <div
-            className={`flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all duration-150 ${
+            className={`flex-shrink-0 sticky left-0 z-40 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all duration-150 ${
               isUnassigned ? (isDarkMode ? 'bg-orange-900/30 border-orange-800' : 'bg-gradient-to-r from-orange-50 to-orange-50/30 border-orange-200') : (isDarkMode ? 'bg-gray-800/50 group-hover:bg-gray-700/80 border-gray-700' : 'bg-gray-50/50 group-hover:bg-gray-100/80 border-gray-200')
             }`}
             style={{ width: responsiveTableColWidth }}
@@ -2037,7 +2067,11 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                 const totalMins = openHour * 60 + slot * 15;
                 const d = new Date(currentDate);
                 d.setHours(Math.floor(totalMins / 60), totalMins % 60, 0, 0);
-                onCreateReservation && onCreateReservation(d);
+                onCreateReservation && onCreateReservation(
+                  d,
+                  isUnassigned ? null : table.id,
+                  isUnassigned ? null : table.name
+                );
               }} />
             {allTableRes.map(r => renderResBar(r, tableId))}
           </div>
@@ -2058,8 +2092,8 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             }}
           >
           <div className="w-full">
-            <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : (isTablet ? 44 : 48) }}>
-              <div className={`flex-shrink-0 ${isDarkMode ? 'bg-gradient-to-r from-gray-900 to-gray-800 border-r-2 border-gray-700' : 'bg-gradient-to-r from-gray-800 to-gray-900 border-r-2 border-gray-700'} flex items-center justify-center`}
+          <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : (isTablet ? 44 : 48) }}>
+              <div className={`flex-shrink-0 sticky left-0 z-40 ${isDarkMode ? 'bg-gradient-to-r from-gray-900 to-gray-800 border-r-2 border-gray-700' : 'bg-gradient-to-r from-gray-800 to-gray-900 border-r-2 border-gray-700'} flex items-center justify-center`}
                 style={{ width: responsiveTableColWidth }}>
                 <div className="text-center">
                   <div className="text-[8px] md:text-xs font-bold text-gray-200 uppercase tracking-wider">{t('table')}</div>
@@ -2137,7 +2171,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                       <div key={comboKey} data-table-row={comboKey}
                         className={`flex border-b transition-colors ${isDarkMode ? 'border-purple-900/50 group hover:bg-purple-900/20' : 'border-purple-100 group hover:bg-purple-50/30'}`}
                         style={{ height: isTablet ? 38 : TABLE_ROW_HEIGHT }}>
-                        <div className={`flex-shrink-0 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all ${isDarkMode ? 'border-purple-800 bg-purple-900/30 group-hover:bg-purple-800/40' : 'border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/30 group-hover:from-purple-100 group-hover:to-purple-200/30'}`}
+                        <div className={`flex-shrink-0 sticky left-0 z-40 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all ${isDarkMode ? 'border-purple-800 bg-purple-900/30 group-hover:bg-purple-800/40' : 'border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100/30 group-hover:from-purple-100 group-hover:to-purple-200/30'}`}
                           style={{ width: responsiveTableColWidth }}>
                           <div className="flex items-center gap-1 md:gap-2 min-w-0">
                             <div className={`w-5 h-5 md:w-6 md:h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${isDarkMode ? 'bg-purple-800/50' : 'bg-gradient-to-br from-purple-100 to-purple-200'}`}>
@@ -2180,7 +2214,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                               const totalMins = openHour * 60 + slot * 15;
                               const d = new Date(currentDate);
                               d.setHours(Math.floor(totalMins / 60), totalMins % 60, 0, 0);
-                              onCreateReservation && onCreateReservation(d);
+                              onCreateReservation && onCreateReservation(d, combo.tableIds?.[0] || null, combo.name || null);
                             }} />
                           {allComboRes.map(r => renderResBar(r, comboKey))}
                         </div>
@@ -2621,11 +2655,10 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
     <div className={`h-full flex flex-col select-none relative ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}
       style={{ 
         cursor: dragging ? (dragging.type === 'resize' ? 'ns-resize' : dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'default',
-        touchAction: isTouchDevice ? 'none' : 'none',
+        touchAction: dragging ? 'none' : 'auto',
         minHeight: '100%',
         transition: 'transform 0.05s ease',
       }}>
-
       {/* ─── Loading Overlay ────────────────────────────────────────────────── */}
       {isLoading && (
         <div className={`absolute inset-0 z-50 flex items-center justify-center ${isDarkMode ? 'bg-gray-900/80' : 'bg-white/80'} backdrop-blur-sm transition-opacity duration-300`}>

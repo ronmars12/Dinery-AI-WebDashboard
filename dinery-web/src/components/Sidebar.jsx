@@ -159,6 +159,8 @@ export default function Sidebar({
       console.log("User signed out successfully");
     } catch (error) {
       console.error("Logout error:", error);
+    } finally {
+      window.location.href = "/login";
     }
   };
 

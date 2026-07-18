@@ -307,7 +307,12 @@ const ReservationSoftware = () => {
 
   const handleReservationClick = (reservation) => { setSelectedReservation(reservation); setShowEditModal(true); };
   const handleWalkIn = () => { setSelectedReservationDate(null); setModalMode('walkin'); setShowCreateModal(true); };
-  const handleCreateReservationFromSlot = (dateTime) => { setSelectedReservationDate(dateTime); setModalMode('full'); setShowCreateModal(true); };
+  const handleCreateReservationFromSlot = (dateTime, tableId, tableName) => {
+    setSelectedReservationDate(dateTime);
+    setPreSelectedTable(tableId ? { id: tableId, name: tableName } : null);
+    setModalMode('full');
+    setShowCreateModal(true);
+  };
   const handleCloseEditModal   = () => { setShowEditModal(false);   setSelectedReservation(null); };
   const handleCloseCreateModal = () => { setShowCreateModal(false); setSelectedReservationDate(null); setModalMode('full'); setPreSelectedTable(null); };
 

@@ -1264,7 +1264,7 @@ const CreateReservationModal = ({
     internal_notes:          existingReservationData?.internal_notes || '',
     ServiceType_Reservation: existingReservationData?.ServiceType_Reservation || 'dine-in',
     status:                  existingReservationData?.status || 'confirmed',
-    meal_status:             existingReservationData?.meal_status || '',
+    meal_status:             existingReservationData?.meal_status || (isWalkIn ? 'arrived' : ''),
     reservation_date:        existingReservationData?.reservation_date?.toDate?.() || selectedDate || new Date(),
   });
 

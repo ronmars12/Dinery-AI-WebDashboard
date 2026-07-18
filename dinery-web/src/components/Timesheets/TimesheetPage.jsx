@@ -185,6 +185,7 @@ export default function TimesheetPage({ restaurantId }) {
   const [sort, setSort]                 = useState({ field: "name", dir: "asc" });
   const [deletingId, setDeletingId]     = useState(null);
   const [showAddUser, setShowAddUser]   = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
   const [activeView, setActiveView]     = useState("list");
   const [animationDirection, setAnimationDirection] = useState("right");
 
@@ -318,6 +319,13 @@ export default function TimesheetPage({ restaurantId }) {
 }
 
   function handleAddUser() {
+    setEditingEmployee(null);
+    setAnimationDirection("right");
+    setShowAddUser(true);
+  }
+
+  function handleEditUser(emp) {
+    setEditingEmployee(emp);
     setAnimationDirection("right");
     setShowAddUser(true);
   }
@@ -325,6 +333,7 @@ export default function TimesheetPage({ restaurantId }) {
   function handleBackToList() {
     setAnimationDirection("left");
     setShowAddUser(false);
+    setEditingEmployee(null);
   }
 
   const today = new Date().toLocaleDateString("en-US", {
@@ -717,10 +726,10 @@ export default function TimesheetPage({ restaurantId }) {
                       </td>
 
                       <td style={{ ...td, textAlign: "center" }}>
-                        <button
+                       <button
                           style={iconBtn}
                           title="Edit"
-                          onClick={() => console.log("Edit", emp.id)}
+                          onClick={() => handleEditUser(emp)}
                           onMouseEnter={(e) => (e.currentTarget.style.background = C.orangeLight)}
                           onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                         >
@@ -765,7 +774,7 @@ export default function TimesheetPage({ restaurantId }) {
 
       {/* Add User View */}
       <div style={pageStyle(showAddUser, "right")}>
-        <AddUserPage onBack={handleBackToList} restaurantId={restaurantId} />
+        <AddUserPage onBack={handleBackToList} restaurantId={restaurantId} editingUser={editingEmployee} />
       </div>
     </div>
   );

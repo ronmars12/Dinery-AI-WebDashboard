@@ -10,11 +10,18 @@ const createStaffAccount = onCall(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:3000",
+      // Firebase hosting
       "https://dinery-9c261.web.app",
       "https://dinery-9c261.firebaseapp.com",
+      // Netlify hosting
       "https://dinery-ai.netlify.app",
       "https://dineryai.netlify.app",
       "https://www.dineryai.netlify.app",
+      // Custom domain(s)
+      "https://dashboard.dinery.ai",
+      "https://dinery.ai",
+      "https://booking.dinery.ai", 
+      "https://www.dinery.ai",
     ],
     timeoutSeconds: 60,
   },

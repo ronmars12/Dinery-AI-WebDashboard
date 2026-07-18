@@ -1,6 +1,5 @@
 // src/components/Timesheets/AddUserPage.jsx
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { collection, addDoc, serverTimestamp, updateDoc, deleteDoc, doc, query, where, getDocs } from "firebase/firestore";
 import { firestore as db } from "../../firebase";
 import { getFunctions, httpsCallable } from "firebase/functions";
@@ -456,18 +455,72 @@ function TabAppSettings({ form, set }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-export default function AddUserPage({ onBack, restaurantId }) {
+function employeeToForm(emp) {
+  const [birthDay = "", birthMonth = "", birthYear = ""] = (emp.birthday || "").split("/");
+  return {
+    ...EMPTY_FORM,
+    firstName: emp.firstName || "",
+    lastName: emp.lastName || "",
+    mobilePhone: emp.mobilePhone || "",
+    email: emp.email || "",
+    gender: emp.gender || "Male",
+    birthDay: birthDay === "undefined" ? "" : birthDay,
+    birthMonth: birthMonth === "undefined" ? "" : birthMonth,
+    birthYear: birthYear === "undefined" ? "" : birthYear,
+    initials: emp.initials || "",
+    workPhone: emp.workPhone || "",
+    extension: emp.extension || "",
+    privateMobilePhone: emp.privateMobilePhone || "",
+    privateEmail: emp.privateEmail || "",
+    privateLandline: emp.privateLandline || "",
+    closestRelativeName: emp.closestRelativeName || "",
+    closestRelativePhone: emp.closestRelativePhone || "",
+    jobTitle: emp.jobTitle || "",
+    socialSecurityNumber: emp.socialSecurityNumber || "",
+    classification: emp.classification || "Employee",
+    sortNumber: emp.sortNumber || "",
+    department: emp.department || "Kitchen",
+    deptWaiters: !!emp.additionalDepts?.waiters,
+    deptBar: !!emp.additionalDepts?.bar,
+    deptCleaning: !!emp.additionalDepts?.cleaning,
+    deptSecurity: !!emp.additionalDepts?.security,
+    deptHotel: !!emp.additionalDepts?.hotel,
+    deptAdmin: !!emp.additionalDepts?.admin,
+    addressLine1: emp.addressLine1 || "",
+    addressLine2: emp.addressLine2 || "",
+    city: emp.city || "",
+    zipCode: emp.zipCode || "",
+    state: emp.state || "",
+    note: emp.note || "",
+    role: emp.role || "Staff",
+    language: emp.language || "EN",
+    disableIpFilter: !!emp.disableIpFilter,
+    enableIpFilterLogin: !!emp.enableIpFilterLogin,
+    disableAutoClockout: !!emp.disableAutoClockout,
+    receiveDailyBooking: !!emp.receiveDailyBooking,
+    cannotDeleteBookings: !!emp.cannotDeleteBookings,
+  };
+}
+
+export default function AddUserPage({ onBack, restaurantId, editingUser }) {
+  const isEditMode = !!editingUser;
   const [activeTab, setActiveTab] = useState(0);
-  const [form, setForm]           = useState(EMPTY_FORM);
+  const [form, setForm]           = useState(() => isEditMode ? employeeToForm(editingUser) : EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
   const [saved, setSaved]         = useState(false);
   const [error, setError]         = useState("");
+
+  useEffect(() => {
+    setForm(isEditMode ? employeeToForm(editingUser) : EMPTY_FORM);
+    setActiveTab(0);
+    setError("");
+  }, [editingUser?.id]);
 
   function set(key, val) {
     setForm((prev) => ({ ...prev, [key]: val }));
   }
 
-  async function handleSave() {
+async function handleSave() {
     if (!form.firstName.trim()) { setError("First name is required."); setActiveTab(0); return; }
     if (!form.email.trim())     { setError("Email is required.");      setActiveTab(0); return; }
     
@@ -479,6 +532,10 @@ export default function AddUserPage({ onBack, restaurantId }) {
     }
     
     if (!restaurantId) { setError("Restaurant ID is missing. Please go back and try again."); return; }
+
+    if (isEditMode) {
+      return handleUpdate();
+    }
 
     setSaving(true);
     setError("");
@@ -539,6 +596,7 @@ export default function AddUserPage({ onBack, restaurantId }) {
         lastName: form.lastName || "",
         mobilePhone: form.mobilePhone || "",
         email: form.email.trim().toLowerCase(),
+        tempPassword: tempPassword,
         gender: form.gender || "Male",
         birthday: `${form.birthDay || ""}/${form.birthMonth || ""}/${form.birthYear || ""}`,
         initials: form.initials || "",
@@ -684,6 +742,107 @@ export default function AddUserPage({ onBack, restaurantId }) {
       } else {
         setError(errorMessage);
       }
+} finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUpdate() {
+    setSaving(true);
+    setError("");
+
+    // ── Role-based permission flags ──
+    const rolePermissions = {
+      Admin: {
+        canManageEmployees: true,
+        canManageSettings: true,
+        canManageRoles: true,
+        canDeleteBookings: true,
+        canApproveTimesheets: true,
+      },
+      Manager: {
+        canManageEmployees: false,
+        canManageSettings: false,
+        canManageRoles: false,
+        canDeleteBookings: form.cannotDeleteBookings ? false : true,
+        canApproveTimesheets: true,
+      },
+      Staff: {
+        canManageEmployees: false,
+        canManageSettings: false,
+        canManageRoles: false,
+        canDeleteBookings: false,
+        canApproveTimesheets: false,
+      },
+    };
+
+    try {
+      // If email changed, make sure it's not already used by another employee
+      const newEmail = form.email.trim().toLowerCase();
+      if (newEmail !== (editingUser.email || "").toLowerCase()) {
+        const staffCollection = collection(db, "restaurants", restaurantId, "staff");
+        const q = query(staffCollection, where("email", "==", newEmail));
+        const querySnapshot = await getDocs(q);
+        const usedByOther = querySnapshot.docs.some((d) => d.id !== editingUser.id);
+        if (usedByOther) {
+          setError("This email is already registered to another employee. Please use a different email.");
+          setSaving(false);
+          return;
+        }
+      }
+
+      const docRef = doc(db, "restaurants", restaurantId, "staff", editingUser.id);
+      await updateDoc(docRef, {
+        name: `${form.firstName} ${form.lastName}`.trim(),
+        firstName: form.firstName || "",
+        lastName: form.lastName || "",
+        mobilePhone: form.mobilePhone || "",
+        email: newEmail,
+        gender: form.gender || "Male",
+        birthday: `${form.birthDay || ""}/${form.birthMonth || ""}/${form.birthYear || ""}`,
+        initials: form.initials || "",
+        workPhone: form.workPhone || "",
+        extension: form.extension || "",
+        privateMobilePhone: form.privateMobilePhone || "",
+        privateEmail: form.privateEmail || "",
+        privateLandline: form.privateLandline || "",
+        closestRelativeName: form.closestRelativeName || "",
+        closestRelativePhone: form.closestRelativePhone || "",
+        jobTitle: form.jobTitle || "",
+        socialSecurityNumber: form.socialSecurityNumber || "",
+        classification: form.classification || "Employee",
+        sortNumber: form.sortNumber || "",
+        department: form.department || "Kitchen",
+        additionalDepts: {
+          waiters: form.deptWaiters || false,
+          bar: form.deptBar || false,
+          cleaning: form.deptCleaning || false,
+          security: form.deptSecurity || false,
+          hotel: form.deptHotel || false,
+          admin: form.deptAdmin || false,
+        },
+        addressLine1: form.addressLine1 || "",
+        addressLine2: form.addressLine2 || "",
+        city: form.city || "",
+        zipCode: form.zipCode || "",
+        state: form.state || "",
+        note: form.note || "",
+        role: form.role,
+        permissions: rolePermissions[form.role],
+        language: form.language || "EN",
+        disableIpFilter: form.disableIpFilter || false,
+        enableIpFilterLogin: form.enableIpFilterLogin || false,
+        disableAutoClockout: form.disableAutoClockout || false,
+        receiveDailyBooking: form.receiveDailyBooking || false,
+        cannotDeleteBookings: form.cannotDeleteBookings || false,
+      });
+
+      console.log("✅ Employee updated successfully");
+      setSaved(true);
+      setTimeout(() => onBack && onBack(), 1200);
+    } catch (e) {
+      console.error("handleUpdate error:", e);
+      setError(e?.message || "Failed to update employee. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -713,9 +872,11 @@ export default function AddUserPage({ onBack, restaurantId }) {
             display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
           }}>👤</div>
           <div>
-            <div style={{ color: C.white, fontWeight: 700, fontSize: 18 }}>Add New Employee</div>
+            <div style={{ color: C.white, fontWeight: 700, fontSize: 18 }}>
+              {isEditMode ? `Edit Employee${editingUser?.firstName ? ` — ${editingUser.firstName}` : ""}` : "Add New Employee"}
+            </div>
             <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>
-              Fill in all sections and press Save
+              {isEditMode ? "Update details and press Save" : "Fill in all sections and press Save"}
             </div>
           </div>
         </div>
