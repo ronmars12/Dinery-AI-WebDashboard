@@ -34,6 +34,10 @@ exports.sendEmail = sendEmail;
 const { trackOfferClick } = require("./trackOfferClick");
 exports.trackOfferClick = trackOfferClick;
 
+// ── CRM: Automation queue processor (birthday + win-back, scheduled) ──────────
+const { sendAutomationQueue } = require("./sendAutomationQueue");
+exports.sendAutomationQueue = sendAutomationQueue;
+
 // ── Staff account creation ────────────────────────────────────────────────────
 const { createStaffAccount } = require("./createStaffAccount");
 exports.createStaffAccount = createStaffAccount;

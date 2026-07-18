@@ -1013,7 +1013,7 @@ const [config, setConfig] = useState({
 
   useEffect(() => {
     if (!restaurantId) return;
-    getDoc(doc(db, 'crm_settings', restaurantId))
+    getDoc(doc(db, activeRestaurant?._collection || 'restaurants', restaurantId, 'crm_settings', 'config'))
       .then((snap) => {
         if (snap.exists()) {
           const v = parseFloat(snap.data().avgRevenuePerGuest);
@@ -1413,7 +1413,7 @@ const assignedTable = eligible[0] || null;
 
       if (reservationSettings?.enableOfferCode && offerCodeInput) {
         try {
-          const statsRef = doc(db, 'crm_stats', restaurantId);
+          const statsRef = doc(db, collectionName, restaurantId, 'crm_stats', 'config');
           const statsSnap = await getDoc(statsRef);
           const currentCount = statsSnap.exists() ? (statsSnap.data().offerReservationsCreated || 0) : 0;
           const currentRevenue = statsSnap.exists() ? (statsSnap.data().estimatedRevenue || 0) : 0;

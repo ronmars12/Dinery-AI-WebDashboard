@@ -440,7 +440,12 @@ const ReservationSoftware = () => {
                   aria-label={t('selectRestaurant')}
                 >
                   {restaurants.map(r => (
-                    <option key={r.id} value={r.id} className="font-normal">
+                    <option
+                      key={r.id}
+                      value={r.id}
+                      className="font-normal"
+                      style={{ color: '#111827', backgroundColor: '#ffffff' }}
+                    >
                       {r.name}
                     </option>
                   ))}
@@ -615,15 +620,15 @@ const ReservationSoftware = () => {
             isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'
           }`}>
             <div className="flex items-center gap-0.5 sm:gap-1">
-              <FiUsers className={`w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-              <span className={`text-[8px] sm:text-[10px] md:text-xs font-medium whitespace-nowrap ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <FiUsers className={`w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`} />
+              <span className={`text-[8px] sm:text-[10px] md:text-xs font-medium whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-gray-600'}`}>
                 {getStatsText()}
               </span>
             </div>
             <div className={`w-px h-2 sm:h-3 md:h-4 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
             <div className="flex items-center gap-0.5 sm:gap-1">
-              <FiClock className={`w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-              <span className={`text-[8px] sm:text-[10px] md:text-xs font-mono font-semibold tabular-nums min-w-[35px] sm:min-w-[45px] md:min-w-[65px] ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              <FiClock className={`w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`} />
+              <span className={`text-[8px] sm:text-[10px] md:text-xs font-mono font-semibold tabular-nums min-w-[35px] sm:min-w-[45px] md:min-w-[65px] ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
                 {formatTime(currentTime)}
               </span>
             </div>

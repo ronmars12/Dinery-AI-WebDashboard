@@ -6,12 +6,18 @@
 // 302-redirects the guest on to the real reservation page with the offer
 // code and campaignId preserved in the query string.
 //
+// crm_stats now lives nested under each restaurant document:
+//   {restaurantCollection}/{restaurantId}/crm_stats/config
+// restaurantCollection is passed through the URL (defaults to "restaurants"
+// if missing, for backward compatibility with older email links).
+//
 // Example incoming URL:
 //   https://asia-southeast1-dinery-9c261.cloudfunctions.net/trackOfferClick
-//     ?restaurantId=abc123&offer=WELCOME10&campaignId=res_789&reservationId=res_789
+//     ?restaurantId=abc123&restaurantCollection=restaurants&offer=WELCOME10
+//     &offerId=xyz&campaignId=res_789&reservationId=res_789&source=crm_email
 //
 // Redirects to:
-//   https://dashboard.dinery.ai/reserve/abc123?offer=WELCOME10&campaignId=res_789
+//   https://dashboard.dinery.ai/reserve/abc123?offer=WELCOME10&offerId=xyz&campaignId=res_789&source=crm_email
 
 const { onRequest } = require("firebase-functions/v2/https");
 const { getFirestore, Timestamp } = require("firebase-admin/firestore");
@@ -26,18 +32,34 @@ const BASE_URL = "https://dashboard.dinery.ai";
 const trackOfferClick = onRequest(
   { region: "asia-southeast1", cors: true },
   async (req, res) => {
-    const { restaurantId, offer, campaignId, reservationId } = req.query;
+    const {
+      restaurantId,
+      restaurantCollection,
+      offer,
+      offerId,
+      campaignId,
+      reservationId,
+      source,
+    } = req.query;
 
     if (!restaurantId) {
       res.status(400).send("Missing restaurantId");
       return;
     }
 
+    const col = restaurantCollection ? String(restaurantCollection) : "restaurants";
+
     try {
       const db = getFirestore();
 
-      // Aggregate counter used by the CRM overview dashboard
-      const statsRef = db.collection("crm_stats").doc(String(restaurantId));
+      // Aggregate counter used by the CRM overview dashboard — now nested
+      // under the restaurant doc instead of a top-level collection.
+      const statsRef = db
+        .collection(col)
+        .doc(String(restaurantId))
+        .collection("crm_stats")
+        .doc("config");
+
       await db.runTransaction(async (tx) => {
         const snap = await tx.get(statsRef);
         const current = snap.exists ? snap.data().offerClicks || 0 : 0;
@@ -48,9 +70,12 @@ const trackOfferClick = onRequest(
       // click timing analysis, de-duping repeat clicks, etc.
       await db.collection("offer_clicks").add({
         restaurantId: String(restaurantId),
+        restaurantCollection: col,
         campaignId: campaignId ? String(campaignId) : null,
         offerCode: offer ? String(offer) : null,
+        offerId: offerId ? String(offerId) : null,
         reservationId: reservationId ? String(reservationId) : null,
+        source: source ? String(source) : null,
         clickedAt: Timestamp.now(),
         userAgent: req.headers["user-agent"] || null,
       });
@@ -61,7 +86,9 @@ const trackOfferClick = onRequest(
 
     const params = new URLSearchParams();
     if (offer) params.set("offer", String(offer));
+    if (offerId) params.set("offerId", String(offerId));
     if (campaignId) params.set("campaignId", String(campaignId));
+    if (source) params.set("source", String(source));
     const query = params.toString();
 
     const redirectUrl = `${BASE_URL}/reserve/${encodeURIComponent(String(restaurantId))}${query ? `?${query}` : ""}`;

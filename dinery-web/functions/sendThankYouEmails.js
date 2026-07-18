@@ -105,8 +105,8 @@ async function sendViaResend(apiKey, { to, subject, html }) {
 }
 
 // Increments a numeric field on crm_stats/{restaurantId} inside a transaction
-async function incrementStat(db, restaurantId, field, by = 1) {
-  const statsRef = db.collection("crm_stats").doc(restaurantId);
+async function incrementStat(db, collectionName, restaurantId, field, by = 1) {
+  const statsRef = db.collection(collectionName).doc(restaurantId).collection("crm_stats").doc("config");
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(statsRef);
     const current = snap.exists ? snap.data()[field] || 0 : 0;
@@ -140,7 +140,7 @@ const sendThankYouEmails = onSchedule(
 
     // 1. Find all restaurants with CRM enabled for this send hour
     const settingsSnap = await db
-      .collection("crm_settings")
+      .collectionGroup("crm_settings")
       .where("enabled", "==", true)
       .where("sendHour", "==", currentHour)
       .get();
@@ -151,18 +151,15 @@ const sendThankYouEmails = onSchedule(
     }
 
     for (const settingsDoc of settingsSnap.docs) {
-      const restaurantId = settingsDoc.id;
+      // Doc path is {collection}/{restaurantId}/crm_settings/config
+      const restaurantId = settingsDoc.ref.parent.parent.id;
+      const restaurantCollection = settingsDoc.ref.parent.parent.parent.id;
       const settings = settingsDoc.data();
 
-    try {
-        // 2. Get restaurant name + collection (try both collections)
+      try {
+        // 2. Get restaurant name
         let restaurantName = "the restaurant";
-        let restaurantCollection = "restaurants";
-        let restaurantDoc = await db.collection("restaurants").doc(restaurantId).get();
-        if (!restaurantDoc.exists) {
-          restaurantDoc = await db.collection("TestRestaurant").doc(restaurantId).get();
-          restaurantCollection = "TestRestaurant";
-        }
+        const restaurantDoc = await db.collection(restaurantCollection).doc(restaurantId).get();
         if (restaurantDoc.exists) {
           restaurantName = restaurantDoc.data().name || restaurantName;
         }
@@ -231,6 +228,7 @@ const sendThankYouEmails = onSchedule(
           // Offer link routes through the click-tracking redirect function
           const offerLink = selectedOffer
             ? `${TRACK_CLICK_URL}?restaurantId=${encodeURIComponent(restaurantId)}` +
+              `&restaurantCollection=${encodeURIComponent(restaurantCollection)}` +
               `&offer=${encodeURIComponent(selectedOffer.offer_id)}` +
               `&offerId=${encodeURIComponent(selectedOffer.id)}` +
               `&campaignId=${encodeURIComponent(campaignId)}` +
@@ -262,9 +260,9 @@ const sendThankYouEmails = onSchedule(
             await resDoc.ref.update({ thankYouEmailSent: true, thankYouEmailSentAt: Timestamp.now() });
 
             // Increment crm_stats.emailsSent counter
-            await incrementStat(db, restaurantId, "emailsSent");
+            await incrementStat(db, restaurantCollection, restaurantId, "emailsSent");
             if (selectedOffer) {
-              await incrementStat(db, restaurantId, "offersSent");
+              await incrementStat(db, restaurantCollection, restaurantId, "offersSent");
             }
           } else {
             console.error(`❌ Failed to send to ${email}:`, result.error);

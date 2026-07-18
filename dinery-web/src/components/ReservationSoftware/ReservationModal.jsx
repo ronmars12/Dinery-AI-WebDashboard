@@ -1,6 +1,6 @@
 // src/components/reservation-software/ReservationModal.jsx
 import React, { useState, useEffect } from 'react';
-import { doc, updateDoc, deleteDoc, serverTimestamp, collection, getDocs, getDoc, setDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc, serverTimestamp, collection, getDocs, getDoc, setDoc, query, where } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firestore } from '../../firebase';
 import { 
@@ -713,6 +713,116 @@ const MenuItemSelector = ({ menuItems, selectedItems, guests, onAddItem, onRemov
   );
 };
 
+function makeGuestId(email, phone) {
+  const e = (email || '').trim().toLowerCase();
+  if (e) return `email_${e.replace(/[^a-z0-9@._-]/g, '_')}`;
+  const p = (phone || '').replace(/[^0-9+]/g, '');
+  if (p) return `phone_${p}`;
+  return null;
+}
+
+// ── Automation Queue scheduling (Phase 2) ──────────────────────────────────
+// Reads the restaurant's CRM automation settings (birthday + win-back rules)
+// and writes/overwrites pending queue entries for this guest. Deterministic
+// doc IDs mean re-running this for the same guest+rule just updates the
+// existing entry instead of creating duplicates.
+async function scheduleAutomationsForGuest({
+  db, doc, setDoc, getDoc, collection, getDocs,
+  collectionName, restaurantId, guestId, customerEmail, customerName,
+  lastCompletedVisit, birthday, triggerReservationId, marketingConsent,
+}) {
+  if (!marketingConsent) return; // respect consent immediately
+
+  try {
+    // Load birthday + winback automation settings
+    const birthdaySettingsSnap = await getDoc(
+      doc(db, collectionName, restaurantId, 'crm_settings', 'birthday')
+    );
+    const winbackSettingsSnap = await getDoc(
+      doc(db, collectionName, restaurantId, 'crm_settings', 'winback')
+    );
+
+    const birthdaySettings = birthdaySettingsSnap.exists() ? birthdaySettingsSnap.data() : null;
+    const winbackSettings = winbackSettingsSnap.exists() ? winbackSettingsSnap.data() : null;
+
+    const visitDate = lastCompletedVisit?.toDate?.() || new Date(lastCompletedVisit);
+
+    // ── Birthday automation ──────────────────────────────────────────────
+    if (birthdaySettings?.enabled && birthday) {
+      const [bMonth, bDay] = birthday.split('-').map(Number);
+      if (bMonth && bDay) {
+        const now = new Date();
+        let nextBirthday = new Date(now.getFullYear(), bMonth - 1, bDay);
+        if (nextBirthday < now) {
+          nextBirthday = new Date(now.getFullYear() + 1, bMonth - 1, bDay);
+        }
+        const daysBefore = birthdaySettings.daysBefore ?? 30;
+        const executionDate = new Date(nextBirthday);
+        executionDate.setDate(executionDate.getDate() - daysBefore);
+
+        if (executionDate > now) {
+          const queueId = `${guestId}_birthday_default`;
+          await setDoc(doc(db, collectionName, restaurantId, 'automationQueue', queueId), {
+            guestId, customerEmail, customerName,
+            automationType: 'birthday',
+            automationName: 'Birthday Automation',
+            ruleId: 'birthday_default',
+            triggerReservationId,
+            executionDate,
+            status: 'pending',
+            createdAt: new Date(),
+            cancelledReason: null,
+          }, { merge: true });
+        }
+      }
+    }
+
+    // ── Win-back automations (one per enabled rule) ──────────────────────
+    if (winbackSettings?.rules?.length) {
+      for (const rule of winbackSettings.rules) {
+        if (!rule.enabled) continue;
+        const executionDate = new Date(visitDate);
+        executionDate.setDate(executionDate.getDate() + (rule.daysAfter || 30));
+
+        const queueId = `${guestId}_winback_${rule.id}`;
+        await setDoc(doc(db, collectionName, restaurantId, 'automationQueue', queueId), {
+          guestId, customerEmail, customerName,
+          automationType: 'winback',
+          automationName: rule.name || `${rule.daysAfter}-day Win-back`,
+          ruleId: rule.id,
+          triggerReservationId,
+          executionDate,
+          status: 'pending',
+          createdAt: new Date(),
+          cancelledReason: null,
+        }, { merge: true });
+      }
+    }
+  } catch (e) {
+    console.warn('scheduleAutomationsForGuest failed:', e);
+  }
+}
+
+// ── Cancel-on-return logic (Phase 2) ───────────────────────────────────────
+async function cancelPendingWinbacksForGuest({ db, collection, getDocs, query, where, updateDoc, doc, collectionName, restaurantId, guestId }) {
+  try {
+    const q = query(
+      collection(db, collectionName, restaurantId, 'automationQueue'),
+      where('guestId', '==', guestId),
+      where('automationType', '==', 'winback'),
+      where('status', '==', 'pending')
+    );
+    const snap = await getDocs(q);
+    await Promise.all(
+      snap.docs.map(d => updateDoc(doc(db, collectionName, restaurantId, 'automationQueue', d.id), {
+        status: 'cancelled',
+        cancelledReason: 'guest_returned',
+      }))
+    );
+  } catch (e) {
+    console.warn('cancelPendingWinbacksForGuest failed:', e);
+  }
+}
 // ─── Main ReservationModal Component ───────────────────────────────────────────
 const ReservationModal = ({ reservation, onClose }) => {
   // ── Language ──────────────────────────────────────────────────────────────────
@@ -1020,12 +1130,168 @@ const oldTableIds = reservation.table_ids?.length
 
       if (justCompleted && hasOfferCode && reservation.restaurant_id) {
         try {
-          const statsRef = doc(db, 'crm_stats', reservation.restaurant_id);
+          const col = reservation.restaurant_collection || 'restaurants';
+          const statsRef = doc(db, col, reservation.restaurant_id, 'crm_stats', 'config');
           const statsSnap = await getDoc(statsRef);
           const current = statsSnap.exists() ? (statsSnap.data().offersRedeemed || 0) : 0;
           await setDoc(statsRef, { offersRedeemed: current + 1 }, { merge: true });
         } catch (e) {
           console.warn('offersRedeemed increment failed:', e);
+        }
+      }
+
+      // ── Guest Activity record (CRM automation engine — Phase 1) ───────────
+      // Written once per completion, regardless of offer code. This is the
+      // single small record future automations (birthday, win-back) will
+      // read from — never the full reservation history.
+      if (justCompleted) {
+        try {
+          const guestId = makeGuestId(formData.customer_email, formData.customer_phone);
+          if (guestId && reservation.restaurant_id) {
+            const col = reservation.restaurant_collection || 'restaurants';
+            let isReturningGuest = false;
+            try {
+              const priorSnap = await getDoc(guestActivityRef);
+              isReturningGuest = priorSnap.exists() && !!priorSnap.data().lastCompletedVisit;
+            } catch (e) { console.warn('Could not check prior guest activity:', e); }
+            const guestActivityRef = doc(db, col, reservation.restaurant_id, 'guestActivity', guestId);
+
+            // Find this guest's next upcoming reservation, if any
+            let nextUpcoming = null;
+            try {
+              const now = new Date();
+              const upcomingQuery = query(
+                collection(db, 'reservations'),
+                where('restaurant_id', '==', reservation.restaurant_id),
+                where('customer_email', '==', formData.customer_email || ''),
+                where('status', 'in', ['pending', 'confirmed'])
+              );
+              const upcomingSnap = await getDocs(upcomingQuery);
+              const future = upcomingSnap.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(r => r.id !== reservation.id)
+                .filter(r => {
+                  const d = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
+                  return d > now;
+                })
+                .sort((a, b) => {
+                  const da = a.reservation_date?.toDate?.() || new Date(a.reservation_date);
+                  const dbb = b.reservation_date?.toDate?.() || new Date(b.reservation_date);
+                  return da - dbb;
+                });
+              if (future.length > 0) {
+                nextUpcoming = {
+                  reservationId: future[0].id,
+                  date: future[0].reservation_date,
+                };
+              }
+            } catch (e) {
+              console.warn('Could not check upcoming reservations:', e);
+            }
+
+            if (isReturningGuest) {
+              try {
+                const statsRef = doc(db, col, reservation.restaurant_id, 'crm_stats', 'config');
+                const statsSnap = await getDoc(statsRef);
+                const current = statsSnap.exists() ? (statsSnap.data().returnedGuests || 0) : 0;
+                await setDoc(statsRef, { returnedGuests: current + 1 }, { merge: true });
+              } catch (e) { console.warn('returnedGuests increment failed:', e); }
+            }
+
+            if (reservation.offer_campaign_id && reservation.offer_source === 'crm_recovery') {
+              try {
+                const statsRef = doc(db, col, reservation.restaurant_id, 'crm_stats', 'config');
+                const statsSnap = await getDoc(statsRef);
+                const currentRes = statsSnap.exists() ? (statsSnap.data().reservationsRecovered || 0) : 0;
+                const currentGuests = statsSnap.exists() ? (statsSnap.data().guestsRecovered || 0) : 0;
+                await setDoc(statsRef, {
+                  reservationsRecovered: currentRes + 1,
+                  guestsRecovered: currentGuests + 1,
+                }, { merge: true });
+              } catch (e) { console.warn('recovery stat increment failed:', e); }
+            }
+            await setDoc(guestActivityRef, {
+              customerName: formData.customer_name || '',
+              customerEmail: formData.customer_email || '',
+              customerPhone: formData.customer_phone || '',
+              lastCompletedVisit: formData.reservation_date,
+              latestReservationId: reservation.id,
+              nextUpcomingReservation: nextUpcoming,
+              birthday: reservation.customer_birthday || null,
+              marketingConsent: reservation.agree_newsletter !== false,
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+
+            // Guest returned → cancel any pending win-back countdowns, then
+            // schedule fresh automations from this new visit.
+            await cancelPendingWinbacksForGuest({
+              db, collection, getDocs, query, where, updateDoc, doc,
+              collectionName: col, restaurantId: reservation.restaurant_id, guestId,
+            });
+
+            await scheduleAutomationsForGuest({
+              db, doc, setDoc, getDoc, collection, getDocs,
+              collectionName: col, restaurantId: reservation.restaurant_id, guestId,
+              customerEmail: formData.customer_email, customerName: formData.customer_name,
+              lastCompletedVisit: formData.reservation_date,
+              birthday: reservation.customer_birthday || null,
+              triggerReservationId: reservation.id,
+              marketingConsent: reservation.agree_newsletter !== false,
+            });
+          }
+        } catch (e) {
+          console.warn('Guest activity update failed:', e);
+        }
+      }
+
+      // ── Reservation Recovery Automation trigger ────────────────────────────
+      // Fires when status transitions INTO cancelled or no_show (from
+      // something else). Separate from the completed-visit flow above.
+      const justCancelled = reservation.status !== 'cancelled' && formData.status === 'cancelled';
+      const justNoShow = reservation.status !== 'no_show' && formData.status === 'no_show';
+
+      if (justCancelled || justNoShow) {
+        try {
+          const col = reservation.restaurant_collection || 'restaurants';
+          const settingsSnap = await getDoc(doc(db, col, reservation.restaurant_id, 'crm_settings', 'recovery'));
+
+          if (settingsSnap.exists()) {
+            const recoverySettings = settingsSnap.data();
+            const triggerMatches =
+              (justCancelled && recoverySettings.triggerCancelled) ||
+              (justNoShow && recoverySettings.triggerNoShow);
+
+            if (recoverySettings.enabled && triggerMatches && formData.customer_email) {
+              const guestId = makeGuestId(formData.customer_email, formData.customer_phone);
+              if (guestId) {
+                const delayMinutes = recoverySettings.delayMinutes ?? (24 * 60); // default 24h
+                const executionDate = new Date(Date.now() + delayMinutes * 60000);
+
+                // Deterministic ID keyed to THIS cancellation event, so
+                // re-saving the same cancelled reservation doesn't duplicate
+                // the queue entry, and a distinct future cancellation for the
+                // same guest gets its own entry.
+                const queueId = `${guestId}_recovery_${reservation.id}`;
+
+                await setDoc(doc(db, col, reservation.restaurant_id, 'automationQueue', queueId), {
+                  guestId,
+                  customerEmail: formData.customer_email,
+                  customerName: formData.customer_name || '',
+                  automationType: 'recovery',
+                  automationName: recoverySettings.automationName || 'Reservation Recovery',
+                  ruleId: 'recovery_default',
+                  triggerReservationId: reservation.id,
+                  triggerStatus: justCancelled ? 'cancelled' : 'no_show',
+                  executionDate,
+                  status: 'pending',
+                  createdAt: new Date(),
+                  cancelledReason: null,
+                }, { merge: true });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Reservation recovery scheduling failed:', e);
         }
       }
       // ── Determine if anything customer-facing actually changed ──

@@ -1179,7 +1179,7 @@ export default function PublicReservationPage() {
 
   useEffect(() => {
     if (!restaurantData?.firestoreId) return;
-    getDoc(doc(db, 'crm_settings', restaurantData.firestoreId))
+    getDoc(doc(db, restaurantData._collection || 'restaurants', restaurantData.firestoreId, 'crm_settings', 'config'))
       .then((snap) => {
         if (snap.exists()) {
           const v = parseFloat(snap.data().avgRevenuePerGuest);
@@ -1219,6 +1219,13 @@ export default function PublicReservationPage() {
               setSettings(s);
               setThankYouMessage(s.thankYouMessage || '');
               setRestaurantPageUrl(s.restaurantPageUrl || '');
+              setConfig(prev => ({
+                ...prev,
+                requireEmail: s.requireEmail ?? prev.requireEmail,
+                requirePhone: s.requirePhone ?? prev.requirePhone,
+                showCompany:  s.showCompany  ?? prev.showCompany,
+                showNotes:    s.showNotes    ?? prev.showNotes,
+              }));
               restaurantCache.set(cacheKey, { ...cached, settings: s });
             } else {
               setSettings(cached.settings);
@@ -1329,6 +1336,16 @@ export default function PublicReservationPage() {
           }
           setThankYouMessage(settingsData.thankYouMessage || '');
           setRestaurantPageUrl(settingsData.restaurantPageUrl || '');
+
+          // reservationSettings/config (admin panel) overrides the legacy
+          // reservationConfig/config values for these shared fields
+          configData = {
+            ...configData,
+            requireEmail: settingsData.requireEmail ?? configData.requireEmail,
+            requirePhone: settingsData.requirePhone ?? configData.requirePhone,
+            showCompany:  settingsData.showCompany  ?? configData.showCompany,
+            showNotes:    settingsData.showNotes    ?? configData.showNotes,
+          };
         }
 
         setRestaurantData(rd);
@@ -1885,7 +1902,7 @@ const collectionName = restaurantData._collection || 'restaurants';
             
       if (settings?.enableOfferCode && offerCodeInput) {
         try {
-          const statsRef = doc(db, 'crm_stats', restaurantData.firestoreId);
+          const statsRef = doc(db, collectionName, restaurantData.firestoreId, 'crm_stats', 'config');
           const statsSnap = await getDoc(statsRef);
           const currentCount = statsSnap.exists() ? (statsSnap.data().offerReservationsCreated || 0) : 0;
           const currentRevenue = statsSnap.exists() ? (statsSnap.data().estimatedRevenue || 0) : 0;
@@ -1904,7 +1921,7 @@ const collectionName = restaurantData._collection || 'restaurants';
           );
         } catch (e) { console.warn('offer times_redeemed increment failed', e); }
       }
-     // Send confirmation email
+      if (settings?.sendConfirmationEmail !== false) {
       try {
         const functions = getFunctions(undefined, 'asia-southeast1');
         const sendEmailFn = httpsCallable(functions, 'sendEmail');
@@ -1947,6 +1964,7 @@ const collectionName = restaurantData._collection || 'restaurants';
         console.log('✅ Confirmation email sent successfully');
       } catch (emailError) {
         console.error('Confirmation email failed:', emailError);
+      }
       }
 
       await Promise.all(

@@ -1179,7 +1179,7 @@ function pct(numerator, denominator) {
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
 
-function CRMOverview({ restaurantId }) {
+function CRMOverview({ restaurantId, collectionName = "restaurants" }) {
   // ── Language ──────────────────────────────────────────────────────────────────
   const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
   
@@ -1201,6 +1201,8 @@ function CRMOverview({ restaurantId }) {
     positiveCount: 0, responseRate: 0,
     offersSent: 0, offerClicks: 0, offerReservationsCreated: 0, offersRedeemed: 0,
     estimatedRevenue: 0,
+    birthdayEmailsSent: 0, winbackEmailsSent: 0, returnedGuests: 0,
+    recoveryEmailsSent: 0, reservationsRecovered: 0, guestsRecovered: 0,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1215,7 +1217,7 @@ function CRMOverview({ restaurantId }) {
       const fbQuery = query(collection(firestore, "feedback"), where("restaurantId", "==", restaurantId), orderBy("createdAt", "desc"));
       const fbSnap = await getDocs(fbQuery);
       const feedbacks = fbSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const logSnap = await getDoc(doc(firestore, "crm_stats", restaurantId));
+      const logSnap = await getDoc(doc(firestore, collectionName, restaurantId, "crm_stats", "config"));
       const logData = logSnap.exists() ? logSnap.data() : {};
       const count = feedbacks.length;
       const avgField = (field) => count > 0 ? (feedbacks.reduce((s, f) => s + (f[field] || 0), 0) / count).toFixed(1) : "0.0";
@@ -1231,6 +1233,12 @@ function CRMOverview({ restaurantId }) {
         offerReservationsCreated: logData.offerReservationsCreated || 0,
         offersRedeemed: logData.offersRedeemed || 0,
         estimatedRevenue: logData.estimatedRevenue || 0,
+        birthdayEmailsSent: logData.birthdayEmailsSent || 0,
+        winbackEmailsSent: logData.winbackEmailsSent || 0,
+        returnedGuests: logData.returnedGuests || 0,
+        recoveryEmailsSent: logData.recoveryEmailsSent || 0,
+        reservationsRecovered: logData.reservationsRecovered || 0,
+        guestsRecovered: logData.guestsRecovered || 0,
       });
       setRecentFeedback(feedbacks.slice(0, 5));
       setLastUpdated(new Date());
@@ -1341,6 +1349,64 @@ function CRMOverview({ restaurantId }) {
             color="rose" 
             icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
             sub={t('ofTotalOffersSent')}
+          />
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-1 h-6 bg-gradient-to-b from-pink-400 to-rose-400 rounded-full" />
+          <div>
+            <h3 className="text-sm font-bold text-gray-700 tracking-tight">Automation Activity</h3>
+            <p className="text-xs text-gray-400 font-medium">Birthday and win-back automation performance</p>
+          </div>
+        </div>
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          <MetricCard
+            label="Birthday Emails Sent"
+            value={stats.birthdayEmailsSent}
+            color="orange"
+            icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
+          <MetricCard
+            label="Win-back Emails Sent"
+            value={stats.winbackEmailsSent}
+            color="rose"
+            icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
+          <MetricCard
+            label="Returned Guests"
+            value={stats.returnedGuests}
+            color="green"
+            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            sub="guests who came back after an automation"
+          />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <MetricCard
+            label="Recovery Emails Sent"
+            value={stats.recoveryEmailsSent}
+            color="indigo"
+            icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+          />
+          <MetricCard
+            label="Reservations Recovered"
+            value={stats.reservationsRecovered}
+            color="green"
+            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+          <MetricCard
+            label="Guests Recovered"
+            value={stats.guestsRecovered}
+            color="purple"
+            icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+          <MetricCard
+            label="Recovery Rate"
+            value={pct(stats.reservationsRecovered, stats.recoveryEmailsSent)}
+            color="rose"
+            icon="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+            sub="of recovery emails sent"
           />
         </div>
       </div>
@@ -1525,7 +1591,7 @@ function CRMOverview({ restaurantId }) {
 
 // ─── Email Log ────────────────────────────────────────────────────────────────
 
-function EmailLog({ restaurantId }) {
+function EmailLog({ restaurantId, collectionName = "restaurants" }) {
   // ── Language ──────────────────────────────────────────────────────────────────
   const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
   
@@ -1546,23 +1612,91 @@ function EmailLog({ restaurantId }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async (isManualRefresh = false) => {
+const load = useCallback(async (isManualRefresh = false) => {
     if (!restaurantId) return;
     if (isManualRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const q = query(collection(firestore, "reservations"), where("restaurant_id", "==", restaurantId), where("thankYouEmailSent", "==", true), orderBy("thankYouEmailSentAt", "desc"), limit(50));
-      const snap = await getDocs(q);
-      setEmails(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    } catch {
+      // Thank You emails — logged on the reservation doc itself
+      const thankYouRows = [];
       try {
-        const q2 = query(collection(firestore, "reservations"), where("restaurant_id", "==", restaurantId), where("thankYouEmailSent", "==", true), limit(50));
+        const q = query(collection(firestore, "reservations"), where("restaurant_id", "==", restaurantId), where("thankYouEmailSent", "==", true), orderBy("thankYouEmailSentAt", "desc"), limit(50));
+        const snap = await getDocs(q);
+        snap.docs.forEach((d) => {
+          const data = d.data();
+          thankYouRows.push({
+            id: d.id,
+            automationType: "Thank You",
+            automationName: "Thank You Email",
+            customer_name: data.customer_name,
+            customer_email: data.customer_email,
+            visitOrBirthdayDate: data.reservation_date,
+            sentAt: data.thankYouEmailSentAt,
+            campaignId: d.id,
+            offerUsed: data.offer_code_applied || null,
+            reservationCreated: null,
+            returnedVisit: null,
+          });
+        });
+      } catch (e) { console.warn("Thank you log query failed:", e); }
+
+      // Birthday + Win-back — logged in the automationQueue subcollection
+const automationRows = [];
+      try {
+        const q2 = query(
+          collection(firestore, collectionName, restaurantId, "automationQueue"),
+          where("status", "==", "sent"),
+          orderBy("sentAt", "desc"),
+          limit(50)
+        );
         const snap2 = await getDocs(q2);
-        const rows = snap2.docs.map((d) => ({ id: d.id, ...d.data() }));
-        rows.sort((a, b) => { const tA = a.thankYouEmailSentAt?.toDate?.() || new Date(0); const tB = b.thankYouEmailSentAt?.toDate?.() || new Date(0); return tB - tA; });
-        setEmails(rows);
-      } catch (e2) { console.error("Email log load error:", e2); }
-    } finally { setLoading(false); setRefreshing(false); }
-  }, [restaurantId]);
+
+        // For each sent automation, check if it led to a new reservation
+        // (via offer_campaign_id matching this queue item's ID) and whether
+        // that reservation actually completed (a "returned visit").
+        const rows = await Promise.all(snap2.docs.map(async (d) => {
+          const data = d.data();
+          let reservationCreated = false;
+          let returnedVisit = false;
+          try {
+            const resSnap = await getDocs(query(
+              collection(firestore, "reservations"),
+              where("offer_campaign_id", "==", d.id)
+            ));
+            if (!resSnap.empty) {
+              reservationCreated = true;
+              returnedVisit = resSnap.docs.some((rd) => rd.data().status === "completed");
+            }
+          } catch (e) { /* non-fatal */ }
+
+          return {
+            id: d.id,
+            automationType:
+              data.automationType === "birthday" ? "Birthday" :
+              data.automationType === "recovery" ? "Recovery" : "Win-back",
+            automationName: data.automationName || "",
+            customer_name: data.customerName,
+            customer_email: data.customerEmail,
+            visitOrBirthdayDate: null,
+            sentAt: data.sentAt,
+            campaignId: d.id,
+            offerUsed: data.offerCodeUsed || null,
+            reservationCreated,
+            returnedVisit,
+          };
+        }));
+        automationRows.push(...rows);
+      } catch (e) { console.warn("Automation log query failed:", e); }
+
+      const merged = [...thankYouRows, ...automationRows].sort((a, b) => {
+        const tA = a.sentAt?.toDate?.() || new Date(0);
+        const tB = b.sentAt?.toDate?.() || new Date(0);
+        return tB - tA;
+      });
+
+      setEmails(merged);
+    } catch (e) { console.error("Email log load error:", e); }
+    finally { setLoading(false); setRefreshing(false); }
+  }, [restaurantId, collectionName]);
 
   useEffect(() => { load(false); }, [load]);
 
@@ -1587,21 +1721,44 @@ function EmailLog({ restaurantId }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
-              {[t('guest'), t('email'), t('visitDateLabel'), t('sentAt'), t('status')].map((h) => (
+             {[t('guest'), t('email'), "Type", "Campaign", t('sentAt'), "Offer Used", "Reservation Created", "Returned Visit", t('status')].map((h) => (
                 <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider pb-3 pr-4">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {emails.map((r) => {
-              const visitDate = r.reservation_date?.toDate?.() || (r.reservation_date ? new Date(r.reservation_date) : null);
-              const sentAt = r.thankYouEmailSentAt?.toDate?.() || null;
+              const sentAt = r.sentAt?.toDate?.() || null;
+              const typeColors = {
+                "Thank You": "bg-orange-50 text-[#fe8a24] border-orange-100",
+                "Birthday": "bg-pink-50 text-pink-600 border-pink-100",
+                "Win-back": "bg-purple-50 text-purple-600 border-purple-100",
+                "Recovery": "bg-indigo-50 text-indigo-600 border-indigo-100",
+              };
               return (
                 <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3 pr-4 font-medium text-gray-800 whitespace-nowrap">{r.customer_name || "—"}</td>
                   <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{r.customer_email || "—"}</td>
-                  <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{visitDate ? visitDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
+                  <td className="py-3 pr-4 whitespace-nowrap">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${typeColors[r.automationType] || "bg-gray-50 text-gray-600 border-gray-100"}`}>{r.automationType}</span>
+                  </td>
+                  <td className="py-3 pr-4 text-gray-500 whitespace-nowrap text-xs font-mono">{r.campaignId}</td>
                   <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{sentAt ? sentAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}</td>
+                  <td className="py-3 pr-4 text-gray-500 whitespace-nowrap">{r.offerUsed ? <span className="font-mono text-xs bg-orange-50 text-[#fe8a24] px-1.5 py-0.5 rounded">{r.offerUsed}</span> : "—"}</td>
+                  <td className="py-3 pr-4 whitespace-nowrap">
+                    {r.reservationCreated === null ? "—" : r.reservationCreated ? (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Yes</span>
+                    ) : (
+                      <span className="text-xs text-gray-400">No</span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 whitespace-nowrap">
+                    {r.returnedVisit === null ? "—" : r.returnedVisit ? (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">Yes</span>
+                    ) : (
+                      <span className="text-xs text-gray-400">No</span>
+                    )}
+                  </td>
                   <td className="py-3">
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
@@ -1619,8 +1776,584 @@ function EmailLog({ restaurantId }) {
   );
 }
 
-// ─── Email Automation ─────────────────────────────────────────────────────────
+// ─── Birthday Automation Settings ──────────────────────────────────────────────
 
+function BirthdaySettings({ restaurantId, collectionName }) {
+  const [settings, setSettings] = useState({
+    enabled: false,
+    daysBefore: 30,
+    subject: "Happy Birthday from {{restaurant_name}}!",
+    body: "Happy Birthday, {{customer_first_name}}! 🎉\n\nWe hope your day is wonderful. As a small gift, we'd love to welcome you back for a celebratory visit.",
+    selectedOfferId: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [restaurantOffers, setRestaurantOffers] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    setLoading(true);
+    getDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "birthday"))
+      .then((snap) => { if (snap.exists()) setSettings((prev) => ({ ...prev, ...snap.data() })); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [restaurantId, collectionName]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    setLoadingOffers(true);
+    getDocs(collection(firestore, collectionName, restaurantId, "offer"))
+      .then((snap) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const active = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((o) => {
+          if (o.is_active === false) return false;
+          const start = o.start_date ? new Date(o.start_date) : null;
+          const end = o.end_date ? new Date(o.end_date) : null;
+          if (end && new Date(end.getFullYear(), end.getMonth(), end.getDate()) < today) return false;
+          if (start && new Date(start.getFullYear(), start.getMonth(), start.getDate()) > today) return false;
+          return true;
+        });
+        setRestaurantOffers(active);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingOffers(false));
+  }, [restaurantId, collectionName]);
+
+  const set = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await setDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "birthday"), settings, { merge: true });
+      setSaved(true); setTimeout(() => setSaved(false), 3000);
+    } catch (e) { console.error(e); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fe8a24]" /></div>;
+
+  return (
+    <div>
+      <div className="flex justify-end mb-4">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-[#fe8a24] text-white text-sm font-semibold rounded-lg hover:bg-[#e07a1f] transition-colors disabled:opacity-60 shadow-sm">
+          {saving ? "Saving…" : saved ? "✓ Saved!" : "Save Settings"}
+        </button>
+      </div>
+
+      <div className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-6 border ${settings.enabled ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${settings.enabled ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
+        <div className="flex-1">
+          <p className={`text-sm font-semibold ${settings.enabled ? "text-green-800" : "text-gray-600"}`}>
+            {settings.enabled ? `Sending ${settings.daysBefore} days before each guest's birthday` : "Birthday automation is off"}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">Only sent to guests who provided a birthday and have marketing consent.</p>
+        </div>
+        <Toggle enabled={settings.enabled} onChange={(v) => set("enabled", v)} />
+      </div>
+
+      <SectionCard title="Timing" subtitle="How many days before the guest's birthday to send the email.">
+        <div className="flex items-center gap-2">
+          <input type="number" min="0" max="90" value={settings.daysBefore} onChange={(e) => set("daysBefore", parseInt(e.target.value) || 0)} className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+          <span className="text-sm text-gray-500">days before</span>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Email Content" subtitle="Subject and message guests receive.">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input type="text" value={settings.subject} onChange={(e) => set("subject", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+            <textarea value={settings.body} onChange={(e) => set("body", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["{{restaurant_name}}", "{{customer_first_name}}", "{{customer_full_name}}"].map((tag) => (
+                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("body", settings.body + " " + tag)}>{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Birthday Offer" subtitle="Optionally attach one of your existing offers.">
+        {loadingOffers ? (
+          <p className="text-sm text-gray-400">Loading your offers…</p>
+        ) : restaurantOffers.length === 0 ? (
+          <p className="text-sm text-gray-400">No active offers. Create one in the Offers tab.</p>
+        ) : (
+          <select value={settings.selectedOfferId} onChange={(e) => set("selectedOfferId", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
+            <option value="">— No offer —</option>
+            {restaurantOffers.map((o) => (
+              <option key={o.id} value={o.id}>{o.offer_id}: {o.offer_name}{o.discount_percent ? ` (${o.discount_percent}% off)` : ""}</option>
+            ))}
+          </select>
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
+// ─── Win-back Automation Settings ──────────────────────────────────────────────
+
+function WinbackRuleEditor({ rule, offers, onSave, onCancel }) {
+  const [form, setForm] = useState(rule || {
+    id: `winback_${Date.now()}`,
+    name: "",
+    daysAfter: 30,
+    subject: "We miss you at {{restaurant_name}}!",
+    body: "Hi {{customer_first_name}},\n\nIt's been a while since your last visit. We'd love to see you again!",
+    selectedOfferId: "",
+    enabled: true,
+  });
+
+  const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h3 className="text-base font-semibold text-gray-900">{rule ? "Edit Win-back Rule" : "New Win-back Rule"}</h3>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rule Name</label>
+            <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. 30-day reminder" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Days After Last Visit</label>
+            <input
+              type="number"
+              min="0"
+              max="730"
+              value={form.daysAfter}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === "") { set("daysAfter", ""); return; }
+                const n = parseInt(raw, 10);
+                if (!isNaN(n)) set("daysAfter", n);
+              }}
+              onBlur={() => {
+                if (form.daysAfter === "" || isNaN(form.daysAfter)) set("daysAfter", 1);
+              }}
+              className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input type="text" value={form.subject} onChange={(e) => set("subject", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+            <textarea value={form.body} onChange={(e) => set("body", e.target.value)} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["{{restaurant_name}}", "{{customer_first_name}}", "{{customer_full_name}}"].map((tag) => (
+                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("body", form.body + " " + tag)}>{tag}</span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Offer (optional)</label>
+            {offers.length === 0 ? (
+              <p className="text-sm text-gray-400">No active offers. Create one in the Offers tab.</p>
+            ) : (
+              <select value={form.selectedOfferId} onChange={(e) => set("selectedOfferId", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
+                <option value="">— No offer —</option>
+                {offers.map((o) => (
+                  <option key={o.id} value={o.id}>{o.offer_id}: {o.offer_name}{o.discount_percent ? ` (${o.discount_percent}% off)` : ""}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div className="flex items-center justify-between py-2">
+            <span className="text-sm text-gray-700">Enabled</span>
+            <Toggle enabled={form.enabled} onChange={(v) => set("enabled", v)} />
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+          <button onClick={onCancel} className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+          <button
+            onClick={() => onSave({ ...form, daysAfter: form.daysAfter === "" ? 0 : form.daysAfter })}
+            disabled={!form.name.trim() || form.daysAfter === "" || isNaN(form.daysAfter)}
+            className="px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-sm font-semibold hover:bg-[#e07a1f] disabled:opacity-50"
+          >
+            Save Rule
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WinbackSettings({ restaurantId, collectionName }) {
+  const [rules, setRules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editingRule, setEditingRule] = useState(null);
+  const [restaurantOffers, setRestaurantOffers] = useState([]);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    setLoading(true);
+    getDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "winback"))
+      .then((snap) => { if (snap.exists()) setRules(snap.data().rules || []); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [restaurantId, collectionName]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    getDocs(collection(firestore, collectionName, restaurantId, "offer"))
+      .then((snap) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const active = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((o) => {
+          if (o.is_active === false) return false;
+          const start = o.start_date ? new Date(o.start_date) : null;
+          const end = o.end_date ? new Date(o.end_date) : null;
+          if (end && new Date(end.getFullYear(), end.getMonth(), end.getDate()) < today) return false;
+          if (start && new Date(start.getFullYear(), start.getMonth(), start.getDate()) > today) return false;
+          return true;
+        });
+        setRestaurantOffers(active);
+      })
+      .catch(console.error);
+  }, [restaurantId, collectionName]);
+
+  const persist = async (newRules) => {
+    setSaving(true);
+    try {
+      await setDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "winback"), { rules: newRules }, { merge: true });
+      setRules(newRules);
+    } catch (e) { console.error(e); }
+    finally { setSaving(false); }
+  };
+
+  const handleSaveRule = async (rule) => {
+    const exists = rules.some((r) => r.id === rule.id);
+    const updated = exists ? rules.map((r) => (r.id === rule.id ? rule : r)) : [...rules, rule];
+    await persist(updated);
+    setEditingRule(null);
+    setToast({ message: `"${rule.name}" saved successfully`, type: "success" });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleDeleteRule = async (ruleId) => {
+    if (!window.confirm("Delete this win-back rule?")) return;
+    const deleted = rules.find((r) => r.id === ruleId);
+    await persist(rules.filter((r) => r.id !== ruleId));
+    setToast({ message: `"${deleted?.name || "Rule"}" deleted`, type: "success" });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleToggleRule = (ruleId, enabled) => {
+    persist(rules.map((r) => (r.id === ruleId ? { ...r, enabled } : r)));
+  };
+
+  const persistWithErrorHandling = async (newRules) => {
+    try {
+      await persist(newRules);
+      return true;
+    } catch (e) {
+      setToast({ message: "Failed to save. Please try again.", type: "error" });
+      setTimeout(() => setToast(null), 3000);
+      return false;
+    }
+  };
+
+if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fe8a24]" /></div>;
+
+  return (
+    <div>
+      {toast && (
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-lg mb-4 text-sm font-medium ${toast.type === "error" ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
+          <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+          {toast.message}
+        </div>
+      )}
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-sm text-gray-500">Automated reminders sent based on days since a guest's last completed visit.</p>
+        <button onClick={() => setEditingRule("new")} className="flex items-center gap-2 px-5 py-2.5 bg-[#fe8a24] text-white text-sm font-semibold rounded-lg hover:bg-[#e07a1f] transition-colors shadow-sm">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+          New Rule
+        </button>
+      </div>
+
+      {rules.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <p className="text-sm font-medium text-gray-600 mb-1">No win-back rules yet</p>
+          <p className="text-xs text-gray-400">Create rules like "30 days after visit" or "60 days after visit" to bring guests back.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {rules.sort((a, b) => a.daysAfter - b.daysAfter).map((rule) => {
+            const offer = restaurantOffers.find((o) => o.id === rule.selectedOfferId);
+            return (
+              <div key={rule.id} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-semibold text-gray-900">{rule.name}</p>
+                    <span className="text-xs font-semibold bg-orange-50 text-[#fe8a24] px-2 py-0.5 rounded-full">{rule.daysAfter} days</span>
+                    {offer && <span className="text-xs font-semibold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">{offer.offer_id}</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 truncate">{rule.subject}</p>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <Toggle enabled={rule.enabled} onChange={(v) => handleToggleRule(rule.id, v)} />
+                  <button onClick={() => setEditingRule(rule)} className="text-gray-400 hover:text-[#fe8a24] transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  </button>
+                  <button onClick={() => handleDeleteRule(rule.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {editingRule && (
+        <WinbackRuleEditor
+          rule={editingRule === "new" ? null : editingRule}
+          offers={restaurantOffers}
+          onSave={handleSaveRule}
+          onCancel={() => setEditingRule(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Reservation Recovery Automation Settings ──────────────────────────────────
+
+function RecoverySettings({ restaurantId, collectionName }) {
+  const [settings, setSettings] = useState({
+    enabled: false,
+    automationName: "Reservation Recovery",
+    subject: "We'd love to have you back at {{restaurant_name}}",
+    body: "Hi {{customer_first_name}},\n\nWe noticed your recent reservation didn't go through as planned. We'd love the chance to welcome you — book again whenever suits you.",
+    delayMinutes: 24 * 60,
+    triggerCancelled: false,
+    triggerNoShow: false,
+    selectedOfferId: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [restaurantOffers, setRestaurantOffers] = useState([]);
+  const [loadingOffers, setLoadingOffers] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    setLoading(true);
+    getDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "recovery"))
+      .then((snap) => { if (snap.exists()) setSettings((prev) => ({ ...prev, ...snap.data() })); })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [restaurantId, collectionName]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    setLoadingOffers(true);
+    getDocs(collection(firestore, collectionName, restaurantId, "offer"))
+      .then((snap) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const active = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((o) => {
+          if (o.is_active === false) return false;
+          const start = o.start_date ? new Date(o.start_date) : null;
+          const end = o.end_date ? new Date(o.end_date) : null;
+          if (end && new Date(end.getFullYear(), end.getMonth(), end.getDate()) < today) return false;
+          if (start && new Date(start.getFullYear(), start.getMonth(), start.getDate()) > today) return false;
+          return true;
+        });
+        setRestaurantOffers(active);
+      })
+      .catch(console.error)
+      .finally(() => setLoadingOffers(false));
+  }, [restaurantId, collectionName]);
+
+  const set = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await setDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "recovery"), settings, { merge: true });
+      setSaved(true); setTimeout(() => setSaved(false), 3000);
+    } catch (e) { console.error(e); }
+    finally { setSaving(false); }
+  };
+
+  const sendTestEmail = async () => {
+    if (!testEmail.trim()) return;
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const functions = getFunctions(undefined, "asia-southeast1");
+      const sendEmailFn = httpsCallable(functions, "sendEmail");
+      const selectedOffer = restaurantOffers.find((o) => o.id === settings.selectedOfferId);
+
+      const bodyHtml = (settings.body || "")
+        .replace(/{{restaurant_name}}/g, "Your Restaurant (preview)")
+        .replace(/{{customer_first_name}}/g, "Test Guest")
+        .replace(/{{customer_full_name}}/g, "Test Guest")
+        .replace(/\n/g, "<br/>");
+
+      const offerHtml = selectedOffer ? `
+        <div style="margin-top:20px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:10px;">
+          <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${selectedOffer.offer_name}</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#555;">${(selectedOffer.description || "").replace(/\n/g, "<br/>")}</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#555;">Offer code: <strong style="font-family:monospace;background:#fff;border:1px solid #fe8a24;padding:2px 8px;border-radius:4px;">${selectedOffer.offer_id}</strong></p>
+          <a href="https://dashboard.dinery.ai/reserve/" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Again</a>
+        </div>` : "";
+
+      const result = await sendEmailFn({
+        to: testEmail.trim(),
+        subject: `[TEST PREVIEW] ${settings.subject}`,
+        isReservation: true,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1e293b;">
+          <div style="background:#fff3e8;border:2px solid #fe8a24;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#c05a00;font-weight:600;">
+            ⚠️ TEST PREVIEW — this is what your guests will receive.
+          </div>
+          <h2 style="color:#fe8a24;margin-bottom:4px;">${settings.subject}</h2>
+          <p style="font-size:14px;line-height:1.6;">${bodyHtml}</p>
+          ${offerHtml}
+        </div>`,
+      });
+      const data = result.data;
+      if (data?.success === false) {
+        setTestResult({ ok: false, message: `Resend rejected the email: ${data.error || data.message || "Unknown error"}` });
+      } else {
+        setTestResult({ ok: true, message: `Email sent! Check ${testEmail.trim()}.` });
+      }
+    } catch (e) {
+      setTestResult({ ok: false, message: `Error: ${e?.message || "Unknown error"}` });
+    } finally {
+      setTestSending(false);
+    }
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-40"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fe8a24]" /></div>;
+
+  return (
+    <div>
+      <div className="flex justify-end mb-4">
+        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-[#fe8a24] text-white text-sm font-semibold rounded-lg hover:bg-[#e07a1f] transition-colors disabled:opacity-60 shadow-sm">
+          {saving ? "Saving…" : saved ? "✓ Saved!" : "Save Settings"}
+        </button>
+      </div>
+
+      <div className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-6 border ${settings.enabled ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
+        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${settings.enabled ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
+        <div className="flex-1">
+          <p className={`text-sm font-semibold ${settings.enabled ? "text-green-800" : "text-gray-600"}`}>
+            {settings.enabled ? "Reservation Recovery is active" : "Reservation Recovery is off"}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">Both triggers below are off by default — nothing sends until you explicitly enable one.</p>
+        </div>
+        <Toggle enabled={settings.enabled} onChange={(v) => set("enabled", v)} />
+      </div>
+
+      <SectionCard title="Automation Name" subtitle="Internal name shown in your Email Log and dashboard.">
+        <input type="text" value={settings.automationName} onChange={(e) => set("automationName", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+      </SectionCard>
+
+      <SectionCard title="Triggers" subtitle="Choose which reservation statuses activate this automation. Both are off by default.">
+        <div className="space-y-1">
+          <label className="flex items-center justify-between py-3 border-b border-gray-100 cursor-pointer">
+            <div>
+              <span className="text-sm text-gray-700 font-medium">Cancelled Reservations</span>
+              <p className="text-xs text-gray-400 mt-0.5">Send when a reservation is marked cancelled.</p>
+            </div>
+            <Toggle enabled={settings.triggerCancelled} onChange={(v) => set("triggerCancelled", v)} />
+          </label>
+          <label className="flex items-center justify-between py-3 cursor-pointer">
+            <div>
+              <span className="text-sm text-gray-700 font-medium">No Show Reservations</span>
+              <p className="text-xs text-gray-400 mt-0.5">Send when a reservation is marked no-show.</p>
+            </div>
+            <Toggle enabled={settings.triggerNoShow} onChange={(v) => set("triggerNoShow", v)} />
+          </label>
+        </div>
+        {!settings.triggerCancelled && !settings.triggerNoShow && (
+          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <p className="text-xs text-amber-700">No triggers enabled — this automation will never send, even if turned on above.</p>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard title="Delay Before Sending" subtitle="How long to wait after the cancellation/no-show before sending.">
+        <div className="flex items-center gap-2">
+          <input
+            type="number" min="0" value={Math.round(settings.delayMinutes / 60)}
+            onChange={(e) => set("delayMinutes", (parseInt(e.target.value) || 0) * 60)}
+            className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]"
+          />
+          <span className="text-sm text-gray-500">hours after the event</span>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Email Content" subtitle="Subject and message guests receive.">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input type="text" value={settings.subject} onChange={(e) => set("subject", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
+            <textarea value={settings.body} onChange={(e) => set("body", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["{{restaurant_name}}", "{{customer_first_name}}", "{{customer_full_name}}"].map((tag) => (
+                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("body", settings.body + " " + tag)}>{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Recovery Offer" subtitle="Optionally attach one of your existing offers.">
+        {loadingOffers ? (
+          <p className="text-sm text-gray-400">Loading your offers…</p>
+        ) : restaurantOffers.length === 0 ? (
+          <p className="text-sm text-gray-400">No active offers. Create one in the Offers tab.</p>
+        ) : (
+          <select value={settings.selectedOfferId} onChange={(e) => set("selectedOfferId", e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
+            <option value="">— No offer —</option>
+            {restaurantOffers.map((o) => (
+              <option key={o.id} value={o.id}>{o.offer_id}: {o.offer_name}{o.discount_percent ? ` (${o.discount_percent}% off)` : ""}</option>
+            ))}
+          </select>
+        )}
+      </SectionCard>
+
+      <SectionCard title="Test Email" subtitle="Send yourself a preview using current settings.">
+        <div className="flex gap-3">
+          <input type="email" value={testEmail} onChange={(e) => setTestEmail(e.target.value)} placeholder="your@email.com" className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" onKeyDown={(e) => e.key === "Enter" && sendTestEmail()} />
+          <button onClick={sendTestEmail} disabled={testSending || !testEmail.trim()} className="flex items-center gap-2 px-5 py-2 bg-[#fe8a24] text-white text-sm font-semibold rounded-lg hover:bg-[#e07a1f] transition-colors disabled:opacity-50">
+            {testSending ? "Sending…" : "Send Preview"}
+          </button>
+        </div>
+        {testResult && (
+          <div className={`mt-3 flex items-start gap-3 px-4 py-3 rounded-lg border text-sm ${testResult.ok ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+            <span className="text-base flex-shrink-0">{testResult.ok ? "✓" : "✗"}</span>
+            <span>{testResult.message}</span>
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
+// ─── Email Automation ─────────────────────────────────────────────────────────
 const DEFAULT_SETTINGS = {
   enabled: false, sendHour: "10",
   thankYouMessage: "Thank you for visiting {{restaurant_name}}.\n\nWe hope you had a wonderful experience and look forward to welcoming you again soon.",
@@ -1649,6 +2382,7 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
     return () => window.removeEventListener('app:setLanguage', handler);
   }, []);
 
+  const [automationType, setAutomationType] = useState("thankyou");
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1696,7 +2430,7 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
   useEffect(() => {
     if (!restaurantId) return;
     setLoading(true);
-    getDoc(doc(firestore, "crm_settings", restaurantId))
+    getDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "config"))
       .then((snap) => { if (snap.exists()) setSettings({ ...DEFAULT_SETTINGS, ...snap.data() }); })
       .catch(console.error).finally(() => setLoading(false));
   }, [restaurantId]);
@@ -1708,7 +2442,7 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
     if (!restaurantId) return;
     setSaving(true);
     try {
-      await setDoc(doc(firestore, "crm_settings", restaurantId), settings, { merge: true });
+      await setDoc(doc(firestore, collectionName, restaurantId, "crm_settings", "config"), settings, { merge: true });
       setSaved(true); setTimeout(() => setSaved(false), 3000);
     } catch (e) { console.error("Save settings error:", e); }
     finally { setSaving(false); }
@@ -1872,15 +2606,36 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">{t('emailAutomation')}</h2>
-          <p className="text-sm text-gray-500 mt-1">{t('configureWorkflow')}</p>
+          <h2 className="text-xl font-bold text-gray-900">Email Automation</h2>
+          <p className="text-sm text-gray-500 mt-1">Configure automated emails and view sent email history.</p>
         </div>
-        {activePanel === "settings" && (
+        {automationType === "thankyou" && activePanel === "settings" && (
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-[#fe8a24] text-white text-sm font-semibold rounded-lg hover:bg-[#e07a1f] transition-colors disabled:opacity-60 shadow-sm">
             {saving ? <><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block" /> {t('saving')}</> : saved ? <>✓ {t('saved')}</> : t('saveSettings')}
           </button>
         )}
       </div>
+
+      <div className="flex gap-2 mb-6">
+        {[
+          ["thankyou", "Thank You Page"],
+          ["birthday", "Birthday Page"],
+          ["winback", "Win-back Page"],
+           ["recovery", "Reservation Recovery"],
+        ].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setAutomationType(key)}
+            className={`px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+              automationType === key ? "border-[#fe8a24] bg-orange-50 text-[#fe8a24]" : "border-gray-200 text-gray-600 hover:border-gray-300"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {automationType === "thankyou" && (
       <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
         {[
           ["settings", t('settings'), "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"],
@@ -1893,7 +2648,18 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
           </button>
         ))}
       </div>
-      {activePanel === "settings" && (
+      )}
+
+      {automationType === "birthday" && (
+        <BirthdaySettings restaurantId={restaurantId} collectionName={collectionName} />
+      )}
+      {automationType === "winback" && (
+        <WinbackSettings restaurantId={restaurantId} collectionName={collectionName} />
+      )}
+      {automationType === "recovery" && (
+        <RecoverySettings restaurantId={restaurantId} collectionName={collectionName} />
+      )}
+      {automationType === "thankyou" && activePanel === "settings" && (
         <div>
           <div className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-6 border ${settings.enabled ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"}`}>
             <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${settings.enabled ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
@@ -2008,17 +2774,17 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
           </SectionCard>
         </div>
       )}
-      {activePanel === "log" && (
+      {automationType === "thankyou" && activePanel === "log" && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100">
             <h3 className="text-base font-semibold text-gray-900">{t('sentEmailLog')}</h3>
             <p className="text-sm text-gray-500 mt-0.5">{t('reservationsReceivedEmail')}</p>
           </div>
-          <div className="px-6 py-5"><EmailLog restaurantId={restaurantId} /></div>
+          <div className="px-6 py-5"><EmailLog restaurantId={restaurantId} collectionName={collectionName} /></div>
         </div>
       )}
 
-      {activePanel === "test" && (
+      {automationType === "thankyou" && activePanel === "test" && (
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
@@ -2152,7 +2918,7 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
                     <p className="font-semibold text-gray-700 mb-1">{title}</p>
                     <p className="text-gray-500">{desc}</p>
                   </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>
@@ -2694,7 +3460,7 @@ export default function CRM() {
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          {activeTab === "overview" && <CRMOverview restaurantId={selectedRestaurant.id} />}
+          {activeTab === "overview" && <CRMOverview restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
           {activeTab === "email-settings" && <EmailAutomation restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
           {activeTab === "campaigns" && <Campaigns restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
           {activeTab === "feedback" && <GuestFeedback restaurantId={selectedRestaurant.id} />}

@@ -2648,12 +2648,10 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
               </h2>
             </div>
           </div>
-
-          {/* Middle: Stats */}
           {!isMobile && (
             <div className={`flex items-center gap-2 md:gap-4 px-3 md:px-4 py-1 md:py-2 rounded-xl md:rounded-2xl ${isDarkMode ? 'bg-primary/10' : 'bg-primary/10'}`}>
-              <FiUsers className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />
-              <span className={`text-[10px] md:text-sm font-bold text-primary whitespace-nowrap`}>
+              <FiUsers className={`w-3 h-3 md:w-3.5 md:h-3.5 ${isDarkMode ? 'text-orange-300' : 'text-primary'}`} />
+              <span className={`text-[10px] md:text-sm font-bold whitespace-nowrap ${isDarkMode ? 'text-white' : 'text-primary'}`}>
                 {(() => {
                   const dayRes = getReservationsForDay(currentDate);
                   const totalGuests = dayRes.reduce((sum, r) => sum + (r.number_of_guests || 0), 0);
@@ -2662,7 +2660,6 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
               </span>
             </div>
           )}
-
           {/* Right: View Controls + Theme Toggle + Refresh */}
           <div className="flex items-center gap-1 md:gap-3 w-full md:w-auto justify-end">
             <div className={`flex rounded-xl overflow-hidden border-2 shadow-sm ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>

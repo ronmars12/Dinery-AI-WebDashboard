@@ -9,6 +9,22 @@ const db = getFirestore();
 // ─── i18n Translations ──────────────────────────────────────────────────────────
 const i18n = {
   en: {
+    reservationSettings: 'Reservation Settings',
+    items: 'items',
+    name: 'Name',
+    description: 'Description',
+    subcategory: 'Subcategory',
+    selectAllergens: 'Select allergens present in this item',
+    tagItem: 'Tag this item with relevant attributes',
+    save: 'Save',
+    saveItem: 'Save Item',
+    whenEnabled: 'When enabled, dining duration is calculated automatically based on party size.',
+    birthdayOfferPlaceholder: 'e.g. Enjoy a free dessert on us!',
+    groupMenuRequiredPlaceholder: 'Please select your group menu to continue',
+    menuTitlePlaceholder: 'Our Menu',
+    menuSubtitlePlaceholder: 'Browse our menu selection for your party',
+    thankYouPlaceholder: 'Thank you for your reservation!',
+    offerCodePlaceholder: 'Have an offer code?',
     // General
     general: 'General',
     booking: 'Booking',
@@ -2326,14 +2342,6 @@ const renderGeneralTab = () => (
       settingKey="showNotes"
     />
     <SettingNumber
-      label={t('maxPartySize')}
-      description={t('maximumGuestsPerBooking')}
-      settingKey="maxGuestsOnline"
-      min={1}
-      max={50}
-      unit="guests"
-    />
-    <SettingNumber
       label={t('minPartySize')}
       description={t('minimumGuestsAllowed')}
       settingKey="minGuestsPerReservation"
@@ -2359,11 +2367,6 @@ const renderGeneralTab = () => (
       </div>
     </div>
     <SettingToggle
-      label={t('blockFullSlots')}
-      description={t('preventBookingsWhenFull')}
-      settingKey="blockFullTimeSlots"
-    />
-   <SettingToggle
       label={t('allowWalkIns')}
       description={t('walkInsWithoutTable')}
       settingKey="allowWalkInsWithoutTable"
