@@ -1768,22 +1768,22 @@ const oldTableIds = reservation.table_ids?.length
                   <div className="border-2 border-gray-200 rounded-xl p-2 overflow-y-auto" style={{ maxHeight: 220 }}>
                     <p className="text-[10px] sm:text-xs text-gray-400 mb-2">{t('clickToToggle')}</p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
-                      {tables.map(t => {
-                        const isSelected = selectedTableIds.includes(t.id);
-                        const cap = t.maxCapacity || t.capacity || 0;
+                      {tables.map(table => {
+                        const isSelected = selectedTableIds.includes(table.id);
+                        const cap = table.maxCapacity || table.capacity || 0;
                         const guestFit = cap >= (formData.number_of_guests || 1);
                         return (
                           <button
-                            key={t.id}
+                            key={table.id}
                             type="button"
                             onClick={() => {
                               setSelectedTableIds(prev =>
-                                prev.includes(t.id)
-                                  ? prev.filter(id => id !== t.id)
-                                  : [...prev, t.id]
+                                prev.includes(table.id)
+                                  ? prev.filter(id => id !== table.id)
+                                  : [...prev, table.id]
                               );
                             }}
-                            title={`${t.name} · ${t('cap')}. ${cap}`}
+                            title={`${table.name} · ${t('cap')}. ${cap}`}
                             className={`relative rounded-lg px-0.5 sm:px-1 py-2 sm:py-2.5 text-[10px] sm:text-xs font-bold transition-all border-2 flex flex-col items-center gap-0.5 min-h-[44px] ${
                               isSelected
                                 ? 'bg-[#fe8a24] border-[#fe8a24] text-white shadow-md scale-105'
@@ -1792,7 +1792,7 @@ const oldTableIds = reservation.table_ids?.length
                                 : 'bg-orange-50 border-orange-200 text-orange-700 hover:border-orange-400'
                             }`}
                           >
-                            <span className="leading-tight">{t.name}</span>
+                            <span className="leading-tight">{table.name}</span>
                             <span className={`text-[8px] sm:text-[10px] font-normal leading-tight ${isSelected ? 'text-white/80' : 'opacity-60'}`}>
                               ({cap})
                             </span>
