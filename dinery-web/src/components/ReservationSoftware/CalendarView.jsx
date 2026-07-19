@@ -25,6 +25,8 @@ const i18n = {
     confirmed: 'Confirmed',
     completed: 'Completed',
     cancelled: 'Cancelled',
+    sendUpdateEmail: 'Send new details to customer',
+    noEmailOnFile: 'No email on file',
     mobile: 'Mobile',
     change: 'Change',
     cancel: 'Cancel',
@@ -101,6 +103,8 @@ const i18n = {
     addTablesFirst: 'Lisää pöytiä Pöytähallinnassa ensin',
     tableCombinations: 'Pöytäyhdistelmät',
     unassigned: 'Määrittämättä',
+    sendUpdateEmail: 'Lähetä uudet tiedot asiakkaalle',
+    noEmailOnFile: 'Ei sähköpostia tallennettuna',
     capacity: 'Kapasiteetti',
     table: 'Pöytä',
     reservations: 'varaukset',
@@ -186,6 +190,8 @@ const i18n = {
     confirmed: 'Bekreftet',
     completed: 'Fullført',
     cancelled: 'Avbestilt',
+    sendUpdateEmail: 'Send nye detaljer til kunden',
+    noEmailOnFile: 'Ingen e-post registrert',
     mobile: 'Mobil',
     change: 'Endring',
     cancel: 'Avbryt',
@@ -259,6 +265,8 @@ const i18n = {
     status: 'Status',
     pending: 'Väntar',
     confirmed: 'Bekräftad',
+    sendUpdateEmail: 'Skicka nya uppgifter till kunden',
+    noEmailOnFile: 'Ingen e-post registrerad',
     completed: 'Slutförd',
     cancelled: 'Avbokad',
     mobile: 'Mobil',
@@ -331,6 +339,8 @@ const i18n = {
     reservations: 'Reservierungen',
     res: 'Res.',
     guests: 'Gäste',
+    sendUpdateEmail: 'Neue Details an Kunden senden',
+    noEmailOnFile: 'Keine E-Mail hinterlegt',
     status: 'Status',
     pending: 'Ausstehend',
     confirmed: 'Bestätigt',
@@ -466,6 +476,8 @@ const TimeChangeConfirmModal = ({ pending, onClose, settings, setLocalReservatio
   const { isDarkMode } = useTheme();
   const db = firestore;
   const [confirming, setConfirming] = useState(false);
+  const [sendEmail, setSendEmail] = useState(false);
+  const { reservation } = pending;
 
 const handleConfirm = () => {
     if (confirming) return;
@@ -491,8 +503,8 @@ const handleConfirm = () => {
       ...(tableUpdate || {}),
       updated_at: serverTimestamp(),
     })
-      .then(() => {
-        if (reservation.customer_email?.trim() && !['cancelled','completed'].includes(reservation.status)) {
+    .then(() => {
+        if (sendEmail && reservation.customer_email?.trim() && !['cancelled','completed'].includes(reservation.status)) {
           const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
           const resDateFormatted = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
           sendEmailFn({
@@ -546,6 +558,31 @@ const handleConfirm = () => {
         <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           {t('confirmTimeChangeMsg').replace('{oldTime}', pending.oldFromTime).replace('{newTime}', pending.newFromTime)}
         </p>
+
+        {/* Send-email toggle — default off */}
+        <button
+          type="button"
+          onClick={() => setSendEmail(v => !v)}
+          disabled={confirming}
+          className={`w-full flex items-center justify-between gap-3 mb-4 px-3 py-2.5 rounded-xl border-2 transition-colors disabled:opacity-50 ${
+            sendEmail
+              ? (isDarkMode ? 'border-[#fe8a24] bg-[#fe8a24]/10' : 'border-[#fe8a24] bg-orange-50')
+              : (isDarkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-gray-50')
+          }`}
+        >
+          <div className="text-left">
+            <p className={`text-sm font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+              {t('sendUpdateEmail')}
+            </p>
+            <p className={`text-[11px] ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {reservation.customer_email?.trim() ? reservation.customer_email.trim() : t('noEmailOnFile')}
+            </p>
+          </div>
+          <span className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${sendEmail ? 'bg-[#fe8a24]' : (isDarkMode ? 'bg-gray-600' : 'bg-gray-300')}`}>
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${sendEmail ? 'translate-x-6' : 'translate-x-1'}`} />
+          </span>
+        </button>
+
         <div className="flex gap-2">
           <button
             onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); if (!confirming) onClose(); }}
@@ -678,20 +715,38 @@ const CalendarView = ({
   useEffect(() => { setLocalReservations(reservations); }, [reservations]);
 
   useEffect(() => {
-    if (hasAutoScrolledRef.current) return;
-    if (isLoading) return;
-    if (!isToday(currentDate)) return;
+      if (isLoading) return;
+      if (viewRange !== 'day') return;
+      if (!isToday(currentDate)) return;
 
-    const timer = setTimeout(() => {
-      const el = document.querySelector('[data-now-indicator]');
-      if (el) {
-        el.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'center' });
-        hasAutoScrolledRef.current = true;
-      }
-    }, 350);
+      const timer = setTimeout(() => {
+        const container = scrollRef.current;
+        if (!container) return;
 
-    return () => clearTimeout(timer);
-  }, [isLoading, currentDate, viewRange, tables]);
+        // Read opening hours straight from settings to avoid TDZ / ordering issues
+        const oh = Number(settings?.openHour ?? settings?.opening_hour ?? 8);
+        const ch = Number(settings?.closeHour ?? settings?.closing_hour ?? 24);
+
+        const now = new Date();
+        const nowMinutes = (now.getHours() - oh) * 60 + now.getMinutes();
+        const totalMinutes = (ch - oh) * 60;
+
+        // Clamp: if before open or after close, aim at the nearest edge
+        const clamped = Math.max(0, Math.min(nowMinutes, totalMinutes));
+
+        const hourWidth = isMobile ? 112 : (isTablet ? 152 : HOUR_WIDTH);
+        const pxPerMinute = hourWidth / 60;
+
+        // Center "now" in the visible time area (excluding the sticky table column)
+        const tableColWidth = isMobile ? 90 : (isTablet ? 110 : TABLE_COL_WIDTH);
+        const visibleTimeWidth = container.clientWidth - tableColWidth;
+        const target = clamped * pxPerMinute - visibleTimeWidth / 2;
+
+        container.scrollLeft = Math.max(0, target);
+      }, 350);
+
+      return () => clearTimeout(timer);
+    }, [isLoading, currentDate, viewRange, tables, settings, isMobile, isTablet]);
 
   useEffect(() => {
     if (selectedDate) {
