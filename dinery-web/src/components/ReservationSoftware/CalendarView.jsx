@@ -854,6 +854,7 @@ const CalendarView = ({
     return localReservations.filter(r => {
       if (r.id === res.id) return false;
       if (excludeId && r.id === excludeId) return false;
+      if (['table_cleared', 'clear_out', 'no_show'].includes(r.meal_status)) return false;
       const rTableIds = Array.isArray(r.table_ids) && r.table_ids.length > 0 ? r.table_ids : [r.table_id];
       if (!rTableIds.includes(tableId)) return false;
       const rDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
@@ -874,6 +875,7 @@ const CalendarView = ({
 
     return localReservations.find(r => {
       if (r.id === draggedRes.id) return false;
+      if (['table_cleared', 'clear_out', 'no_show'].includes(r.meal_status)) return false;
       const rTableIds = Array.isArray(r.table_ids) && r.table_ids.length > 0 ? r.table_ids : [r.table_id];
       if (!rTableIds.includes(newTableId)) return false;
       const rDate = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
@@ -883,7 +885,6 @@ const CalendarView = ({
       return newStartMinutes < bEnd && (newStartMinutes + duration) > bStart;
     });
   };
-
   const { openHour, closeHour } = getRestaurantHours();
   const totalHours = closeHour - openHour;
   const totalHeight = totalHours * SLOT_HEIGHT;
@@ -1749,10 +1750,12 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
         return null;
       }
       const styles = getReservationStyles(r.meal_status || r.status, r.source);
-      const isCleared = r.meal_status === 'table_cleared';
+      const isCleared = r.meal_status === 'table_cleared' || r.meal_status === 'clear_out';
       const isNoShow = r.meal_status === 'no_show';
       const left = slot * responsiveCellWidth;
-      const width = (isCleared ? (durSlots * 0.3) : durSlots) * responsiveCellWidth - 2;
+      const fullWidth = durSlots * responsiveCellWidth - 2;
+      const compactWidth = isMobile ? 90 : (isTablet ? 110 : 130);
+      const width = isCleared ? Math.min(fullWidth, compactWidth) : fullWidth;
       const overlappingRes = getOverlappingReservations(r, tableId);
       const isOverlapping = overlappingRes.length > 0;
       const isMultiTable = Array.isArray(r.table_ids) && r.table_ids.length > 1;
@@ -1910,11 +1913,9 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-mono font-semibold whitespace-nowrap`} style={{ color: styles.text }}>
               {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
             </span>
-              {width > 50 && (
-              <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-medium truncate`} style={{ color: styles.text }}>
+            <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-medium truncate min-w-0 flex-1`} style={{ color: styles.text }}>
               {isMobile ? `${r.number_of_guests} ${r.customer_name || 'Guest'}` : `${r.number_of_guests} · ${r.customer_name || 'Guest'}`}
-              </span>
-            )}
+            </span>
             {width > 100 && isMultiTable && (
               <span
                 className="text-[8px] md:text-[10px] truncate font-semibold flex-shrink-0 hidden md:inline"
