@@ -597,6 +597,7 @@ const CalendarView = ({
   const [dragState, setDragState] = useState(null);
   const [tables, setTables] = useState([]);
   const scrollRef = useRef(null);
+  const hasAutoScrolledRef = useRef(false);
   const db = firestore;
   const [settings, setSettings] = useState({ timeBarShowsStartOfHour: true });
   const [contextMenu, setContextMenu] = useState(null);
@@ -676,7 +677,22 @@ const CalendarView = ({
 
   useEffect(() => { setLocalReservations(reservations); }, [reservations]);
 
-  // Show loading when date changes from parent
+  useEffect(() => {
+    if (hasAutoScrolledRef.current) return;
+    if (isLoading) return;
+    if (!isToday(currentDate)) return;
+
+    const timer = setTimeout(() => {
+      const el = document.querySelector('[data-now-indicator]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'center' });
+        hasAutoScrolledRef.current = true;
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [isLoading, currentDate, viewRange, tables]);
+
   useEffect(() => {
     if (selectedDate) {
       const newDate = new Date(selectedDate);
@@ -806,8 +822,8 @@ const CalendarView = ({
 
   // Add touch feedback styles
   useEffect(() => {
-    if (isTouchDevice) {
-      const style = document.createElement('style');
+  {
+    const style = document.createElement('style');
       style.textContent = `
         [data-table-row]:active {
           background-color: ${isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)'};
@@ -815,6 +831,11 @@ const CalendarView = ({
         .reservation-bar {
           transition: box-shadow 0.2s ease, transform 0.1s ease;
           -webkit-tap-highlight-color: transparent;
+          transform: translateZ(0);
+          -webkit-transform: translateZ(0);
+          will-change: transform;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
         .reservation-bar:active {
           transform: scale(1.02);
@@ -1735,7 +1756,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
       : -1;
 
     const responsiveTableColWidth = isMobile ? 90 : (isTablet ? 110 : TABLE_COL_WIDTH);
-    const responsiveHourWidth = isMobile ? 110 : (isTablet ? 150 : HOUR_WIDTH);
+    const responsiveHourWidth = isMobile ? 112 : (isTablet ? 152 : HOUR_WIDTH);
     const responsiveCellWidth = responsiveHourWidth / 4;
 
     const renderResBar = (r, tableId) => {
@@ -1768,17 +1789,19 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
         <div
           key={r.id}
           className={`reservation-bar absolute top-1 rounded-lg overflow-hidden select-none group/res ${isActive ? 'ring-2 ring-primary/50 z-30' : 'z-10'}`}
-          style={{
-            left: left + 1, width: Math.max(width, 32),
-            height: (isTablet ? TABLE_ROW_HEIGHT - 10 : TABLE_ROW_HEIGHT - 8),
-            background: styles.bg,
-            border: `1px solid ${styles.border}`,
-            borderLeft: `3px solid ${styles.border}`,
-            cursor: dragging?.id === r.id ? (dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'grab',
-            boxShadow: isActive ? `0 4px 16px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 2px 8px rgba(0,0,0,0.1)` : '0 1px 2px rgba(0,0,0,0.05)'),
-            touchAction: 'none',
-            opacity: isNoShow ? 0.4 : 1,
-          }}
+            style={{
+              left: left + 1, width: Math.max(width, 32),
+              height: (isTablet ? TABLE_ROW_HEIGHT - 10 : TABLE_ROW_HEIGHT - 8),
+              background: styles.bg,
+              border: `1px solid ${styles.border}`,
+              borderLeft: `3px solid ${styles.border}`,
+              cursor: dragging?.id === r.id ? (dragging.type === 'table-resize' ? 'ew-resize' : 'grabbing') : 'grab',
+              boxShadow: isActive ? `0 4px 16px rgba(0,0,0,0.15)` : (hoveredReservation === r.id ? `0 2px 8px rgba(0,0,0,0.1)` : '0 1px 2px rgba(0,0,0,0.05)'),
+              touchAction: 'none',
+              opacity: isNoShow ? 0.4 : 1,
+              transform: 'translateZ(0)',
+              willChange: 'transform',
+            }}
             onMouseDown={(e) => {
               if (e.button === 2) return;
               e.preventDefault();
@@ -2005,7 +2028,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             className={`flex-shrink-0 sticky left-0 z-40 flex items-center justify-between px-2 md:px-3 border-r-2 transition-all duration-150 ${
               isUnassigned ? (isDarkMode ? 'bg-orange-900/30 border-orange-800' : 'bg-gradient-to-r from-orange-50 to-orange-50/30 border-orange-200') : (isDarkMode ? 'bg-gray-800/50 group-hover:bg-gray-700/80 border-gray-700' : 'bg-gray-50/50 group-hover:bg-gray-100/80 border-gray-200')
             }`}
-            style={{ width: responsiveTableColWidth }}
+          style={{ width: responsiveTableColWidth }}
           >
             {isUnassigned ? (
               <div className="flex items-center gap-1 md:gap-2">
@@ -2026,40 +2049,30 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
               </div>
             )}
           </div>
-
           <div 
-            className={`relative overflow-hidden transition-all duration-150 flex-1 ${isDragTarget ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50/20') : ''}`}
-            style={{ position: 'relative', minWidth: (closeHour - openHour) * responsiveHourWidth }}
-          >
-            {Array.from({ length: closeHour - openHour + 1 }, (_, i) => (
-              <div 
-                key={`hour-${i}`} 
-                className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} 
-                style={{ left: i * responsiveHourWidth, zIndex: 1 }} 
-              />
-            ))}
-
-            {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => {
-              const slotWidth = responsiveHourWidth / 4;
-              return (
-                <div 
-                  key={`slot-${i}`} 
-                  className={`absolute top-0 bottom-0 border-l ${i % 4 === 0 ? 'border-gray-300' : (isDarkMode ? 'border-gray-800' : 'border-gray-200')}`} 
-                  style={{ left: (i + 1) * slotWidth, zIndex: 1 }} 
-                />
-              );
-            })}
-
-            {Array.from({ length: (closeHour - openHour) * 2 }, (_, i) => {
-              const halfWidth = responsiveHourWidth / 2;
-              return (
-                <div 
-                  key={`half-${i}`} 
-                  className={`absolute top-0 bottom-0 border-l border-dashed ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} 
-                  style={{ left: (i + 0.5) * halfWidth, zIndex: 1 }}
-                />
-              );
-            })}
+              className={`relative transition-all duration-150 flex-1 ${isDragTarget ? (isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50/20') : ''}`}
+              style={{
+                position: 'relative',
+                minWidth: (closeHour - openHour) * responsiveHourWidth,
+              }}
+            >
+              {/* Grid lines — same technique as the header (flex cells with borders) */}
+              <div className="absolute inset-0 flex pointer-events-none" style={{ zIndex: 1 }}>
+                {Array.from({ length: closeHour - openHour }, (_, i) => (
+                  <div
+                    key={`gridcell-${i}`}
+                    className={`h-full flex-shrink-0 border-l ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}
+                    style={{ width: responsiveHourWidth }}
+                  >
+                    <div className="h-full grid grid-cols-4">
+                      <div className={`border-r ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`} />
+                      <div className={`border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} />
+                      <div className={`border-r ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`} />
+                      <div />
+                    </div>
+                  </div>
+                ))}
+              </div>
             <div className={`absolute inset-0 cursor-crosshair z-0 hover:bg-gradient-to-r hover:from-transparent ${isDarkMode ? 'hover:to-primary/10' : 'hover:to-primary/5'} transition-colors`}
               onClick={(e) => {
                 if (dragging) return;
@@ -2095,7 +2108,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
               if (contextMenu) e.stopPropagation();
             }}
           >
-          <div className="w-full">
+         <div style={{ width: 'max-content', minWidth: '100%' }}>
           <div className={`flex sticky top-0 z-20 ${isDarkMode ? 'bg-gray-800 border-b-2 border-gray-700' : 'bg-white border-b-2 border-gray-200'} shadow-sm`} style={{ height: isMobile ? 40 : (isTablet ? 44 : 48) }}>
               <div className={`flex-shrink-0 sticky left-0 z-40 ${isDarkMode ? 'bg-gradient-to-r from-gray-900 to-gray-800 border-r-2 border-gray-700' : 'bg-gradient-to-r from-gray-800 to-gray-900 border-r-2 border-gray-700'} flex items-center justify-center`}
                 style={{ width: responsiveTableColWidth }}>
@@ -2108,7 +2121,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                   )}
                 </div>
               </div>
-              <div className={`flex relative overflow-x-auto flex-1 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`} style={{ minWidth: (closeHour - openHour) * responsiveHourWidth, position: 'relative' }}>
+             <div className={`flex relative flex-1 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`} style={{ minWidth: (closeHour - openHour) * responsiveHourWidth, position: 'relative' }}>
                 {Array.from({ length: closeHour - openHour }, (_, hourIndex) => {
                   const hour = openHour + hourIndex;
                   return (
@@ -2130,7 +2143,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                   );
                 })}
                 {nowSlot >= 0 && nowSlot <= totalTableSlots && (
-                  <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: nowSlot * responsiveCellWidth, zIndex: 3 }}>
+                  <div data-now-indicator className="absolute top-0 bottom-0 pointer-events-none" style={{ left: nowSlot * responsiveCellWidth, zIndex: 3 }}>
                     <div className="flex items-start">
                       <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-rose-500 rounded-full -ml-1 mt-0.5 shadow-lg" />
                       <div className="w-0.5 h-full bg-rose-500" />
@@ -2191,25 +2204,27 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                             )}
                           </div>
                         </div>
-                        <div className={`relative overflow-hidden flex-1 ${isDragTarget ? (isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50/30') : ''}`}
-                          style={{ position: 'relative', minWidth: (closeHour - openHour) * responsiveHourWidth }}>
-                          {Array.from({ length: closeHour - openHour + 1 }, (_, i) => (
-                            <div 
-                              key={`combo-hour-${i}`} 
-                              className={`absolute top-0 bottom-0 border-l ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} 
-                              style={{ left: i * responsiveHourWidth, zIndex: 1 }} 
-                            />
-                          ))}
-                          {Array.from({ length: (closeHour - openHour) * 4 }, (_, i) => {
-                            const slotWidth = responsiveHourWidth / 4;
-                            return (
-                              <div 
-                                key={`combo-slot-${i}`} 
-                                className={`absolute top-0 bottom-0 border-l ${i % 4 === 0 ? 'border-gray-300' : (isDarkMode ? 'border-gray-800' : 'border-gray-200')}`} 
-                                style={{ left: (i + 1) * slotWidth, zIndex: 1 }} 
-                              />
-                            );
-                          })}
+                        <div className={`relative flex-1 ${isDragTarget ? (isDarkMode ? 'bg-purple-900/30' : 'bg-purple-50/30') : ''}`}
+                          style={{
+                            position: 'relative',
+                            minWidth: (closeHour - openHour) * responsiveHourWidth,
+                          }}>
+                          <div className="absolute inset-0 flex pointer-events-none" style={{ zIndex: 1 }}>
+                            {Array.from({ length: closeHour - openHour }, (_, i) => (
+                              <div
+                                key={`combo-gridcell-${i}`}
+                                className={`h-full flex-shrink-0 border-l ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}
+                                style={{ width: responsiveHourWidth }}
+                              >
+                                <div className="h-full grid grid-cols-4">
+                                  <div className={`border-r ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`} />
+                                  <div className={`border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-300'}`} />
+                                  <div className={`border-r ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`} />
+                                  <div />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                           <div className={`absolute inset-0 cursor-crosshair z-0 ${isDarkMode ? 'hover:bg-purple-900/10' : 'hover:bg-purple-50/10'} transition-colors`}
                             onClick={(e) => {
                               if (dragging) return;
@@ -2362,7 +2377,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                   })}
 
                   {nowMin >= 0 && nowMin < totalHours * 60 && (
-                    <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: (nowMin / 60) * SLOT_HEIGHT }}>
+                    <div data-now-indicator className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: (nowMin / 60) * SLOT_HEIGHT }}>
                       <div className="flex items-center">
                         <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-rose-500 rounded-full shadow-lg shadow-rose-500/50 -ml-1 flex-shrink-0 ring-2 ring-rose-200" />
                         <div className="flex-1 h-0.5 bg-gradient-to-r from-rose-500 to-rose-300" />
