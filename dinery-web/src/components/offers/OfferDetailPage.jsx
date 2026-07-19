@@ -11,6 +11,7 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
     is_active: offer.is_active,
     usage_limit_type: offer.usage_limit_type || 'one_per_guest',
     max_uses: offer.max_uses || '',
+    discount_percent: offer.discount_percent === null || offer.discount_percent === undefined ? 'none' : String(offer.discount_percent),
   });
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +32,8 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
       startDateShort: 'Start Date',
       endDateShort: 'End Date',
       discountPercent: 'Discount Percent',
+      selectDiscount: 'Select a discount',
+      noDiscountOption: '— No discount (e.g. free welcome drink) —',
       activateNow: 'Activate this offer immediately',
       statusActive: 'Active',
       statusInactive: 'Inactive',
@@ -63,6 +66,8 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
       startDateShort: 'Alkupäivä',
       endDateShort: 'Loppupäivä',
       discountPercent: 'Alennusprosentti',
+      selectDiscount: 'Valitse alennus',
+      noDiscountOption: '— Ei alennusta (esim. ilmainen tervetuliaisjuoma) —',
       activateNow: 'Aktivoi tämä tarjous heti',
       statusActive: 'Aktiivinen',
       statusInactive: 'Ei aktiivinen',
@@ -94,6 +99,8 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
       startDateShort: 'Startdato',
       endDateShort: 'Sluttdato',
       discountPercent: 'Rabattprosent',
+      selectDiscount: 'Velg rabatt',
+      noDiscountOption: '— Ingen rabatt (f.eks. gratis velkomstdrink) —',
       activateNow: 'Aktiver dette tilbudet umiddelbart',
       statusActive: 'Aktiv',
       statusInactive: 'Inaktiv',
@@ -125,6 +132,8 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
       startDateShort: 'Startdatum',
       endDateShort: 'Slutdatum',
       discountPercent: 'Rabattprocent',
+      selectDiscount: 'Välj rabatt',
+      noDiscountOption: '— Ingen rabatt (t.ex. gratis välkomstdrink) —',
       activateNow: 'Aktivera detta erbjudande omedelbart',
       statusActive: 'Aktiv',
       statusInactive: 'Inaktiv',
@@ -156,6 +165,8 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
       startDateShort: 'Startdatum',
       endDateShort: 'Enddatum',
       discountPercent: 'Rabattprozentsatz',
+      selectDiscount: 'Rabatt auswählen',
+      noDiscountOption: '— Kein Rabatt (z. B. gratis Begrüßungsgetränk) —',
       activateNow: 'Dieses Angebot sofort aktivieren',
       statusActive: 'Aktiv',
       statusInactive: 'Inaktiv',
@@ -244,13 +255,18 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
         is_active: formData.is_active,
         usage_limit_type: formData.usage_limit_type,
         max_uses: formData.usage_limit_type === 'max_uses' ? Number(formData.max_uses) : null,
+        discount_percent: formData.discount_percent === 'none' ? null : Number(formData.discount_percent),
       });
 
       setIsEditing(false);
       alert(t('saveOk'));
 
       // Notify parent of updated offer
-      onOfferUpdated({ ...offer, ...formData });
+      onOfferUpdated({
+        ...offer,
+        ...formData,
+        discount_percent: formData.discount_percent === 'none' ? null : Number(formData.discount_percent),
+      });
     } catch (error) {
       alert(t('saveFail') + error.message);
     } finally {
@@ -383,32 +399,71 @@ export default function OfferDetailPage({ offer, userRole, onClose, onOfferUpdat
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('discountPercent')}
+                  </label>
+                  <select
+                    name="discount_percent"
+                    value={formData.discount_percent}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+                    disabled={loading}
+                  >
+                    <option value="" disabled>{t('selectDiscount')}</option>
+                    <option value="none">{t('noDiscountOption')}</option>
+                    {[5, 10, ...Array.from({ length: 18 }, (_, i) => 15 + i * 5)].map((val) => (
+                      <option key={val} value={val}>{val}%</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {t('startDate')}
                     </label>
-                    <input
-                      name="start_date"
-                      type="date"
-                      value={formData.start_date}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
-                      disabled={loading}
-                    />
+                    <div className="relative">
+                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <input
+                        name="start_date"
+                        type="date"
+                        value={formData.start_date}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+
+                  {/* Connector line between the two fields */}
+                  <div className="flex items-center pl-4 -my-1">
+                    <div className="w-px h-4 bg-gray-200 ml-[7px]" />
+                  </div>
+
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       {t('endDate')}
                     </label>
-                    <input
-                      name="end_date"
-                      type="date"
-                      value={formData.end_date}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
-                      disabled={loading}
-                    />
+                    <div className="relative">
+                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <input
+                        name="end_date"
+                        type="date"
+                        value={formData.end_date}
+                        min={formData.start_date}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors disabled:bg-gray-50 disabled:text-gray-400"
+                        disabled={!formData.start_date || loading}
+                      />
+                    </div>
+                    {!formData.start_date && (
+                      <p className="text-xs text-gray-400 mt-1">Select a start date first</p>
+                    )}
                   </div>
                 </div>
 

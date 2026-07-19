@@ -34,6 +34,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
       offerNamePh: 'E.g. Summer Special',
       descriptionPh: 'Describe the offer details...',
       selectDiscount: 'Select a discount',
+      noDiscountOption: '— No discount (e.g. free welcome drink) —',
       clickToUpload: 'Click to upload or drag and drop',
       maxSize: 'Max 5MB',
       removeImage: 'Remove image',
@@ -66,6 +67,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
       offerNamePh: 'Esim. Kesäkampanja',
       descriptionPh: 'Kuvaile tarjouksen tiedot...',
       selectDiscount: 'Valitse alennus',
+      noDiscountOption: '— Ei alennusta (esim. ilmainen tervetuliaisjuoma) —',
       clickToUpload: 'Napsauta ladataksesi tai vedä ja pudota',
       maxSize: 'Max 5 Mt',
       removeImage: 'Poista kuva',
@@ -97,6 +99,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
       offerNamePh: 'F.eks. Sommertilbud',
       descriptionPh: 'Beskriv tilbudet...',
       selectDiscount: 'Velg rabatt',
+      noDiscountOption: '— Ingen rabatt (f.eks. gratis velkomstdrink) —',
       clickToUpload: 'Klikk for å laste opp eller dra og slipp',
       maxSize: 'Maks 5 MB',
       removeImage: 'Fjern bilde',
@@ -128,6 +131,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
       offerNamePh: 'T.ex. Sommarspecial',
       descriptionPh: 'Beskriv erbjudandet...',
       selectDiscount: 'Välj rabatt',
+      noDiscountOption: '— Ingen rabatt (t.ex. gratis välkomstdrink) —',
       clickToUpload: 'Klicka för att ladda upp eller dra och släpp',
       maxSize: 'Max 5 MB',
       removeImage: 'Ta bort bild',
@@ -159,6 +163,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
       offerNamePh: 'Z. B. Sommerspecial',
       descriptionPh: 'Beschreibe die Angebotsdetails...',
       selectDiscount: 'Rabatt auswählen',
+      noDiscountOption: '— Kein Rabatt (z. B. gratis Begrüßungsgetränk) —',
       clickToUpload: 'Zum Hochladen klicken oder ziehen und ablegen',
       maxSize: 'Max 5 MB',
       removeImage: 'Bild entfernen',
@@ -252,7 +257,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
       alert(t('endBeforeStart'));
       return;
     }
-    if (!discountPercent) {
+    if (discountPercent === "") {
       alert(t('selectDiscountPercent'));
       return;
     }
@@ -281,7 +286,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
         is_active: isActive,
         image: uploadedImageUrl,
         offer_id: offerId,
-        discount_percent: Number(discountPercent),
+        discount_percent: discountPercent === "none" ? null : Number(discountPercent),
         created_at: new Date().toISOString(),
         usage_limit_type: usageLimitType,
         max_uses: usageLimitType === 'max_uses' ? Number(maxUses) : null,
@@ -333,7 +338,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
               {isActive ? t('active') : t('inactive')}
             </span>
           )}
-          {typeof discountPercent === "number" && !Number.isNaN(discountPercent) && discountPercent !== "" && (
+          {discountPercent && discountPercent !== "none" && (
             <span className="text-xs font-semibold text-[#212620] bg-[#fe8922]/10 px-2 py-0.5 rounded-full">
               {t('percentOff', { percent: discountPercent })}
             </span>
@@ -380,7 +385,7 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('discountPercent')}
             </label>
-            <select
+           <select
               value={discountPercent}
               onChange={(e) => setDiscountPercent(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
@@ -388,14 +393,15 @@ export default function OfferModalPage({ restaurant, userRole, onClose }) {
               disabled={loading}
             >
               <option value="" disabled>{t('selectDiscount')}</option>
-              {Array.from({ length: 18 }, (_, i) => 15 + i * 5).map((val) => (
+              <option value="none">{t('noDiscountOption')}</option>
+              {[5, 10, ...Array.from({ length: 18 }, (_, i) => 15 + i * 5)].map((val) => (
                 <option key={val} value={val}>
                   {val}%
                 </option>
               ))}
           </select>
           </div>
-{/* Date Range */}
+
             <div className="space-y-3">
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">

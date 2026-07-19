@@ -4,6 +4,7 @@ import {
   doc,
   getDocs,
   addDoc,
+  updateDoc,
   deleteDoc,
   query,
   where,
@@ -21,6 +22,9 @@ const i18n = {
     campaigns: 'Campaigns',
     createTrackableLinks: 'Create trackable offer links for Facebook, Instagram, Google Ads, QR codes, and more.',
     newCampaign: 'New Campaign',
+    editCampaign: 'Edit Campaign',
+    saveChanges: 'Save Changes',
+    updating: 'Saving…',
     // Campaign card
     clicks: 'Clicks',
     bookings: 'Bookings',
@@ -62,6 +66,9 @@ const i18n = {
     campaigns: 'Kampanjat',
     createTrackableLinks: 'Luo seurattavia tarjouslinkkejä Facebookiin, Instagramiin, Google Ads -mainoksiin, QR-koodeihin ja muihin.',
     newCampaign: 'Uusi kampanja',
+    editCampaign: 'Muokkaa kampanjaa',
+    saveChanges: 'Tallenna muutokset',
+    updating: 'Tallennetaan…',
     clicks: 'Klikkaukset',
     bookings: 'Varaukset',
     redeemed: 'Lunastetut',
@@ -96,6 +103,9 @@ const i18n = {
     campaigns: 'Kampanjer',
     createTrackableLinks: 'Lag sporbare tilbudslenker for Facebook, Instagram, Google Ads, QR-koder og mer.',
     newCampaign: 'Ny kampanje',
+    editCampaign: 'Rediger kampanje',
+    saveChanges: 'Lagre endringer',
+    updating: 'Lagrer…',
     clicks: 'Klikk',
     bookings: 'Bestillinger',
     redeemed: 'Innløst',
@@ -130,6 +140,9 @@ const i18n = {
     campaigns: 'Kampanjer',
     createTrackableLinks: 'Skapa spårbara erbjudandelänkar för Facebook, Instagram, Google Ads, QR-koder och mer.',
     newCampaign: 'Ny kampanj',
+    editCampaign: 'Redigera kampanj',
+    saveChanges: 'Spara ändringar',
+    updating: 'Sparar…',
     clicks: 'Klick',
     bookings: 'Bokningar',
     redeemed: 'Inlösta',
@@ -164,6 +177,9 @@ const i18n = {
     campaigns: 'Kampagnen',
     createTrackableLinks: 'Erstellen Sie verfolgbare Angebotslinks für Facebook, Instagram, Google Ads, QR-Codes und mehr.',
     newCampaign: 'Neue Kampagne',
+    editCampaign: 'Kampagne bearbeiten',
+    saveChanges: 'Änderungen speichern',
+    updating: 'Speichere…',
     clicks: 'Klicks',
     bookings: 'Buchungen',
     redeemed: 'Eingelöst',
@@ -218,10 +234,11 @@ function pct(numerator, denominator) {
 
 // ─── Create Campaign Modal ──────────────────────────────────────────────────
 
-function CreateCampaignModal({ restaurantId, collectionName, offers, onClose, onCreated, t }) {
-  const [name, setName] = useState("");
-  const [channel, setChannel] = useState("facebook");
-  const [selectedOfferId, setSelectedOfferId] = useState("");
+function CreateCampaignModal({ restaurantId, collectionName, offers, editingCampaign = null, onClose, onCreated, onUpdated, t }) {
+  const isEditMode = !!editingCampaign;
+  const [name, setName] = useState(editingCampaign?.name || "");
+  const [channel, setChannel] = useState(editingCampaign?.channel || "facebook");
+  const [selectedOfferId, setSelectedOfferId] = useState(editingCampaign?.offerId || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -232,6 +249,27 @@ function CreateCampaignModal({ restaurantId, collectionName, offers, onClose, on
     setSaving(true);
     try {
       const offer = offers.find((o) => o.id === selectedOfferId);
+
+      if (isEditMode) {
+        await updateDoc(doc(firestore, "campaigns", editingCampaign.id), {
+          name: name.trim(),
+          channel,
+          offerId: offer.id,
+          offerCode: offer.offer_id,
+          offerName: offer.offer_name,
+        });
+        onUpdated({
+          ...editingCampaign,
+          name: name.trim(),
+          channel,
+          offerId: offer.id,
+          offerCode: offer.offer_id,
+          offerName: offer.offer_name,
+        });
+        onClose();
+        return;
+      }
+
       const docRef = await addDoc(collection(firestore, "campaigns"), {
         restaurantId,
         collectionName,
@@ -273,8 +311,8 @@ function CreateCampaignModal({ restaurantId, collectionName, offers, onClose, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">{t('newCampaign')}</h3>
+       <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-900">{isEditMode ? t('editCampaign') : t('newCampaign')}</h3>
           <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
@@ -327,11 +365,13 @@ function CreateCampaignModal({ restaurantId, collectionName, offers, onClose, on
         </div>
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50">{t('cancel')}</button>
-          <button
+         <button
             onClick={handleCreate} disabled={saving || offers.length === 0}
             className="flex items-center gap-2 px-5 py-2 bg-[#fe8a24] text-white rounded-lg text-sm font-semibold hover:bg-[#e07a1f] disabled:opacity-50"
           >
-            {saving ? <><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block" /> {t('creating')}</> : t('createCampaign')}
+            {saving
+              ? <><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block" /> {isEditMode ? t('updating') : t('creating')}</>
+              : (isEditMode ? t('saveChanges') : t('createCampaign'))}
           </button>
         </div>
       </div>
@@ -341,7 +381,7 @@ function CreateCampaignModal({ restaurantId, collectionName, offers, onClose, on
 
 // ─── Campaign Card ──────────────────────────────────────────────────────────
 
-function CampaignCard({ campaign, onDelete, t }) {
+function CampaignCard({ campaign, onDelete, onEdit, t }) {
   const [stats, setStats] = useState({ clicks: 0, bookings: 0, redeemed: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -409,9 +449,14 @@ function CampaignCard({ campaign, onDelete, t }) {
             <p className="text-xs text-gray-400 mt-0.5">{getChannelLabel(campaign.channel)} · {campaign.offerCode}: {campaign.offerName}</p>
           </div>
         </div>
-        <button onClick={() => onDelete(campaign.id)} className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button onClick={() => onEdit(campaign)} className="text-gray-300 hover:text-[#fe8a24] transition-colors p-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+          </button>
+          <button onClick={() => onDelete(campaign.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
       </div>
 
       <div className="px-5 py-4">
@@ -480,6 +525,7 @@ export default function Campaigns({ restaurantId, collectionName = "restaurants"
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null);
 
   const load = useCallback(async () => {
     if (!restaurantId) return;
@@ -525,6 +571,9 @@ export default function Campaigns({ restaurantId, collectionName = "restaurants"
     setCampaigns((prev) => [newCampaign, ...prev]);
   };
 
+  const handleUpdated = (updatedCampaign) => {
+    setCampaigns((prev) => prev.map((c) => (c.id === updatedCampaign.id ? { ...c, ...updatedCampaign } : c)));
+  };
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#fe8a24]" /></div>;
 
   return (
@@ -550,9 +599,9 @@ export default function Campaigns({ restaurantId, collectionName = "restaurants"
           <p className="text-xs text-gray-400">{t('createOneToGetLink')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {campaigns.map((c) => (
-            <CampaignCard key={c.id} campaign={c} onDelete={handleDelete} t={t} />
+            <CampaignCard key={c.id} campaign={c} onDelete={handleDelete} onEdit={setEditingCampaign} t={t} />
           ))}
         </div>
       )}
@@ -564,6 +613,19 @@ export default function Campaigns({ restaurantId, collectionName = "restaurants"
           offers={offers}
           onClose={() => setShowCreate(false)}
           onCreated={handleCreated}
+          t={t}
+        />
+      )}
+
+      {editingCampaign && (
+        <CreateCampaignModal
+          restaurantId={restaurantId}
+          collectionName={collectionName}
+          offers={offers}
+          editingCampaign={editingCampaign}
+          onClose={() => setEditingCampaign(null)}
+          onCreated={handleCreated}
+          onUpdated={handleUpdated}
           t={t}
         />
       )}

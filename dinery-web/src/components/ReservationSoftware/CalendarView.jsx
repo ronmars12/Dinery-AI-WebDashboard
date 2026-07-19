@@ -2067,11 +2067,14 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                 const totalMins = openHour * 60 + slot * 15;
                 const d = new Date(currentDate);
                 d.setHours(Math.floor(totalMins / 60), totalMins % 60, 0, 0);
-                onCreateReservation && onCreateReservation(
-                  d,
-                  isUnassigned ? null : table.id,
-                  isUnassigned ? null : table.name
-                );
+                const fromTime = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                onCreateReservation && onCreateReservation(d, {
+                  tableId: isUnassigned ? null : tableId,
+                  tableName: isUnassigned ? '' : (table?.name || ''),
+                  tableIds: isUnassigned ? [] : [tableId],
+                  tableNames: isUnassigned ? [] : [table?.name || ''],
+                  fromTime,
+                });
               }} />
             {allTableRes.map(r => renderResBar(r, tableId))}
           </div>
@@ -2214,7 +2217,16 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                               const totalMins = openHour * 60 + slot * 15;
                               const d = new Date(currentDate);
                               d.setHours(Math.floor(totalMins / 60), totalMins % 60, 0, 0);
-                              onCreateReservation && onCreateReservation(d, combo.tableIds?.[0] || null, combo.name || null);
+                              const fromTime = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                              onCreateReservation && onCreateReservation(d, {
+                                tableId: null,
+                                tableName: null,
+                                combinationId: combo.id,
+                                combinationName: combo.name || '',
+                                tableIds: combo.tableIds || [],
+                                tableNames: combo.tableNames || [],
+                                fromTime,
+                              });
                             }} />
                           {allComboRes.map(r => renderResBar(r, comboKey))}
                         </div>
@@ -2333,7 +2345,12 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                         
                         <div
                           className={`absolute inset-0 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent cursor-pointer transition-all duration-150 flex items-center justify-center opacity-0 hover:opacity-100 z-10 ${isDarkMode ? 'hover:from-primary/10' : ''}`}
-                          onClick={() => { const d = new Date(day); d.setHours(hour, 0, 0, 0); onCreateReservation && onCreateReservation(d); }}>
+                          onClick={() => {
+                            const d = new Date(day);
+                            d.setHours(hour, 0, 0, 0);
+                            const fromTime = `${String(hour).padStart(2,'0')}:00`;
+                            onCreateReservation && onCreateReservation(d, { fromTime });
+                          }}>
                           <div className="flex items-center gap-1 md:gap-1.5 bg-primary text-white text-[8px] md:text-xs px-1.5 md:px-3 py-1 md:py-1.5 rounded-full shadow-lg font-medium transform hover:scale-105 transition-transform">
                             <FiPlus className="w-2 h-2 md:w-3 md:h-3" />
                             {!isMobile && <span>{`${String(hour).padStart(2,'0')}:00`}</span>}

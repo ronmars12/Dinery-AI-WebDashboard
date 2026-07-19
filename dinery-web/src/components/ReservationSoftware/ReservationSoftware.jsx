@@ -307,9 +307,20 @@ const ReservationSoftware = () => {
 
   const handleReservationClick = (reservation) => { setSelectedReservation(reservation); setShowEditModal(true); };
   const handleWalkIn = () => { setSelectedReservationDate(null); setModalMode('walkin'); setShowCreateModal(true); };
-  const handleCreateReservationFromSlot = (dateTime, tableId, tableName) => {
+  const handleCreateReservationFromSlot = (dateTime, prefill) => {
     setSelectedReservationDate(dateTime);
-    setPreSelectedTable(tableId ? { id: tableId, name: tableName } : null);
+    if (prefill?.combinationId) {
+      setPreSelectedTable({
+        combinationId: prefill.combinationId,
+        combinationName: prefill.combinationName || '',
+        tableIds: prefill.tableIds || [],
+        tableNames: prefill.tableNames || [],
+      });
+    } else if (prefill?.tableId) {
+      setPreSelectedTable({ id: prefill.tableId, name: prefill.tableName || '' });
+    } else {
+      setPreSelectedTable(null);
+    }
     setModalMode('full');
     setShowCreateModal(true);
   };
@@ -761,6 +772,10 @@ const ReservationSoftware = () => {
           modalMode={modalMode}
           preSelectedTableId={preSelectedTable?.id || null}
           preSelectedTableName={preSelectedTable?.name || null}
+          preSelectedTableIds={preSelectedTable?.tableIds || null}
+          preSelectedTableNames={preSelectedTable?.tableNames || null}
+          preSelectedCombinationId={preSelectedTable?.combinationId || null}
+          preSelectedCombinationName={preSelectedTable?.combinationName || null}
         />
       )}
       {showSettings && (!isStaff || staffRole === 'admin' || staffRole === 'manager') && (

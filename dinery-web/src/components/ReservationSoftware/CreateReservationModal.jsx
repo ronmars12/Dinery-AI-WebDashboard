@@ -1161,6 +1161,10 @@ const CreateReservationModal = ({
   modalMode = 'full',
   preSelectedTableId = null,
   preSelectedTableName = null,
+  preSelectedTableIds = null,
+  preSelectedTableNames = null,
+  preSelectedCombinationId = null,
+  preSelectedCombinationName = null,
   excludeReservationId = null,
   existingReservationData = null,
 }) => {
@@ -1206,13 +1210,21 @@ const CreateReservationModal = ({
 
   const [tables, setTables]                         = useState([]);
   const [selectedTableIds, setSelectedTableIds]     = useState(
-    existingReservationData?.table_ids || 
-    (preSelectedTableId ? [preSelectedTableId] : [])
+    existingReservationData?.table_ids ||
+    (preSelectedCombinationId ? (preSelectedTableIds || []) :
+     preSelectedTableIds ? preSelectedTableIds :
+     (preSelectedTableId ? [preSelectedTableId] : []))
   );
   const [combinations, setCombinations]             = useState([]);
   const [selectedCombination, setSelectedCombination] = useState(
     existingReservationData?.combination_id ? 
       { id: existingReservationData.combination_id, name: existingReservationData.combination_name, tableIds: existingReservationData.table_ids, tableNames: existingReservationData.table_names } 
+      : preSelectedCombinationId ? {
+          id: preSelectedCombinationId,
+          name: preSelectedCombinationName || '',
+          tableIds: preSelectedTableIds || [],
+          tableNames: preSelectedTableNames || [],
+        }
       : null
   );
 
@@ -1388,11 +1400,25 @@ const CreateReservationModal = ({
         const loadedTables = tabSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setTables(sortTables(loadedTables));
         setCombinations(comboSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-        if (preSelectedTableId && !existingReservationData) {
-          setSelectedTableIds([preSelectedTableId]);
-          if (selectedDate && fromTime) {
-            const duration = getEffectiveDuration(guests);
-            checkTableAvailabilityForSlots([preSelectedTableId], selectedDate, fromTime, duration);
+        if (!existingReservationData) {
+          if (preSelectedCombinationId) {
+            setSelectedCombination({
+              id: preSelectedCombinationId,
+              name: preSelectedCombinationName || '',
+              tableIds: preSelectedTableIds || [],
+              tableNames: preSelectedTableNames || [],
+            });
+            setSelectedTableIds(preSelectedTableIds || []);
+            if (selectedDate && fromTime && (preSelectedTableIds || []).length) {
+              const duration = getEffectiveDuration(guests);
+              checkTableAvailabilityForSlots(preSelectedTableIds, selectedDate, fromTime, duration);
+            }
+          } else if (preSelectedTableId) {
+            setSelectedTableIds([preSelectedTableId]);
+            if (selectedDate && fromTime) {
+              const duration = getEffectiveDuration(guests);
+              checkTableAvailabilityForSlots([preSelectedTableId], selectedDate, fromTime, duration);
+            }
           }
         }
         if (existingReservationData?.table_ids && existingReservationData.table_ids.length > 0) {

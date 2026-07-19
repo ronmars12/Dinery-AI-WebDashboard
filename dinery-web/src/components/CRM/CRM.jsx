@@ -1779,6 +1779,20 @@ const automationRows = [];
 // ─── Birthday Automation Settings ──────────────────────────────────────────────
 
 function BirthdaySettings({ restaurantId, collectionName }) {
+  const bodyRef = React.useRef(null);
+  const insertTag = (tag) => {
+    const el = bodyRef.current;
+    if (!el) { set("body", settings.body + " " + tag); return; }
+    const start = el.selectionStart ?? settings.body.length;
+    const end = el.selectionEnd ?? settings.body.length;
+    const newVal = settings.body.slice(0, start) + tag + settings.body.slice(end);
+    set("body", newVal);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + tag.length;
+      el.selectionStart = el.selectionEnd = pos;
+    });
+  };
   const [settings, setSettings] = useState({
     enabled: false,
     daysBefore: 30,
@@ -1869,10 +1883,10 @@ function BirthdaySettings({ restaurantId, collectionName }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
-            <textarea value={settings.body} onChange={(e) => set("body", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+            <textarea ref={bodyRef} value={settings.body} onChange={(e) => set("body", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
             <div className="mt-3 flex flex-wrap gap-2">
               {["{{restaurant_name}}", "{{customer_first_name}}", "{{customer_full_name}}"].map((tag) => (
-                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("body", settings.body + " " + tag)}>{tag}</span>
+                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => insertTag(tag)}>{tag}</span>
               ))}
             </div>
           </div>
@@ -1900,6 +1914,7 @@ function BirthdaySettings({ restaurantId, collectionName }) {
 // ─── Win-back Automation Settings ──────────────────────────────────────────────
 
 function WinbackRuleEditor({ rule, offers, onSave, onCancel }) {
+  const bodyRef = React.useRef(null);
   const [form, setForm] = useState(rule || {
     id: `winback_${Date.now()}`,
     name: "",
@@ -1910,7 +1925,21 @@ function WinbackRuleEditor({ rule, offers, onSave, onCancel }) {
     enabled: true,
   });
 
-  const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const insertTag = (tag) => {
+    const el = bodyRef.current;
+    if (!el) { set("body", form.body + " " + tag); return; }
+    const start = el.selectionStart ?? form.body.length;
+    const end = el.selectionEnd ?? form.body.length;
+    const newVal = form.body.slice(0, start) + tag + form.body.slice(end);
+    set("body", newVal);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + tag.length;
+      el.selectionStart = el.selectionEnd = pos;
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -1948,10 +1977,10 @@ function WinbackRuleEditor({ rule, offers, onSave, onCancel }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
-            <textarea value={form.body} onChange={(e) => set("body", e.target.value)} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+              <textarea ref={bodyRef} value={form.body} onChange={(e) => set("body", e.target.value)} rows={4} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
             <div className="mt-3 flex flex-wrap gap-2">
               {["{{restaurant_name}}", "{{customer_first_name}}", "{{customer_full_name}}"].map((tag) => (
-                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("body", form.body + " " + tag)}>{tag}</span>
+                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => insertTag(tag)}>{tag}</span>
               ))}
             </div>
           </div>
@@ -2132,6 +2161,7 @@ if (loading) return <div className="flex items-center justify-center h-40"><div 
 // ─── Reservation Recovery Automation Settings ──────────────────────────────────
 
 function RecoverySettings({ restaurantId, collectionName }) {
+  const bodyRef = React.useRef(null);
   const [settings, setSettings] = useState({
     enabled: false,
     automationName: "Reservation Recovery",
@@ -2182,6 +2212,20 @@ function RecoverySettings({ restaurantId, collectionName }) {
   }, [restaurantId, collectionName]);
 
   const set = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
+
+  const insertTag = (tag) => {
+    const el = bodyRef.current;
+    if (!el) { set("body", settings.body + " " + tag); return; }
+    const start = el.selectionStart ?? settings.body.length;
+    const end = el.selectionEnd ?? settings.body.length;
+    const newVal = settings.body.slice(0, start) + tag + settings.body.slice(end);
+    set("body", newVal);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + tag.length;
+      el.selectionStart = el.selectionEnd = pos;
+    });
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -2310,17 +2354,17 @@ function RecoverySettings({ restaurantId, collectionName }) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Body</label>
-            <textarea value={settings.body} onChange={(e) => set("body", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+            <textarea ref={bodyRef} value={settings.body} onChange={(e) => set("body", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
             <div className="mt-3 flex flex-wrap gap-2">
               {["{{restaurant_name}}", "{{customer_first_name}}", "{{customer_full_name}}"].map((tag) => (
-                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("body", settings.body + " " + tag)}>{tag}</span>
+                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => insertTag(tag)}>{tag}</span>
               ))}
             </div>
           </div>
         </div>
       </SectionCard>
 
-      <SectionCard title="Recovery Offer" subtitle="Optionally attach one of your existing offers.">
+      <SectionCard title="Recovery Offer" subtitle="Optionally attach one of your existing offers.">    
         {loadingOffers ? (
           <p className="text-sm text-gray-400">Loading your offers…</p>
         ) : restaurantOffers.length === 0 ? (
@@ -2366,6 +2410,7 @@ const DEFAULT_SETTINGS = {
 };
 
 function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
+  const thankYouMessageRef = React.useRef(null);
   // ── Language ──────────────────────────────────────────────────────────────────
   const [lang, setLang] = useState(() => localStorage.getItem('app_lang') || 'en');
   
@@ -2435,8 +2480,22 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
       .catch(console.error).finally(() => setLoading(false));
   }, [restaurantId]);
 
-  const set = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
+ const set = (key, value) => setSettings((prev) => ({ ...prev, [key]: value }));
   const setSurveyQ = (key, value) => setSettings((prev) => ({ ...prev, surveyQuestions: { ...prev.surveyQuestions, [key]: value } }));
+
+  const insertThankYouTag = (tag) => {
+    const el = thankYouMessageRef.current;
+    if (!el) { set("thankYouMessage", settings.thankYouMessage + " " + tag); return; }
+    const start = el.selectionStart ?? settings.thankYouMessage.length;
+    const end = el.selectionEnd ?? settings.thankYouMessage.length;
+    const newVal = settings.thankYouMessage.slice(0, start) + tag + settings.thankYouMessage.slice(end);
+    set("thankYouMessage", newVal);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + tag.length;
+      el.selectionStart = el.selectionEnd = pos;
+    });
+  };
 
   const handleSave = async () => {
     if (!restaurantId) return;
@@ -2690,10 +2749,10 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
             <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3"><p className="text-xs text-amber-700"><span className="font-semibold">{t('testingTip')}</span></p></div>
           </SectionCard>
           <SectionCard title={t('thankYouMessage')} subtitle={t('openingMessage')}>
-            <textarea value={settings.thankYouMessage} onChange={(e) => set("thankYouMessage", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
+            <textarea ref={thankYouMessageRef} value={settings.thankYouMessage} onChange={(e) => set("thankYouMessage", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
             <div className="mt-3 flex flex-wrap gap-2">
               {["{{restaurant_name}}","{{customer_first_name}}","{{customer_full_name}}","{{reservation_date}}","{{reservation_time}}","{{party_size}}"].map((tag) => (
-                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => set("thankYouMessage", settings.thankYouMessage + " " + tag)}>{tag}</span>
+                <span key={tag} className="text-xs bg-orange-50 text-[#fe8a24] border border-orange-200 rounded px-2 py-1 font-mono cursor-pointer hover:bg-orange-100 transition-colors" onClick={() => insertThankYouTag(tag)}>{tag}</span>
               ))}
             </div>
           </SectionCard>
@@ -3253,9 +3312,30 @@ function GuestFeedback({ restaurantId }) {
           </div>
           <div className="flex flex-wrap gap-3 items-center">
             <span className="text-xs text-gray-400 font-medium">{t('dateRange')}</span>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] focus:border-orange-500 transition-colors"
+              />
+            </div>
             <span className="text-xs text-gray-400">{t('to')}</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]" />
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] focus:border-orange-500 transition-colors"
+              />
+            </div>
             {(dateFrom || dateTo) && (
               <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-xs text-gray-400 hover:text-red-500 transition-colors">{t('clearDates')}</button>
             )}
