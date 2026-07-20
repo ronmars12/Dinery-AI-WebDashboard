@@ -39,6 +39,7 @@ const fmtPct  = (n,t) => t>0 ? `${((n/t)*100).toFixed(1)}%` : "0%";
 const fmt     = (d,o) => d?.toLocaleDateString("en-US",o) || "";
 const fmtDur  = (m) => { if(!m||m<1) return "—"; const h=Math.floor(m/60),r=Math.round(m%60); return h>0?`${h}h ${r}m`:`${r}m`; };
 const pad2    = (n) => String(n).padStart(2,"0");
+const localDateKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 
 const safeInt = (v) => {
   if (v === null || v === undefined) return 0;
@@ -67,8 +68,8 @@ const getPeriodRange = (key) => {
   const s=(d)=>{const x=new Date(d);x.setHours(0,0,0,0);return x;};
   const e=(d)=>{const x=new Date(d);x.setHours(23,59,59,999);return x;};
   switch(key){
-    case "this_week":  {const ws=new Date(now);ws.setDate(now.getDate()-now.getDay());return[s(ws),e(now)];}
-    case "prev_week":  {const ws=new Date(now);ws.setDate(now.getDate()-now.getDay()-7);const we=new Date(ws);we.setDate(ws.getDate()+6);return[s(ws),e(we)];}
+    case "this_week":  {const ws=new Date(now);ws.setDate(now.getDate()-((now.getDay()+6)%7));return[s(ws),e(now)];}
+    case "prev_week":  {const ws=new Date(now);ws.setDate(now.getDate()-((now.getDay()+6)%7)-7);const we=new Date(ws);we.setDate(ws.getDate()+6);return[s(ws),e(we)];}
     case "this_month": return[s(new Date(now.getFullYear(),now.getMonth(),1)),e(now)];
     case "this_year":  return[s(new Date(now.getFullYear(),0,1)),e(now)];  // January 1st of current year to today
     default: return[s(now),e(now)];
@@ -440,14 +441,14 @@ function AnalyticsSection({ restaurants }) {
     const map = {};
     const cur = new Date(rangeStart);
     while(cur <= rangeEnd){
-      const k = cur.toISOString().slice(0,10);
+      const k = localDateKey(cur);
       map[k] = { date: k, orders: 0, revenue: 0 };
       cur.setDate(cur.getDate() + 1);
     }
     filteredOrders.forEach(order => {
       const d = toDate(order.created_at);
       if(!d || d < rangeStart || d > rangeEnd) return;
-      const k = d.toISOString().slice(0,10);
+      const k = localDateKey(d);
       if(map[k]){
         map[k].orders += 1;
         map[k].revenue += (order.total_amount || 0);
@@ -515,18 +516,18 @@ function AnalyticsSection({ restaurants }) {
   const popularItemsData = dineryKpis.topItems.map(([name, count]) => ({ name: name.length > 15 ? name.slice(0,12)+"..." : name, count }));
 
   // ── Guests per day ──
-  const guestsPerDay=useMemo(()=>{
+const guestsPerDay=useMemo(()=>{
     if(!rangeStart||!rangeEnd) return[];
     const map={};
     const cur=new Date(rangeStart);
     while(cur<=rangeEnd){
-      const k=cur.toISOString().slice(0,10);
+      const k=localDateKey(cur);
       map[k]={date:k,guests:0,bookings:0};
       cur.setDate(cur.getDate()+1);
     }
     reservations.forEach(r=>{
       const d=toDate(r.reservation_date);if(!d)return;
-      const k=d.toISOString().slice(0,10);
+      const k=localDateKey(d);
       if(map[k]){map[k].guests+=safeInt(r.number_of_guests);map[k].bookings+=1;}
     });
     return Object.values(map).map(v=>({...v,label:new Date(v.date+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"})}));

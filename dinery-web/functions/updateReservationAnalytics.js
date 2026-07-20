@@ -10,7 +10,6 @@ const db = admin.firestore();
 setGlobalOptions({ maxInstances: 10 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const toDate = (v) => {
   if (!v) return null;
   if (v?.toDate) return v.toDate();
@@ -20,9 +19,27 @@ const toDate = (v) => {
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
-const getDateKey  = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-const getMonthKey = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
-const getYearKey  = (d) => `${d.getFullYear()}`;
+// Cloud Functions run in UTC regardless of project region, so all date/time
+// getters must be computed in the restaurant's local timezone explicitly.
+// TODO: swap this for a per-restaurant timezone field if you add one later.
+const RESTAURANT_TIMEZONE = "Asia/Manila";
+
+const getZonedParts = (date, timeZone = RESTAURANT_TIMEZONE) => {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+    hourCycle: "h23",
+    weekday: "short",
+  });
+  const parts = {};
+  fmt.formatToParts(date).forEach(p => { if (p.type !== "literal") parts[p.type] = p.value; });
+  return parts; // { year, month, day, hour, minute, weekday }
+};
+
+const getDateKey  = (d) => { const p = getZonedParts(d); return `${p.year}-${p.month}-${p.day}`; };
+const getMonthKey = (d) => { const p = getZonedParts(d); return `${p.year}-${p.month}`; };
+const getYearKey  = (d) => getZonedParts(d).year;
 
 const getOrigin = (data) => {
   if (data.is_walkin)                     return "walkin";
@@ -52,18 +69,19 @@ const buildDelta = (data, multiplier) => {
   const guests     = Math.max(0, parseInt(data.number_of_guests) || 0);
   const duration   = Math.max(0, parseInt(data.duration_minutes) || 0);
   const origin     = getOrigin(data);
-  const weekday    = resDate ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][resDate.getDay()] : null;
+
+  const resParts = resDate ? getZonedParts(resDate) : null;
+  const weekday  = resParts ? resParts.weekday : null; // "Sun".."Sat" — matches DAYS array
 
   let arrivalKey = null;
-  if (resDate) {
-    const h = resDate.getHours();
-    const m = resDate.getMinutes() < 30 ? 0 : 30;
-    arrivalKey = `${pad2(h)}_${pad2(m)}`;
+  if (resParts) {
+    const m = Number(resParts.minute) < 30 ? "00" : "30";
+    arrivalKey = `${resParts.hour}_${m}`;
   }
 
   let createdHourKey = null;
   if (createdAt) {
-    createdHourKey = pad2(createdAt.getHours());
+    createdHourKey = getZonedParts(createdAt).hour;
   }
 
   const leadBucket  = getLeadTimeBucket(resDate, createdAt);
