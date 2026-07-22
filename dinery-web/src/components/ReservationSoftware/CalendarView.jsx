@@ -1838,8 +1838,11 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
         <div
           key={r.id}
           className={`reservation-bar absolute top-1 rounded-lg overflow-hidden select-none group/res ${isActive ? 'ring-2 ring-primary/50 z-30' : 'z-10'}`}
-            style={{
-              left: left + 1, width: Math.max(width, 32),
+          style={{
+            left: left + 1,
+            ...(isCleared
+              ? { width: 'max-content', minWidth: 32, maxWidth: Math.max(fullWidth, compactWidth * 2) }
+              : { width: Math.max(width, 32) }),
               height: (isTablet ? TABLE_ROW_HEIGHT - 10 : TABLE_ROW_HEIGHT - 8),
               background: styles.bg,
               border: `1px solid ${styles.border}`,
@@ -1985,7 +1988,7 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
             <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-mono font-semibold whitespace-nowrap`} style={{ color: styles.text }}>
               {r.from_time || `${String(resDate.getHours()).padStart(2,'0')}:${String(resDate.getMinutes()).padStart(2,'0')}`}
             </span>
-            <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-medium truncate min-w-0 flex-1`} style={{ color: styles.text }}>
+            <span className={`${isMobile ? 'text-[8px]' : 'text-[9px] md:text-xs'} font-medium ${isCleared ? 'whitespace-nowrap' : 'truncate min-w-0 flex-1'}`} style={{ color: styles.text }}>
               {isMobile ? `${r.number_of_guests} ${r.customer_name || 'Guest'}` : `${r.number_of_guests} · ${r.customer_name || 'Guest'}`}
             </span>
             {width > 100 && isMultiTable && (
