@@ -2036,29 +2036,57 @@ const ReservationSettings = ({ selectedRestaurant, onClose }) => {
     </div>
   );
 
-const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 1 }) => {
+const SettingNumber = ({ label, description, value, onChange, min, max, unit, step = 1 }) => {
   const intervalRef = React.useRef(null);
   const timeoutRef = React.useRef(null);
+  const valueRef = React.useRef(value);
+  const [text, setText] = React.useState(String(value ?? min));
+
+  React.useEffect(() => {
+    valueRef.current = value;
+    setText(String(value ?? min));
+  }, [value]);
+
+  const clamp = (n) => Math.min(max, Math.max(min, n));
 
   const change = (dir) => {
-    setSettings(prev => {
-      const current = prev[settingKey] || min;
-      const next = current + dir * step;
-      return { ...prev, [settingKey]: Math.min(max, Math.max(min, next)) };
-    });
+    const next = clamp((valueRef.current ?? min) + dir * step);
+    valueRef.current = next;   // keep ref fresh so holding keeps stepping
+    onChange(next);
+  };
+
+  const stopPress = () => {
+    clearTimeout(timeoutRef.current);
+    clearInterval(intervalRef.current);
+    timeoutRef.current = null;
+    intervalRef.current = null;
   };
 
   const startPress = (dir) => {
+    stopPress();               // never allow two timer sets to exist
     change(dir);
     timeoutRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => change(dir), 80);
     }, 400);
   };
 
-  const stopPress = () => {
-    clearTimeout(timeoutRef.current);
-    clearInterval(intervalRef.current);
+  // safety net: if the component unmounts mid-press, kill timers
+  React.useEffect(() => stopPress, []);
+
+  const commit = () => {
+    const n = parseInt(text, 10);
+    const final = isNaN(n) ? (value ?? min) : clamp(n);
+    onChange(final);
+    setText(String(final));
   };
+
+  const holdBtn = (dir) => ({
+    onPointerDown: (e) => { e.preventDefault(); startPress(dir); },
+    onPointerUp: stopPress,
+    onPointerLeave: stopPress,
+    onPointerCancel: stopPress,
+    onContextMenu: (e) => e.preventDefault(), // long-press on mobile opens context menu otherwise
+  });
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 gap-3 sm:gap-0">
@@ -2068,29 +2096,20 @@ const SettingNumber = ({ label, description, settingKey, min, max, unit, step = 
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-          <button
-            onMouseDown={() => startPress(-1)}
-            onMouseUp={stopPress}
-            onMouseLeave={stopPress}
-            onTouchStart={() => startPress(-1)}
-            onTouchEnd={stopPress}
+          <button type="button" {...holdBtn(-1)}
+            style={{ touchAction: 'none' }}
             className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-sm sm:text-base transition-colors select-none border-r border-gray-200"
           >−</button>
           <input
-            type="number"
-            min={min}
-            max={max}
-            step={step}
-            value={settings[settingKey]}
-            onChange={(e) => setSettings(prev => ({ ...prev, [settingKey]: parseInt(e.target.value) || min }))}
+            type="number" min={min} max={max} step={step}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             className="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 border-0"
           />
-          <button
-            onMouseDown={() => startPress(1)}
-            onMouseUp={stopPress}
-            onMouseLeave={stopPress}
-            onTouchStart={() => startPress(1)}
-            onTouchEnd={stopPress}
+          <button type="button" {...holdBtn(1)}
+            style={{ touchAction: 'none' }}
             className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-sm sm:text-base transition-colors select-none border-l border-gray-200"
           >+</button>
         </div>
@@ -2128,21 +2147,18 @@ const renderGeneralTab = () => (
       <SettingNumber
         label={t('diningDuration')}
         description={t('defaultDiningTime')}
-        settingKey="defaultReservationDuration"
-        min={30}
-        max={240}
-        unit="min"
-        step={15}
+        value={settings.defaultReservationDuration}
+        onChange={(v) => setSettings(prev => ({ ...prev, defaultReservationDuration: v }))}
+        min={30} max={240} unit="min" step={15}
       />
       <SettingNumber
         label={t('tableCleanup')}
         description={t('timeBetweenReservations')}
-        settingKey="tableCleanupTime"
-        min={0}
-        max={60}
-        unit="min"
+        value={settings.tableCleanupTime}
+        onChange={(v) => setSettings(prev => ({ ...prev, tableCleanupTime: v }))}
+        min={0} max={60} unit="min"
       />
-<div className="bg-orange-50 rounded-lg p-3 mt-2">
+      <div className="bg-orange-50 rounded-lg p-3 mt-2">
         <p className="text-xs text-gray-600">{t('totalSlotTime')}</p>
         <p className="text-lg font-bold text-[#fe8a24]">
           {settings.defaultReservationDuration + settings.tableCleanupTime} min
@@ -2264,18 +2280,16 @@ const renderGeneralTab = () => (
       <SettingNumber
         label={t('advanceBooking')}
         description={t('maxDaysInAdvance')}
-        settingKey="maxAdvanceBookingDays"
-        min={1}
-        max={365}
-        unit="days"
+        value={settings.maxAdvanceBookingDays}
+        onChange={(v) => setSettings(prev => ({ ...prev, maxAdvanceBookingDays: v }))}
+        min={1} max={365} unit="days"
       />
       <SettingNumber
         label={t('minNotice')}
         description={t('hoursBeforeBooking')}
-        settingKey="minAdvanceBookingHours"
-        min={0}
-        max={48}
-        unit="hrs"
+        value={settings.minAdvanceBookingHours}
+        onChange={(v) => setSettings(prev => ({ ...prev, minAdvanceBookingHours: v }))}
+        min={0} max={48} unit="hrs"
       />
     </div>
 );
@@ -2344,10 +2358,9 @@ const renderGeneralTab = () => (
     <SettingNumber
       label={t('minPartySize')}
       description={t('minimumGuestsAllowed')}
-      settingKey="minGuestsPerReservation"
-      min={1}
-      max={10}
-      unit="guests"
+      value={settings.minGuestsPerReservation}
+      onChange={(v) => setSettings(prev => ({ ...prev, minGuestsPerReservation: v }))}
+      min={1} max={10} unit="guests"
     />
     <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 gap-3 sm:gap-0">
       <div className="flex-1 pr-0 sm:pr-4">
@@ -2410,10 +2423,9 @@ const renderGeneralTab = () => (
           <SettingNumber
             label={t('minGuestsToShowMenu')}
             description={t('menuAppearsWhenPartySize')}
-            settingKey="menuDisplayMinGuests"
-            min={1}
-            max={50}
-            unit="guests"
+            value={settings.menuDisplayMinGuests}
+            onChange={(v) => setSettings(prev => ({ ...prev, menuDisplayMinGuests: v }))}
+            min={1} max={50} unit="guests"
           />
           <SettingToggle
             label={t('requireGroupMenuSelection')}
@@ -2739,13 +2751,20 @@ const renderGeneralTab = () => (
               const interval = daySettings?.interval || settings?.timeSlotInterval || 30;
               const startOffset = daySettings?.startOffset || 0;
               const endOffset = daySettings?.endOffset || 0;
-              const [oH, oM] = hours.openTime.split(':').map(Number);
-              const [cH, cM] = hours.closeTime.split(':').map(Number);
-              const effOpenMin = oH * 60 + oM + startOffset;
-              const effCloseMin = cH * 60 + cM - endOffset;
-              const effOpenTime = `${String(Math.floor(effOpenMin/60)).padStart(2,'0')}:${String(effOpenMin%60).padStart(2,'0')}`;
-              const effCloseTime = `${String(Math.floor(effCloseMin/60)).padStart(2,'0')}:${String(effCloseMin%60).padStart(2,'0')}`;
-              const timeSlots = !isClosed ? generateTimeSlots(effOpenTime, effCloseTime, interval) : [];
+
+              let effOpenTime = '';
+              let effCloseTime = '';
+              let timeSlots = [];
+
+              if (!isClosed) {
+                const [oH, oM] = hours.openTime.split(':').map(Number);
+                const [cH, cM] = hours.closeTime.split(':').map(Number);
+                const effOpenMin = oH * 60 + oM + startOffset;
+                const effCloseMin = cH * 60 + cM - endOffset;
+                effOpenTime = `${String(Math.floor(effOpenMin / 60)).padStart(2, '0')}:${String(effOpenMin % 60).padStart(2, '0')}`;
+                effCloseTime = `${String(Math.floor(effCloseMin / 60)).padStart(2, '0')}:${String(effCloseMin % 60).padStart(2, '0')}`;
+                timeSlots = generateTimeSlots(effOpenTime, effCloseTime, interval);
+              }
               const blockedSlots = settings.blockedTimeSlots?.[dayName] || [];
               
               return (
@@ -2901,10 +2920,9 @@ const renderGeneralTab = () => (
       <SettingNumber
         label={t('reminderTime')}
         description={t('hoursBeforeReservation')}
-        settingKey="reminderHoursBefore"
-        min={1}
-        max={168}
-        unit="hrs"
+        value={settings.reminderHoursBefore}
+        onChange={(v) => setSettings(prev => ({ ...prev, reminderHoursBefore: v }))}
+        min={1} max={168} unit="hrs"
       />
     </div>
   );
