@@ -762,14 +762,8 @@ const CalendarView = ({
     }
   }, [selectedDate]);
 
-  // Show loading when reservations change
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setLocalReservations(reservations);
-      setIsLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
+    setLocalReservations(reservations);
   }, [reservations]);
 
   // Fetch tables from restaurant subcollection

@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { firestore, auth } from "../../firebase";
 import Campaigns from "./Campaigns";
-
+import CustomerList from './CustomerList';
 // ─── i18n Translations ──────────────────────────────────────────────────────────
 const i18n = {
   en: {
@@ -26,6 +26,7 @@ const i18n = {
     overview: 'Overview',
     emailAutomation: 'Email Automation',
     campaigns: 'Campaigns',
+    customerList: 'Customer List',
     guestFeedback: 'Guest Feedback',
     // Overview
     analyticsDashboard: 'Analytics Dashboard',
@@ -3423,6 +3424,7 @@ const NAV_TABS = [
   { key: "overview", label: "Overview", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
   { key: "email-settings", label: "Email Automation", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> },
   { key: "campaigns", label: "Campaigns", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
+  { key: "customers", label: "Customer List", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
   { key: "feedback", label: "Guest Feedback", icon: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg> },
 ];
 
@@ -3529,7 +3531,7 @@ export default function CRM() {
         </div>
         <div className="px-6 flex gap-1 pb-0">
           {NAV_TABS.map((tab) => {
-            const label = t(tab.key === "overview" ? "overview" : tab.key === "email-settings" ? "emailAutomation" : tab.key === "campaigns" ? "campaigns" : "guestFeedback");
+            const label = t(tab.key === "overview" ? "overview" : tab.key === "email-settings" ? "emailAutomation" : tab.key === "campaigns" ? "campaigns" : tab.key === "customers" ? "customerList" : "guestFeedback");
             return (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 -mb-px ${activeTab === tab.key ? "border-[#fe8a24] text-[#fe8a24]" : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"}`}>
                 {tab.icon}{label}
@@ -3543,6 +3545,7 @@ export default function CRM() {
           {activeTab === "overview" && <CRMOverview restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
           {activeTab === "email-settings" && <EmailAutomation restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
           {activeTab === "campaigns" && <Campaigns restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
+          {activeTab === "customers" && <CustomerList restaurantId={selectedRestaurant.id} collectionName={selectedRestaurant._collection || "restaurants"} />}
           {activeTab === "feedback" && <GuestFeedback restaurantId={selectedRestaurant.id} />}
         </div>
       </div>    

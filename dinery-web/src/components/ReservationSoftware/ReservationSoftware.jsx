@@ -1,5 +1,5 @@
 // src/components/reservation-software/ReservationSoftware.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot, orderBy, doc, getDoc } from 'firebase/firestore';
 import { auth, firestore } from '../../firebase';
 import CalendarView from './CalendarView';
@@ -7,10 +7,11 @@ import ListView from './ListView';
 import ReservationModal from './ReservationModal';
 import CreateReservationModal from './CreateReservationModal';
 import ReservationTableView from './ReservationTableView';
+import ImportReservationsModal from './ImportReservationsModal';
 import { 
   FiPlus, FiCalendar, FiList, FiSettings, FiChevronDown, 
   FiChevronLeft, FiChevronRight, FiClock, FiUsers, 
-  FiSearch, FiFilter, FiGrid, FiMenu, FiX, FiSun, FiMoon, FiRefreshCw
+  FiSearch, FiFilter, FiGrid, FiMenu, FiX, FiSun, FiMoon, FiRefreshCw, FiUpload
 } from 'react-icons/fi';
 import { useTheme } from '../../ThemeContext';
 import ReservationSettings from './ReservationSettings';
@@ -29,6 +30,7 @@ const i18n = {
     calendar: 'Calendar',
     list: 'List',
     newBooking: 'New Booking',
+    importReservations: 'Import',
     loading: 'Loading reservations...',
     refreshing: 'Refreshing...',
     refreshData: 'Refresh data',
@@ -146,6 +148,7 @@ const ReservationSoftware = () => {
   }, []);
 
   const [reservations, setReservations] = useState([]);
+  const [importedFilter, setImportedFilter] = useState('all'); 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -162,6 +165,7 @@ const ReservationSoftware = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [modalMode, setModalMode] = useState('full');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -264,8 +268,10 @@ const ReservationSoftware = () => {
   useEffect(() => {
     if (!selectedRestaurant) return;
 
-    const start = getStartOfDay(startDate);
-    const end   = getEndOfDay(endDate);
+    const viewStart = new Date(selectedDate); viewStart.setMonth(viewStart.getMonth() - 1);
+    const viewEnd   = new Date(selectedDate); viewEnd.setMonth(viewEnd.getMonth() + 1);
+    const start = getStartOfDay(viewStart < startDate ? viewStart : startDate);
+    const end   = getEndOfDay(viewEnd > endDate ? viewEnd : endDate);
     const currentUser = auth.currentUser;
 
     const ownerUid = isStaff
@@ -297,6 +303,10 @@ const ReservationSoftware = () => {
       setReservations(reservationsData);
       setLoading(false);
       setRefreshing(false);
+    }, (error) => {
+      console.error('❌ Reservations query failed:', error);
+      setLoading(false);
+      setRefreshing(false);
     });
 
     return () => unsubscribe();
@@ -304,6 +314,12 @@ const ReservationSoftware = () => {
 
   const getStartOfDay = (date) => { const s = new Date(date); s.setHours(0,0,0,0); return s; };
   const getEndOfDay   = (date) => { const e = new Date(date); e.setHours(23,59,59,999); return e; };
+
+  const displayedReservations = useMemo(() => {
+    if (importedFilter === 'imported') return reservations.filter(r => r.is_imported);
+    if (importedFilter === 'not-imported') return reservations.filter(r => !r.is_imported);
+    return reservations;
+  }, [reservations, importedFilter]);
 
   const handleReservationClick = (reservation) => { setSelectedReservation(reservation); setShowEditModal(true); };
   const handleWalkIn = () => { setSelectedReservationDate(null); setModalMode('walkin'); setShowCreateModal(true); };
@@ -414,7 +430,7 @@ const ReservationSoftware = () => {
 
   // Get current day stats
   const getDayStats = () => {
-    const dayRes = reservations.filter(r => {
+    const dayRes = displayedReservations.filter(r => {
       const rd = r.reservation_date?.toDate?.() || new Date(r.reservation_date);
       const d = new Date(selectedDate);
       d.setHours(0, 0, 0, 0);
@@ -527,6 +543,46 @@ const ReservationSoftware = () => {
               <span className="hidden sm:inline">{t('quick')}</span>
             </button>
 
+            {/* Import */}
+            {(!isStaff || staffRole === 'admin' || staffRole === 'manager') && !isMobile && (
+              <button 
+                onClick={() => setShowImportModal(true)}
+                className={`flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 md:px-3.5 py-1 sm:py-1.5 rounded-lg font-medium transition-all text-[10px] sm:text-xs md:text-sm ${
+                  isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
+                title={t('importReservations')}
+              >
+                <FiUpload className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">{t('importReservations')}</span>
+              </button>
+            )}
+
+            {/* Imported-reservations filter toggle */}
+            {!isMobile && (
+              <button
+                onClick={() => setImportedFilter(prev =>
+                  prev === 'all' ? 'imported' : prev === 'imported' ? 'not-imported' : 'all'
+                )}
+                className={`flex items-center gap-0.5 sm:gap-1 px-2 sm:px-2.5 md:px-3.5 py-1 sm:py-1.5 rounded-lg font-medium transition-all text-[10px] sm:text-xs md:text-sm ${
+                  importedFilter !== 'all'
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                    : (isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700')
+                }`}
+                title={
+                  importedFilter === 'all'
+                    ? 'Showing all reservations — click to show only imported'
+                    : importedFilter === 'imported'
+                    ? 'Showing only imported reservations — click to hide imported'
+                    : 'Hiding imported reservations — click to reset'
+                }
+              >
+                <FiFilter className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">
+                  {importedFilter === 'all' ? 'Imported' : importedFilter === 'imported' ? 'Imported only' : 'Hide imported'}
+                </span>
+              </button>
+            )}
+
             {/* Settings */}
             {(!isStaff || staffRole === 'admin' || staffRole === 'manager') && !isMobile && (
               <button 
@@ -566,6 +622,25 @@ const ReservationSoftware = () => {
               }`}
             >
               <FiSettings className="w-3.5 h-3.5" /> {t('settings')}
+            </button>
+            <button 
+              onClick={() => setShowImportModal(true)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium flex-1 justify-center ${
+                isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              <FiUpload className="w-3.5 h-3.5" /> {t('importReservations')}
+            </button>
+            <button
+              onClick={() => setImportedFilter(prev =>
+                prev === 'all' ? 'imported' : prev === 'imported' ? 'not-imported' : 'all'
+              )}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium flex-1 justify-center ${
+                importedFilter !== 'all' ? 'bg-blue-500 text-white' : (isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700')
+              }`}
+            >
+              <FiFilter className="w-3.5 h-3.5" />
+              {importedFilter === 'all' ? 'Imported' : importedFilter === 'imported' ? 'Imported only' : 'Hide imported'}
             </button>
           </div>
         )}
@@ -707,7 +782,7 @@ const ReservationSoftware = () => {
         ) : viewMode === 'calendar' ? (
           <CalendarView
             key={selectedDate.toISOString() + forceRender}
-            reservations={reservations}
+            reservations={displayedReservations}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             onReservationClick={handleReservationClick}
@@ -718,7 +793,7 @@ const ReservationSoftware = () => {
           <ReservationTableView
             key={forceRender}
             selectedRestaurant={selectedRestaurant}
-            reservations={reservations}
+            reservations={displayedReservations}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             onReservationClick={handleReservationClick}
@@ -738,7 +813,7 @@ const ReservationSoftware = () => {
         ) : (
           <ListView
             key={viewMode + selectedDate.toISOString() + forceRender}
-            reservations={reservations}
+            reservations={displayedReservations}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             startDate={selectedDate}
@@ -783,6 +858,26 @@ const ReservationSoftware = () => {
           key={forceRender}
           selectedRestaurant={selectedRestaurant} 
           onClose={() => setShowSettings(false)} 
+        />
+      )}
+      {showImportModal && (!isStaff || staffRole === 'admin' || staffRole === 'manager') && (
+        <ImportReservationsModal
+          selectedRestaurant={selectedRestaurant}
+          onClose={() => setShowImportModal(false)}
+          onImported={(earliestDate, importedRestaurant, latestDate) => {
+            setForceRender(prev => prev + 1);
+            if (importedRestaurant?.id && importedRestaurant.id !== selectedRestaurant?.id) {
+              const match = restaurants.find(r => r.id === importedRestaurant.id);
+              setSelectedRestaurant(match || importedRestaurant);
+            }
+            if (earliestDate) {
+              setSelectedDate(earliestDate);
+              setStartDate(prev => (earliestDate < prev ? new Date(earliestDate) : prev));
+            }
+            if (latestDate) {
+              setEndDate(prev => (latestDate > prev ? new Date(latestDate) : prev));
+            }
+          }}
         />
       )}
     </div>
