@@ -2051,7 +2051,7 @@ const SettingNumber = ({ label, description, value, onChange, min, max, unit, st
 
   const change = (dir) => {
     const next = clamp((valueRef.current ?? min) + dir * step);
-    valueRef.current = next;   // keep ref fresh so holding keeps stepping
+    valueRef.current = next;
     onChange(next);
   };
 
@@ -2063,14 +2063,13 @@ const SettingNumber = ({ label, description, value, onChange, min, max, unit, st
   };
 
   const startPress = (dir) => {
-    stopPress();               // never allow two timer sets to exist
+    stopPress();
     change(dir);
     timeoutRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => change(dir), 80);
     }, 400);
   };
 
-  // safety net: if the component unmounts mid-press, kill timers
   React.useEffect(() => stopPress, []);
 
   const commit = () => {
@@ -2085,7 +2084,7 @@ const SettingNumber = ({ label, description, value, onChange, min, max, unit, st
     onPointerUp: stopPress,
     onPointerLeave: stopPress,
     onPointerCancel: stopPress,
-    onContextMenu: (e) => e.preventDefault(), // long-press on mobile opens context menu otherwise
+    onContextMenu: (e) => e.preventDefault(),
   });
 
   return (
@@ -2101,11 +2100,15 @@ const SettingNumber = ({ label, description, value, onChange, min, max, unit, st
             className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-sm sm:text-base transition-colors select-none border-r border-gray-200"
           >−</button>
           <input
-            type="number" min={min} max={max} step={step}
+            type="number"
+            min={min}
+            max={max}
+            step={step}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            onWheel={(e) => { e.preventDefault(); e.stopPropagation(); return false; }}
             className="w-12 sm:w-16 px-1 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#fe8a24]/20 border-0"
           />
           <button type="button" {...holdBtn(1)}
