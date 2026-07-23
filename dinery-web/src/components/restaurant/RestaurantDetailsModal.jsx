@@ -769,28 +769,49 @@ export default function RestaurantDetailsModal({ restaurant, onClose, onRemove, 
                           return (
                             <div key={idx} className="flex items-center gap-2">
                               <div className="w-5 h-5 flex-shrink-0"></div>
-                              <input
-                                type="date"
-                                className={`border rounded px-2 py-1 ${invalid ? "border-red-400" : ""}`}
-                                value={holiday.startDate || ""}
-                                onChange={e => {
-                                  const updated = [...(editedRestaurant.customHolidays || [])];
-                                  updated[idx] = { ...updated[idx], startDate: e.target.value };
-                                  setEditedRestaurant({ ...editedRestaurant, customHolidays: updated });
-                                }}
-                              />
-                              <input
-                                type="date"
-                                className={`border rounded px-2 py-1 ${invalid ? "border-red-400" : ""}`}
-                                value={holiday.endDate || ""}
-                                min={holiday.startDate || undefined}
-                                onChange={e => {
-                                  const updated = [...(editedRestaurant.customHolidays || [])];
-                                  updated[idx] = { ...updated[idx], endDate: e.target.value };
-                                  setEditedRestaurant({ ...editedRestaurant, customHolidays: updated });
-                                }}
-                                disabled={!holiday.startDate}
-                              />
+                              <div className="relative">
+                                <input
+                                  type="date"
+                                  className={`border rounded px-2 py-1 ${invalid ? "border-red-400" : ""}`}
+                                  value={holiday.startDate || ""}
+                                  onChange={e => {
+                                    const updated = [...(editedRestaurant.customHolidays || [])];
+                                    updated[idx] = { ...updated[idx], startDate: e.target.value };
+                                    setEditedRestaurant({ ...editedRestaurant, customHolidays: updated });
+                                  }}
+                                  onBlur={() => {
+                                    // Force blur to close the date picker
+                                    document.activeElement?.blur();
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                      e.target.blur();
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <div className="relative">
+                                <input
+                                  type="date"
+                                  className={`border rounded px-2 py-1 ${invalid ? "border-red-400" : ""}`}
+                                  value={holiday.endDate || ""}
+                                  min={holiday.startDate || undefined}
+                                  onChange={e => {
+                                    const updated = [...(editedRestaurant.customHolidays || [])];
+                                    updated[idx] = { ...updated[idx], endDate: e.target.value };
+                                    setEditedRestaurant({ ...editedRestaurant, customHolidays: updated });
+                                  }}
+                                  onBlur={() => {
+                                    document.activeElement?.blur();
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Escape') {
+                                      e.target.blur();
+                                    }
+                                  }}
+                                  disabled={!holiday.startDate}
+                                />
+                              </div>
                               <button
                                 type="button"
                                 className="p-2 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
@@ -1177,9 +1198,44 @@ export default function RestaurantDetailsModal({ restaurant, onClose, onRemove, 
                         <div className="flex flex-col gap-2">
                           {editedRestaurant.customHours.map((c, idx) => (
                             <div key={idx} className="flex items-center gap-3 border border-[#ffe5cf] bg-white rounded-lg px-3 py-2" style={{minHeight: '44px'}}>
-                              <div className="flex-1 min-w-[70px]">
-                                <div className="text-gray-900 font-semibold truncate">{(c.days || []).map(formatDayLabel).join(", ")}</div>
-                              </div>
+                                <div className="flex-1 min-w-[70px]">
+                                  <div className="flex flex-wrap gap-1">
+                                    {weekDays.map(day => {
+                                      const rowDayNames = (c.days || []).map(d => formatDayLabel(d));
+                                      const isChecked = rowDayNames.includes(day);
+                                      const usedElsewhere = usedDays.has(day) && !isChecked;
+
+                                      return (
+                                        <button
+                                          type="button"
+                                          key={day}
+                                          disabled={usedElsewhere}
+                                          title={usedElsewhere ? t('dayAlreadyAdded', { day }) : day}
+                                          onClick={() => {
+                                            const updated = [...editedRestaurant.customHours];
+                                            const currentDays = Array.isArray(updated[idx].days) ? updated[idx].days : [];
+                                            const currentNames = currentDays.map(d => formatDayLabel(d));
+                                            const newDays = currentNames.includes(day)
+                                              ? currentDays.filter(d => formatDayLabel(d) !== day)
+                                              : [...currentDays, { name: day, maxGuests: 0 }];
+                                            updated[idx] = { ...updated[idx], days: newDays };
+                                            setEditedRestaurant({ ...editedRestaurant, customHours: updated });
+                                          }}
+                                          className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                                            isChecked
+                                              ? 'text-white'
+                                              : usedElsewhere
+                                                ? 'border-gray-200 bg-gray-100 text-gray-300 cursor-not-allowed'
+                                                : 'border-gray-300 bg-white text-gray-600 hover:border-[#e28743] hover:bg-orange-50'
+                                          }`}
+                                          style={isChecked ? { borderColor: '#e28743', backgroundColor: '#e28743' } : undefined}
+                                        >
+                                          {day.slice(0, 3)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
                               <input
                                 type="time"
                                 className="border border-gray-300 rounded px-2 py-1 w-[90px] focus:outline-none focus:border-[#e28743] transition-colors"

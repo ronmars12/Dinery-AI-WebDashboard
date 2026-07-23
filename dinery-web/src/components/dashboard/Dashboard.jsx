@@ -1284,13 +1284,89 @@ const customerRetentionTrend=useMemo(()=>{
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
           </svg>
           <span style={{fontSize:11,fontWeight:600,color:"#6b7280"}}>From</span>
-          <input type="date" value={customStart} onChange={e=>setCustomStart(e.target.value)}
-            style={{border:"1px solid #e2e8f0",borderRadius:9,padding:"4px 9px",fontSize:12,outline:"none",background:"#f8fafc"}}/>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <input 
+              type="date" 
+              value={customStart} 
+              onChange={e=>setCustomStart(e.target.value)}
+              onBlur={() => {
+                // Force blur to close the date picker
+                document.activeElement?.blur();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.target.blur();
+                }
+              }}
+              style={{
+                border:"1px solid #e2e8f0",
+                borderRadius:9,
+                padding:"4px 9px",
+                fontSize:12,
+                outline:"none",
+                background:"#f8fafc",
+                minWidth:"130px",
+                cursor:"pointer"
+              }}
+            />
+          </div>
           <span style={{fontSize:11,fontWeight:600,color:"#6b7280"}}>To</span>
-          <input type="date" value={customEnd} min={customStart} onChange={e=>setCustomEnd(e.target.value)}
-            style={{border:"1px solid #e2e8f0",borderRadius:9,padding:"4px 9px",fontSize:12,outline:"none",background:"#f8fafc"}}/>
+          <div style={{position:"relative",display:"inline-block"}}>
+            <input 
+              type="date" 
+              value={customEnd} 
+              min={customStart}
+              onChange={e=>setCustomEnd(e.target.value)}
+              onBlur={() => {
+                document.activeElement?.blur();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.target.blur();
+                }
+              }}
+              style={{
+                border:"1px solid #e2e8f0",
+                borderRadius:9,
+                padding:"4px 9px",
+                fontSize:12,
+                outline:"none",
+                background:"#f8fafc",
+                minWidth:"130px",
+                cursor:"pointer"
+              }}
+            />
+          </div>
           {customStart&&customEnd&&(
-            <button onClick={()=>{setCustomStart("");setCustomEnd("");}} style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",background:"none",border:"none",cursor:"pointer"}}>Clear</button>
+            <button 
+              onClick={() => {
+                setCustomStart("");
+                setCustomEnd("");
+                // Close any open date picker
+                document.activeElement?.blur();
+              }} 
+              style={{
+                marginLeft:"auto",
+                fontSize:11,
+                color:"#94a3b8",
+                background:"none",
+                border:"none",
+                cursor:"pointer",
+                padding:"4px 8px",
+                borderRadius:6,
+                transition:"all 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#f1f5f9";
+                e.currentTarget.style.color = "#ef4444";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = "#94a3b8";
+              }}
+            >
+              Clear
+            </button>
           )}
         </div>
       )}

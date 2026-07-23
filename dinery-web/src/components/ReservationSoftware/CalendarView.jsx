@@ -407,6 +407,78 @@ const i18n = {
   },
 };
 
+// Fires the Thank You email right now if automation is on and configured for 0-day delay.
+const sendThankYouIfImmediate = async (reservation, restaurantId, collectionName) => {
+  if (!restaurantId || !reservation?.id) return;
+  if (reservation.thankYouEmailSent) return;
+  if (!reservation.customer_email?.trim()) return;
+  if (!['confirmed', 'completed'].includes(reservation.status)) return;
+
+  try {
+    const cfgSnap = await getDoc(doc(firestore, collectionName, restaurantId, 'crm_settings', 'config'));
+    if (!cfgSnap.exists()) return;
+    const cfg = cfgSnap.data();
+
+    if (!cfg.enabled || Number(cfg.daysAfter ?? 1) !== 0) return; // only fire for the 0-day case
+
+    const restaurantName = reservation.restaurant_name || 'Restaurant';
+    const resDate = reservation.reservation_date?.toDate?.() || new Date(reservation.reservation_date);
+
+    const thankYouHtml = (cfg.thankYouMessage || '')
+      .replace(/{{restaurant_name}}/g, restaurantName)
+      .replace(/{{customer_first_name}}/g, reservation.customer_name?.split(' ')[0] || 'there')
+      .replace(/{{customer_full_name}}/g, reservation.customer_name || '')
+      .replace(/{{reservation_date}}/g, resDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }))
+      .replace(/{{reservation_time}}/g, reservation.from_time || '')
+      .replace(/{{party_size}}/g, reservation.number_of_guests || '')
+      .replace(/\n/g, '<br/>');
+
+    let offerHtml = '';
+    if (cfg.offerEnabled && cfg.selectedOfferId) {
+      const offerSnap = await getDoc(doc(firestore, collectionName, restaurantId, 'offer', cfg.selectedOfferId));
+      if (offerSnap.exists()) {
+        const offer = offerSnap.data();
+        const offerLink = `https://dashboard.dinery.ai/reserve/${encodeURIComponent(restaurantId)}?offer=${encodeURIComponent(offer.offer_id)}&offerId=${encodeURIComponent(cfg.selectedOfferId)}&source=thankyou&resId=${encodeURIComponent(reservation.id)}`;
+        offerHtml = `
+          <div style="margin-top:20px;padding:16px;background:#fff8f0;border:1px solid #fe8a24;border-radius:10px;">
+            <p style="margin:0 0 6px;font-weight:bold;color:#fe8a24;font-size:15px;">${offer.offer_name || 'Welcome Back Offer'}</p>
+            <p style="margin:0 0 12px;font-size:13px;color:#555;">${(offer.description || '').replace(/\n/g, '<br/>')}</p>
+            <a href="${offerLink}" style="display:inline-block;background:#fe8a24;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;">Book Your Next Visit</a>
+          </div>`;
+      }
+    }
+
+    const surveyHtml = cfg.surveyEnabled ? `
+      <div style="margin-top:24px;padding:20px;background:#fffbf5;border:1px solid #fde3c0;border-radius:12px;text-align:center;">
+        <a href="https://dashboard.dinery.ai/feedback/${reservation.id}" style="text-decoration:none;display:block;">
+          <p style="margin:0 0 10px;font-size:14px;font-weight:bold;color:#1e293b;">⭐ Rate Your Experience</p>
+          <p style="margin:0 0 10px;font-size:28px;letter-spacing:4px;line-height:1;">⭐⭐⭐⭐⭐</p>
+          <p style="margin:0;font-size:13px;color:#666;line-height:1.5;">It only takes 10 seconds, but it will help us a lot. ❤️</p>
+        </a>
+      </div>` : '';
+
+    const sendEmailFn = httpsCallable(getFunctions(undefined, 'asia-southeast1'), 'sendEmail');
+    await sendEmailFn({
+      to: reservation.customer_email.trim(),
+      subject: `Thank you for visiting ${restaurantName}!`,
+      isReservation: true,
+      html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1e293b;">
+        <h2 style="color:#fe8a24;margin-bottom:4px;">Thank you for visiting!</h2>
+        <p style="font-size:14px;line-height:1.6;">${thankYouHtml}</p>
+        ${offerHtml}
+        ${surveyHtml}
+      </div>`,
+    });
+
+    await updateDoc(doc(firestore, 'reservations', reservation.id), {
+      thankYouEmailSent: true,
+      thankYouEmailSentAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.error('Immediate thank-you email (table cleared) failed:', err);
+  }
+};
+
 // ─── Note Indicator Component ──────────────────────────────────────────────────
 const NoteIndicator = ({ publicNote, internalNote, isDark }) => {
   const hasPublic = publicNote && publicNote.trim().length > 0;
@@ -1049,6 +1121,13 @@ const CalendarView = ({
           meal_status: status,
           updated_at: new Date(),
         });
+        if (status === 'table_cleared') {
+          sendThankYouIfImmediate(
+            { ...reservation, meal_status: status },
+            selectedRestaurant?.id,
+            selectedRestaurant?._collection || 'restaurants'
+          );
+        }
         onClose();
       } catch (err) {
         console.error('Failed to update meal status:', err);
@@ -2601,6 +2680,13 @@ const snapMinutes = Math.round(prev.startMinutes / 5) * 5;
                                             meal_status: status,
                                             updated_at: serverTimestamp(),
                                           });
+                                          if (status === 'table_cleared') {
+                                            sendThankYouIfImmediate(
+                                              { ...r, meal_status: status },
+                                              selectedRestaurant?.id,
+                                              selectedRestaurant?._collection || 'restaurants'
+                                            );
+                                          }
                                         } catch (err) {
                                           console.error('Failed to update meal status:', err);
                                         }

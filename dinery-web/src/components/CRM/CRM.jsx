@@ -2401,6 +2401,9 @@ function RecoverySettings({ restaurantId, collectionName }) {
 // ─── Email Automation ─────────────────────────────────────────────────────────
 const DEFAULT_SETTINGS = {
   enabled: false, sendHour: "10",
+  daysAfter: 1, 
+  thankYouMessage: "...",
+  enabled: false, sendHour: "10",
   thankYouMessage: "Thank you for visiting {{restaurant_name}}.\n\nWe hope you had a wonderful experience and look forward to welcoming you again soon.",
   offerEnabled: false,
   selectedOfferId: "",
@@ -2738,16 +2741,38 @@ function EmailAutomation({ restaurantId, collectionName = "restaurants" }) {
             <Toggle enabled={settings.enabled} onChange={(v) => set("enabled", v)} />
           </div>
           <SectionCard title={t('sendTime')} subtitle={t('whenEmailSent')}>
-            <select value={settings.sendHour} onChange={(e) => set("sendHour", e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
-              {Array.from({ length: 24 }, (_, i) => {
-                const val = String(i).padStart(2, "0");
-                const h12 = i === 0 ? 12 : i > 12 ? i - 12 : i;
-                const ampm = i < 12 ? "AM" : "PM";
-                return <option key={val} value={val}>{val}:00 — {h12}:00 {ampm}</option>;
-              })}
-            </select>
-            <p className="text-xs text-gray-400 mt-2">Only sent for <span className="font-mono bg-gray-100 px-1 rounded">confirmed</span> or <span className="font-mono bg-gray-100 px-1 rounded">completed</span> reservations. Each reservation receives only one email.</p>
-            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3"><p className="text-xs text-amber-700"><span className="font-semibold">{t('testingTip')}</span></p></div>
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                type="number"
+                min="0"
+                max="30"
+                value={settings.daysAfter ?? 1}
+                onChange={(e) => set("daysAfter", Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]"
+              />
+              <span className="text-sm text-gray-500">days after the visit</span>
+            </div>
+
+            {Number(settings.daysAfter ?? 1) === 0 ? (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <p className="text-xs text-[#fe8a24] font-semibold">
+                  Sends immediately once the table is marked "Table cleared" on the calendar — the hour setting below is ignored.
+                </p>
+              </div>
+            ) : (
+              <>
+                <select value={settings.sendHour} onChange={(e) => set("sendHour", e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24]">
+                  {Array.from({ length: 24 }, (_, i) => {
+                    const val = String(i).padStart(2, "0");
+                    const h12 = i === 0 ? 12 : i > 12 ? i - 12 : i;
+                    const ampm = i < 12 ? "AM" : "PM";
+                    return <option key={val} value={val}>{val}:00 — {h12}:00 {ampm}</option>;
+                  })}
+                </select>
+                <p className="text-xs text-gray-400 mt-2">Only sent for <span className="font-mono bg-gray-100 px-1 rounded">confirmed</span> or <span className="font-mono bg-gray-100 px-1 rounded">completed</span> reservations. Each reservation receives only one email.</p>
+                <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3"><p className="text-xs text-amber-700"><span className="font-semibold">{t('testingTip')}</span></p></div>
+              </>
+            )}
           </SectionCard>
           <SectionCard title={t('thankYouMessage')} subtitle={t('openingMessage')}>
             <textarea ref={thankYouMessageRef} value={settings.thankYouMessage} onChange={(e) => set("thankYouMessage", e.target.value)} rows={5} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#fe8a24] resize-none" />
